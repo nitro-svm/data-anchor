@@ -1,0 +1,38 @@
+[workspace]
+members = ["programs/blober"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Nitro Labs <team@nitro.technology>"]
+homepage = "https://www.termina.technology"
+publish = false
+repository = "https://github.com/nitro-svm/nitro-da"
+
+[workspace.dependencies]
+# External dependencies from crates.io
+futures = "0.3.31"
+hex = "0.4.3"
+rand = "0.8.5"
+tokio = "1.43.0"
+
+# Solana & Agave
+solana-logger = "2.0.21"
+solana-program-test = "2.0.21"
+solana-sdk = "2.0.21"
+solana-rpc-client = "2.0.21"
+solana-test-validator = "2.0.21"
+
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", rev = "db6da5c67d896e0a94c158f69e9b235e364b3064" }
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1

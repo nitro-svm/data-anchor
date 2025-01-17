@@ -1,0 +1,52 @@
+[package]
+name = "nitro-da-client"
+description = "Contains multiple clients for interacting with the Chunker and Hasher programs on Solana."
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+publish = { workspace = true }
+
+[dependencies]
+# External dependencies
+futures = { workspace = true }
+itertools = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+
+# Solana & Agave
+anchor-lang = { workspace = true }
+solana-client = { workspace = true }
+solana-connection-cache = { workspace = true }
+solana-quic-client = { workspace = true }
+solana-rpc-client = { workspace = true }
+solana-rpc-client-api = { workspace = true }
+solana-sdk = { workspace = true }
+solana-transaction-status = { workspace = true }
+
+# Locals
+blober = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bincode = { workspace = true }
+gadgets-scfs = { workspace = true }
+rand = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["test-util", "macros"] }
+tracing-subscriber = { workspace = true, features = [
+    "env-filter",
+    "fmt",
+    "tracing-log",
+    "ansi",
+] }
+walkdir = { workspace = true }
+
+# Solana & Agave
+solana-test-validator = { workspace = true }
+solana-transaction-status = { workspace = true }

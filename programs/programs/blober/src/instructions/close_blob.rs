@@ -1,0 +1,53 @@
+use anchor_lang::prelude::*;
+
+use crate::{blob::Blob, SEED};
+
+#[derive(Accounts)]
+pub struct DiscardBlob<'info> {
+    #[account(
+        mut,
+        close = payer,
+        seeds = [
+            SEED,
+            payer.key().as_ref(),
+            blober.timestamp.to_le_bytes().as_ref()
+        ],
+        bump = blober.bump
+    )]
+    pub blober: Account<'info, Blob>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+}
+
+pub fn discard_blob_handler(_ctx: Context<DiscardBlob>) -> Result<()> {
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use anchor_lang::{
+        prelude::{AccountMeta, Pubkey},
+        ToAccountMetas,
+    };
+
+    use crate::accounts::DiscardBlob;
+
+    #[test]
+    fn test_first_account_is_the_blob() {
+        let blober = Pubkey::new_unique();
+        let payer = Pubkey::new_unique();
+
+        let account = DiscardBlob { blober, payer };
+
+        let expected = AccountMeta {
+            pubkey: blober,
+            is_signer: false,
+            is_writable: true,
+        };
+
+        let is_signer = None;
+        let actual = &account.to_account_metas(is_signer)[0];
+        assert_eq!(actual, &expected);
+    }
+}

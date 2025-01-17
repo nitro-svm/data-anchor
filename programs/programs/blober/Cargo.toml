@@ -1,0 +1,41 @@
+[package]
+name = "blober"
+description = "The Nitro DA Blober program used to store hashes of blob data."
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+publish = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "blober"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+# External dependencies from crates.io
+hex = { workspace = true }
+
+# Solana & Agave
+anchor-lang = { workspace = true }
+
+[dev-dependencies]
+# External dependencies from crates.io
+futures = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
+
+# Solana & Agave
+solana-logger = { workspace = true }
+solana-program-test = { workspace = true }
+solana-rpc-client = { workspace = true }
+solana-sdk = { workspace = true }
+solana-test-validator = { workspace = true }

@@ -1,0 +1,20 @@
+[package]
+name = "nitro-da-indexer-api"
+description = "The shared API for the Solana Indexer."
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+publish = { workspace = true }
+
+[dependencies]
+# External dependencies from crates.io
+jsonrpsee = { workspace = true, features = ["client-core"] }
+serde = { workspace = true, features = ["alloc", "derive"] }
+
+# Solana & Agave
+solana-sdk = { workspace = true }
+
+# Locals
+nitro-da-proofs = { workspace = true }
