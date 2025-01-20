@@ -54,6 +54,8 @@ env:
   RUSTFLAGS: -D warnings
   # This is faster for CI: https://github.com/dtolnay/rust-toolchain/issues/26.
   CARGO_INCREMENTAL: "0"
+  SOLANA_CLI: v2.1.8
+  ANCHOR_CLI: db6da5c67d896e0a94c158f69e9b235e364b3064
 
 # Automatically cancels a job if a new commit if pushed to the same PR, branch, or tag.
 # Source: <https://stackoverflow.com/a/72408109/5148606>
@@ -124,3 +126,51 @@ jobs:
           sudo swapon --show
           free -h
       - run: cargo nextest run --workspace --status-level skip
+
+  nextest-programs:
+    name: nextest-programs
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rui314/setup-mold@v1
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          version: "23.2"
+      # `cargo-nextest` is much faster than standard `cargo test`
+      - uses: taiki-e/install-action@nextest
+      - name: Install Rust
+        run: rustup show
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          cache-provider: "buildjet"
+      # add swap space to accommodate memory spikes
+      - name: Set up swap space
+        run: |
+          sudo swapon --show
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo swapon --show
+          free -h
+      - name: Install Solana tools
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
+      - name: Add Solana to path
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install Anchor management tools
+        run: cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+      - name: Install Anchor
+        run: avm install "$ANCHOR_CLI"
+      - name: Sync keys and build programs
+        working-directory: programs
+        run: anchor keys sync && anchor build
+      - name: Run program tests
+        working-directory: programs
+        env:
+          # Run property testing with arbitrary for 10s
+          ARBTEST_BUDGET_MS: 10000
+        run: cargo nextest run --workspace --status-level skip
