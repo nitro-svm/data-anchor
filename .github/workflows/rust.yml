@@ -115,6 +115,11 @@ jobs:
         with:
           cache-on-failure: true
           cache-provider: "buildjet"
+      # Install system dependencies
+      - name: Install system dependencies
+        run: |
+            sudo apt update
+            sudo apt install -y build-essential cmake pkg-config libudev-dev
       # add swap space to accommodate memory spikes
       - name: Set up swap space
         run: |

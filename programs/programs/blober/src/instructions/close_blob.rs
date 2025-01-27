@@ -10,11 +10,11 @@ pub struct DiscardBlob<'info> {
         seeds = [
             SEED,
             payer.key().as_ref(),
-            blober.timestamp.to_le_bytes().as_ref()
+            blob.timestamp.to_le_bytes().as_ref()
         ],
-        bump = blober.bump
+        bump = blob.bump
     )]
-    pub blober: Account<'info, Blob>,
+    pub blob: Account<'info, Blob>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -35,13 +35,13 @@ mod tests {
 
     #[test]
     fn test_first_account_is_the_blob() {
-        let blober = Pubkey::new_unique();
+        let blob = Pubkey::new_unique();
         let payer = Pubkey::new_unique();
 
-        let account = DiscardBlob { blober, payer };
+        let account = DiscardBlob { blob, payer };
 
         let expected = AccountMeta {
-            pubkey: blober,
+            pubkey: blob,
             is_signer: false,
             is_writable: true,
         };

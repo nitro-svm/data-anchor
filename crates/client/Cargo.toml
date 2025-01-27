@@ -1,6 +1,6 @@
 [package]
 name = "nitro-da-client"
-description = "Contains multiple clients for interacting with the Chunker and Hasher programs on Solana."
+description = "Contains blober client for interacting with the Blober program on Solana."
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -10,43 +10,41 @@ publish = { workspace = true }
 
 [dependencies]
 # External dependencies
+async-trait = { workspace = true }
+bincode = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
+jsonrpsee = { workspace = true, features = ["ws-client"] }
 schemars = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
 
 # Solana & Agave
 anchor-lang = { workspace = true }
+solana-bpf-loader-program = { workspace = true }
+solana-cli = { workspace = true }
 solana-client = { workspace = true }
+solana-compute-budget = { workspace = true }
 solana-connection-cache = { workspace = true }
+solana-program-runtime = { workspace = true }
 solana-quic-client = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
+solana_rbpf = { workspace = true }
 
 # Locals
 blober = { workspace = true }
+nitro-da-indexer-api = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
-async-trait = { workspace = true }
-bincode = { workspace = true }
-gadgets-scfs = { workspace = true }
-rand = { workspace = true }
-serde_json = { workspace = true }
 tokio = { workspace = true, features = ["test-util", "macros"] }
-tracing-subscriber = { workspace = true, features = [
-    "env-filter",
-    "fmt",
-    "tracing-log",
-    "ansi",
-] }
-walkdir = { workspace = true }
+rand = { workspace = true }
 
-# Solana & Agave
-solana-test-validator = { workspace = true }
-solana-transaction-status = { workspace = true }
+

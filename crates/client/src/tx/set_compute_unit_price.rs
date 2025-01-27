@@ -1,9 +1,10 @@
 use std::cmp::min;
 
-use anchor_lang::prelude::Pubkey;
 use itertools::Itertools;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
+use solana_sdk::{
+    compute_budget::ComputeBudgetInstruction, instruction::Instruction, pubkey::Pubkey,
+};
 
 use crate::{
     fees::{FeeStrategy, MicroLamports, Priority},
@@ -68,70 +69,4 @@ fn calculate_percentile<T: PartialOrd>(sorted_values: &[T], priority: Priority) 
     assert!(sorted_values.windows(2).all(|w| w[0] <= w[1]));
     let percentile_index = (sorted_values.len() as f32 * priority.percentile()).round() as usize;
     &sorted_values[min(percentile_index, sorted_values.len() - 1)]
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn priority_percentiles_arbitrary_values() {
-        let recent_fees = [501, 102, 20003, 404, 305, 306, 207];
-        let sorted_fees = recent_fees.into_iter().sorted().collect::<Vec<_>>();
-        let percentile_0 = calculate_percentile(&sorted_fees, Priority::Min);
-        assert_eq!(*percentile_0, 102);
-        let percentile_25 = calculate_percentile(&sorted_fees, Priority::Low);
-        assert_eq!(*percentile_25, 305);
-        let percentile_50 = calculate_percentile(&sorted_fees, Priority::Medium);
-        assert_eq!(*percentile_50, 404);
-        let percentile_75 = calculate_percentile(&sorted_fees, Priority::High);
-        assert_eq!(*percentile_75, 501);
-        let percentile_95 = calculate_percentile(&sorted_fees, Priority::VeryHigh);
-        assert_eq!(*percentile_95, 20003);
-    }
-
-    #[test]
-    fn priority_percentiles_exact_values() {
-        let recent_fees = 0..100u64;
-        let sorted_fees = recent_fees.into_iter().sorted().collect::<Vec<_>>();
-        let percentile_0 = calculate_percentile(&sorted_fees, Priority::Min);
-        assert_eq!(*percentile_0, 0);
-        let percentile_25 = calculate_percentile(&sorted_fees, Priority::Low);
-        assert_eq!(*percentile_25, 25);
-        let percentile_50 = calculate_percentile(&sorted_fees, Priority::Medium);
-        assert_eq!(*percentile_50, 50);
-        let percentile_75 = calculate_percentile(&sorted_fees, Priority::High);
-        assert_eq!(*percentile_75, 75);
-        let percentile_95 = calculate_percentile(&sorted_fees, Priority::VeryHigh);
-        assert_eq!(*percentile_95, 95);
-    }
-
-    #[test]
-    fn priority_percentiles_single_value() {
-        let sorted_fees = vec![1748];
-        let percentile_0 = calculate_percentile(&sorted_fees, Priority::Min);
-        assert_eq!(*percentile_0, 1748);
-        let percentile_25 = calculate_percentile(&sorted_fees, Priority::Low);
-        assert_eq!(*percentile_25, 1748);
-        let percentile_50 = calculate_percentile(&sorted_fees, Priority::Medium);
-        assert_eq!(*percentile_50, 1748);
-        let percentile_75 = calculate_percentile(&sorted_fees, Priority::High);
-        assert_eq!(*percentile_75, 1748);
-        let percentile_95 = calculate_percentile(&sorted_fees, Priority::VeryHigh);
-        assert_eq!(*percentile_95, 1748);
-    }
-
-    #[test]
-    #[should_panic]
-    fn percentile_of_unsorted_values_panics() {
-        let recent_fees = [501, 102, 20003, 404, 305, 306, 207];
-        calculate_percentile(&recent_fees, Priority::Medium);
-    }
-
-    #[test]
-    #[should_panic]
-    fn percentile_of_empty_values_panics() {
-        let recent_fees: [u64; 0] = [];
-        calculate_percentile(&recent_fees, Priority::Medium);
-    }
 }

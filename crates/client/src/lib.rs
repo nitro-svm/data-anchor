@@ -1,14 +1,11 @@
 mod batch_client;
-mod chunker_client;
+mod blober_client;
+mod deploy;
 mod fees;
-mod hasher_client;
+mod helpers;
 mod tx;
+mod types;
 
 pub use solana_rpc_client_api::client_error::{Error, ErrorKind};
 
-pub use crate::{
-    batch_client::*,
-    chunker_client::{ChunkerClient, UploadBlobError},
-    fees::*,
-    hasher_client::HasherClient,
-};
+pub use crate::{batch_client::*, blober_client::BloberClient, fees::*, types::*};

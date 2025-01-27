@@ -190,7 +190,7 @@ fn categorize_transaction_response(
         }
         Some(ref err) => {
             // Some instructions are expected to fail, for example inserting too far ahead
-            // or closing the Chunker when it's not yet full.
+            // or closing the Blober when it's not yet full.
             if !matches!(err, TransactionError::InstructionError(_, _)) {
                 // Other errors are *not* expected and will be logged, but will not otherwise be
                 // handled in any special way.

@@ -13,8 +13,8 @@ pub struct Fee {
     pub compute_unit_limit: u32,
     /// The prioritization fee rate, in micro-lamports.
     pub prioritization_fee_rate: MicroLamports,
-    /// The required size of the chunker account, in bytes.
-    pub chunker_account_size: usize,
+    /// The required size of the blober account, in bytes.
+    pub blob_account_size: usize,
 }
 
 impl Fee {
@@ -23,7 +23,7 @@ impl Fee {
         price_per_signature: Lamports::ZERO,
         compute_unit_limit: 0,
         prioritization_fee_rate: MicroLamports::ZERO,
-        chunker_account_size: 0,
+        blob_account_size: 0,
     };
 
     /// Calculate the static part of the fee for a blob upload.
@@ -53,12 +53,12 @@ impl Fee {
             .expect("addition overflow")
     }
 
-    /// Calculate the required rent used as a deposit for the chunker account.
+    /// Calculate the required rent used as a deposit for the blober account.
     /// Solana programs must hold on to a certain amount of lamports (SOL) in order to exist on-chain.
     /// This rent is paid upfront whenever an account is created or resized, and is proportional to
     /// the size of the account.
     pub fn rent(&self) -> Lamports {
-        let minimum_balance = Rent::default().minimum_balance(self.chunker_account_size) as u32;
+        let minimum_balance = Rent::default().minimum_balance(self.blob_account_size) as u32;
         Lamports::new(minimum_balance)
     }
 }
@@ -74,7 +74,7 @@ mod tests {
             price_per_signature: Lamports::new(5000),
             compute_unit_limit: 1,
             prioritization_fee_rate: MicroLamports::new(999_999),
-            chunker_account_size: 100,
+            blob_account_size: 100,
         };
         assert_eq!(fee.prioritization_fee(), Lamports::new(1));
     }

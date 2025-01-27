@@ -80,7 +80,7 @@ impl BloberAccountStateProof {
         }
     }
 
-    /// Verifies that the provided hasher account data matches the expected state.
+    /// Verifies that the provided blober account data matches the expected state.
     pub fn verify(&self, blober_account_data: &[u8]) -> Result<(), BloberAccountStateError> {
         if &blober_account_data[..8] != Blober::DISCRIMINATOR {
             return Err(BloberAccountStateError::DiscriminatorMismatch);
