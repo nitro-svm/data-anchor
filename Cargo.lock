@@ -3204,6 +3204,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "blober",
+ "bon",
  "futures",
  "itertools 0.14.0",
  "jsonrpsee",

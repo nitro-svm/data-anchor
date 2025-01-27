@@ -12,6 +12,7 @@ publish = { workspace = true }
 # External dependencies
 async-trait = { workspace = true }
 bincode = { workspace = true }
+bon = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
 jsonrpsee = { workspace = true, features = ["ws-client"] }

@@ -2,6 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
 use blober::{find_blob_address, state::blober::Blober, CHUNK_SIZE};
+use bon::Builder;
 use jsonrpsee::ws_client::WsClient;
 use nitro_da_indexer_api::{CompoundProof, IndexerRpcClient};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -24,6 +25,7 @@ use crate::{
     Error,
 };
 
+#[derive(Builder)]
 pub struct BloberClient {
     pub(crate) payer: Arc<Keypair>,
     pub(crate) rpc_client: Arc<RpcClient>,
@@ -38,13 +40,13 @@ impl BloberClient {
         payer: Arc<Keypair>,
         rpc_client: Arc<RpcClient>,
         batch_client: BatchClient,
-        indexer_client: Arc<WsClient>,
+        indexer_client: Option<Arc<WsClient>>,
     ) -> Self {
         Self {
             payer,
             rpc_client,
             batch_client,
-            indexer_client: Some(indexer_client),
+            indexer_client,
         }
     }
 
@@ -324,12 +326,11 @@ pub mod tests {
         let batch_client = BatchClient::new(blober_rpc_client.clone(), None, vec![payer.clone()])
             .await
             .unwrap();
-        let blober_client = BloberClient {
-            payer: payer.clone(),
-            rpc_client: blober_rpc_client.clone(),
-            batch_client,
-            indexer_client: None,
-        };
+        let blober_client = BloberClient::builder()
+            .payer(payer.clone())
+            .rpc_client(blober_rpc_client.clone())
+            .batch_client(batch_client)
+            .build();
 
         // Useful for spotting the blob data in the transaction ledger.
         let data: Vec<u8> = [0xDE, 0xAD, 0xBE, 0xEF]
@@ -400,12 +401,11 @@ pub mod tests {
         .await
         .unwrap();
         // Give a successful RPC client to the BloberClient to allow other calls to succeed.
-        let blober_client = BloberClient {
-            payer: payer.clone(),
-            rpc_client: successful_rpc_client.clone(),
-            batch_client,
-            indexer_client: None,
-        };
+        let blober_client = BloberClient::builder()
+            .payer(payer)
+            .rpc_client(successful_rpc_client.clone())
+            .batch_client(batch_client)
+            .build();
 
         // Useful for spotting the blob data in the transaction ledger.
         let data: Vec<u8> = [0xDE, 0xAD, 0xBE, 0xEF]
