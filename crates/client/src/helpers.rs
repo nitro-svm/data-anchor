@@ -4,13 +4,10 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
-use anchor_lang::{
-    solana_program::message::{Message, VersionedMessage},
-    Discriminator,
-};
+use anchor_lang::{solana_program::message::Message, Discriminator};
 use blober::CHUNK_SIZE;
 use jsonrpsee::ws_client::WsClient;
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signer::Signer};
 use solana_transaction_status::EncodedTransactionWithStatusMeta;
 use tracing::{info_span, Instrument, Span};
 
@@ -215,7 +212,6 @@ pub(crate) fn find_finalize_blob_transactions_for_blober(
         }
     }
 }
-
 fn find_finalize_blob_instruction_for_blober(
     account_keys: &[Pubkey],
     blober: Pubkey,
@@ -225,17 +221,14 @@ fn find_finalize_blob_instruction_for_blober(
         let discriminator = blober::instruction::FinalizeBlob::DISCRIMINATOR;
         let has_blober_discriminator =
             instruction.data.get(..discriminator.len()) == Some(discriminator);
-
         let first_account_address = instruction
             .accounts
             .first()
             .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize));
-
         let second_account_address = instruction
             .accounts
             .get(1)
             .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize));
-
         if is_blober_instruction
             && has_blober_discriminator
             && second_account_address == Some(&blober)

@@ -17,7 +17,7 @@ use crate::{
 
 /// A proof that a specific Solana block contains blobs, and that there are no other blobs in the block.
 ///
-/// This proof consists of five parts:
+/// This proof consists of four parts:
 /// 1. A list of [blob proofs][`BlobProof`] that prove that the blobs uploaded to the [`blober`] program
 ///    hash to the given blob digest.
 /// 2. A [blober account state proof][`BloberAccountStateProof`] that proves that the [`blober`] was

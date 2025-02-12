@@ -8,7 +8,8 @@ use nitro_da_indexer_api::{CompoundProof, IndexerRpcClient};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
-    hash::Hash, pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction,
+    hash::Hash, message::VersionedMessage, pubkey::Pubkey, signature::Keypair, signer::Signer,
+    transaction::Transaction,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 use tracing::Instrument;
@@ -25,7 +26,7 @@ use crate::{
     Error,
 };
 
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 pub struct BloberClient {
     pub(crate) payer: Arc<Keypair>,
     pub(crate) rpc_client: Arc<RpcClient>,
@@ -54,7 +55,7 @@ impl BloberClient {
         &self,
         blob_data: &[u8],
         fee_strategy: FeeStrategy,
-        blober: Pubkey, // blober program id
+        blober: Pubkey,
         timeout: Option<Duration>,
     ) -> Result<Vec<SuccessfulTransaction<TransactionType>>, UploadBlobError> {
         let timestamp = get_unique_timestamp();
@@ -169,10 +170,14 @@ impl BloberClient {
     }
 
     /// Fetches compound proof for a given slot.
-    pub async fn get_slot_proof(&self, slot: u64) -> Result<CompoundProof, IndexerError> {
+    pub async fn get_slot_proof(
+        &self,
+        slot: u64,
+        blober: Pubkey,
+    ) -> Result<CompoundProof, IndexerError> {
         let proof = async move {
             loop {
-                let proof = self.indexer().get_proof(blober::id(), slot).await?;
+                let proof = self.indexer().get_proof(blober, slot).await?;
                 if let Some(proofs) = proof {
                     return Ok(proofs);
                 }
@@ -190,8 +195,23 @@ impl BloberClient {
         Ok(proof)
     }
 
-    /// Fetches blob proofs for a given slot
+    /// Fetches blob hashes for a given slot
     pub async fn get_blob_hashes(&self, slot: u64, blober: Pubkey) -> Result<Vec<Hash>, Error> {
+        let messages = self.get_blob_messages(slot, blober).await?;
+        let hashes = messages
+            .into_iter()
+            .map(|(_blob, message)| message.hash())
+            .collect();
+        Ok(hashes)
+    }
+
+    /// Fetches blob messages for a given slot
+    /// Returns a tuple of (Pubkey, VersionedMessage)
+    pub async fn get_blob_messages(
+        &self,
+        slot: u64,
+        blober: Pubkey,
+    ) -> Result<Vec<(Pubkey, VersionedMessage)>, Error> {
         let block: EncodedConfirmedBlock = self
             .rpc_client
             .get_block_with_config(
@@ -204,19 +224,13 @@ impl BloberClient {
             )
             .await?
             .into();
-
         // Directly pass the closure returned by the function
         let messages = block
             .transactions
             .iter()
             .filter_map(find_finalize_blob_transactions_for_blober(blober))
             .collect::<Vec<_>>();
-
-        let hashes = messages
-            .into_iter()
-            .map(|(_blob, message)| message.hash())
-            .collect();
-        Ok(hashes)
+        Ok(messages)
     }
 }
 

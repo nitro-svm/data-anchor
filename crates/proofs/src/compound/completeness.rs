@@ -12,7 +12,7 @@ use crate::{
 
 /// A proof that there are no blobs in a specific Solana block.
 ///
-/// This proof consists of three parts:
+/// This proof consists of two parts:
 /// 1. An [accounts delta hash proof][`ExclusionProof`] that proves that
 ///    the accounts_delta_hash does *not* include the [`blober`] account.
 /// 2. A [bank hash proof][`BankHashProof`] that proves that the root hash of the accounts_delta_hash
