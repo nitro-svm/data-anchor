@@ -55,7 +55,7 @@ fn test_entry(
 }
 
 async fn process_transaction(
-    banks_client: BanksClient,
+    banks_client: &mut BanksClient,
     transaction: Transaction,
 ) -> std::result::Result<(), BanksClientError> {
     let tx = banks_client
@@ -110,7 +110,7 @@ async fn upload_blob(
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(banks_client, transaction)
             .await
             .expect("failed to create blob");
     }
@@ -118,7 +118,7 @@ async fn upload_blob(
     // This runs all chunks in sequence
     for (idx, chunk_data) in &chunks {
         println!("chunk {idx}");
-        let banks_client = banks_client.clone();
+        let mut banks_client = banks_client.clone();
         let transaction = Transaction::new_signed_with_payer(
             &[Instruction {
                 program_id,
@@ -137,7 +137,7 @@ async fn upload_blob(
             &[&payer],
             banks_client.get_latest_blockhash().await.unwrap(),
         );
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .unwrap_or_else(|_| panic!("failed to upload chunk {idx}"));
     }
@@ -184,7 +184,7 @@ async fn idle_blob_fails() {
 
     let program_test = ProgramTest::new("blob", program_id, processor!(test_entry));
     let mut context = program_test.start_with_context().await;
-    let banks_client = context.banks_client.clone();
+    let mut banks_client = context.banks_client.clone();
     let payer = context.payer.insecure_clone();
 
     let data_len = 100 * 1024;
@@ -218,7 +218,7 @@ async fn idle_blob_fails() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to create blob");
     }
@@ -230,7 +230,7 @@ async fn idle_blob_fails() {
     // This runs all chunks in sequence
     for (chunk_index, chunk_data) in &indexed_chunks {
         println!("chunk {chunk_index}");
-        let banks_client = banks_client.clone();
+        let mut banks_client = banks_client.clone();
         let transaction = Transaction::new_signed_with_payer(
             &[Instruction {
                 program_id,
@@ -258,12 +258,12 @@ async fn idle_blob_fails() {
             context.warp_to_slot(target_slot).unwrap();
 
             // Inserting the chunk should fail.
-            process_transaction(banks_client.clone(), transaction)
+            process_transaction(&mut banks_client, transaction)
                 .await
                 .unwrap_err();
             return;
         } else {
-            process_transaction(banks_client.clone(), transaction)
+            process_transaction(&mut banks_client, transaction)
                 .await
                 .unwrap_or_else(|_| panic!("failed to upload chunk {chunk_index}"));
         }
@@ -301,7 +301,7 @@ async fn hash_single_account() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to create blober account");
     }
@@ -334,7 +334,7 @@ async fn hash_single_account() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -394,7 +394,7 @@ async fn hash_two_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to create blober account");
     }
@@ -436,7 +436,7 @@ async fn hash_two_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -459,7 +459,7 @@ async fn hash_two_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -531,7 +531,7 @@ async fn hash_three_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to create blober account");
     }
@@ -582,7 +582,7 @@ async fn hash_three_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -605,7 +605,7 @@ async fn hash_three_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -628,7 +628,7 @@ async fn hash_three_accounts() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -706,7 +706,7 @@ async fn hash_single_account_in_two_slots() {
             context.banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(context.banks_client.clone(), transaction)
+        process_transaction(&mut context.banks_client, transaction)
             .await
             .expect("failed to create blober account");
     }
@@ -739,7 +739,7 @@ async fn hash_single_account_in_two_slots() {
             context.banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(context.banks_client.clone(), transaction)
+        process_transaction(&mut context.banks_client, transaction)
             .await
             .expect("failed to hash source account");
     }
@@ -786,7 +786,7 @@ async fn hash_single_account_in_two_slots() {
             context.banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(context.banks_client.clone(), transaction)
+        process_transaction(&mut context.banks_client, transaction)
             .await
             .expect_err("finalized same blob twice");
     }
@@ -810,7 +810,7 @@ async fn hash_blober_itself() {
     let system_program = solana_program::system_program::id();
 
     let program_test = ProgramTest::new("blober", program_id, processor!(test_entry));
-    let (banks_client, payer, _) = program_test.start().await;
+    let (mut banks_client, payer, _) = program_test.start().await;
 
     let blober = Keypair::new();
 
@@ -835,7 +835,7 @@ async fn hash_blober_itself() {
             banks_client.get_latest_blockhash().await.unwrap(),
         );
 
-        process_transaction(banks_client.clone(), transaction)
+        process_transaction(&mut banks_client, transaction)
             .await
             .expect("failed to create blober account");
     }
@@ -858,7 +858,7 @@ async fn hash_blober_itself() {
     );
 
     // The transaction should fail because the source account is the same as the blober account.
-    process_transaction(banks_client.clone(), transaction)
+    process_transaction(&mut banks_client, transaction)
         .await
         .unwrap_err();
 }
