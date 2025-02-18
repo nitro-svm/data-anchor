@@ -9,26 +9,26 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
     hash::Hash, message::VersionedMessage, pubkey::Pubkey, signature::Keypair, signer::Signer,
-    transaction::Transaction,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
-use tracing::Instrument;
+use tracing::{info_span, Instrument, Span};
 
 use crate::{
     batch_client::{BatchClient, SuccessfulTransaction},
     fees::{Fee, FeeStrategy, Lamports, Priority},
     helpers::{
-        find_finalize_blob_transactions_for_blober, get_unique_timestamp, split_blob_into_chunks,
+        check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp,
+        split_blob_into_chunks,
     },
-    tx,
-    tx::set_compute_unit_price::calculate_compute_unit_price,
+    tx::{self, set_compute_unit_price::calculate_compute_unit_price, MessageArguments},
     types::{IndexerError, TransactionType, UploadBlobError},
-    Error,
+    BloberClientError, BloberClientResult,
 };
 
 #[derive(Builder, Clone)]
 pub struct BloberClient {
     pub(crate) payer: Arc<Keypair>,
+    pub(crate) program_id: Pubkey,
     pub(crate) rpc_client: Arc<RpcClient>,
     pub(crate) batch_client: BatchClient,
     // Optional for the sake of testing, because in some tests indexer client is not used
@@ -39,12 +39,14 @@ impl BloberClient {
     /// Creates a new `BloberClient` with the given payer and RPC client.
     pub fn new(
         payer: Arc<Keypair>,
+        program_id: Pubkey,
         rpc_client: Arc<RpcClient>,
         batch_client: BatchClient,
         indexer_client: Option<Arc<WsClient>>,
     ) -> Self {
         Self {
             payer,
+            program_id,
             rpc_client,
             batch_client,
             indexer_client,
@@ -57,7 +59,7 @@ impl BloberClient {
         fee_strategy: FeeStrategy,
         blober: Pubkey,
         timeout: Option<Duration>,
-    ) -> Result<Vec<SuccessfulTransaction<TransactionType>>, UploadBlobError> {
+    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let timestamp = get_unique_timestamp();
 
         let blob = find_blob_address(self.payer.pubkey(), timestamp);
@@ -84,33 +86,55 @@ impl BloberClient {
             .in_current_span()
             .await;
 
-        if let Err((true, err)) = res {
-            // Client errors are not cloneable, and they need to be for the map_err calls to work.
-            let err = Arc::new(err);
-            // Last attempt to close the blob account.
-            let msg = tx::discard_blob(&self.rpc_client, &self.payer, blob, blober, fee_strategy)
-                .in_current_span()
-                .await
-                .expect("infallible with a fixed fee strategy");
-            let blockhash = self
-                .rpc_client
-                .get_latest_blockhash()
-                .in_current_span()
-                .await
-                .map_err(|err2| UploadBlobError::CloseAccount(err.clone(), err2))?;
-            let tx = Transaction::new(&[&self.payer], msg, blockhash);
-            self.rpc_client
-                .send_and_confirm_transaction(&tx)
-                .in_current_span()
-                .await
-                .map_err(|err2| UploadBlobError::CloseAccount(err.clone(), err2))?;
-            Err(Arc::into_inner(err).expect("only one handle to the error"))
+        if let Err(BloberClientError::UploadBlob(UploadBlobError::DeclareBlob(_))) = res {
+            self.discard_blob(fee_strategy, blob, blober, timeout).await
         } else {
-            res.map_err(|(_, err)| err)
+            res
         }
     }
 
-    pub async fn estimate_fees(&self, blob_size: usize, priority: Priority) -> Result<Fee, Error> {
+    pub async fn discard_blob(
+        &self,
+        fee_strategy: FeeStrategy,
+        blob: Pubkey,
+        blober: Pubkey,
+        timeout: Option<Duration>,
+    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let fee_strategy = self
+            .convert_fee_strategy_to_fixed(fee_strategy, blob)
+            .in_current_span()
+            .await?;
+
+        let msg = tx::discard_blob(
+            &MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy,
+            ),
+            blob,
+        )
+        .in_current_span()
+        .await
+        .expect("infallible with a fixed fee strategy");
+
+        let span = info_span!(parent: Span::current(), "discard_blob");
+
+        Ok(check_outcomes(
+            self.batch_client
+                .send(vec![(TransactionType::DiscardBlob, msg)], timeout)
+                .instrument(span)
+                .await,
+        )
+        .map_err(UploadBlobError::DiscardBlob)?)
+    }
+
+    pub async fn estimate_fees(
+        &self,
+        blob_size: usize,
+        priority: Priority,
+    ) -> BloberClientResult<Fee> {
         // This whole functions is basically a simulation that doesn't run anything. Instead of executing transactions,
         // it just sums the expected fees and number of signatures.
 
@@ -123,18 +147,18 @@ impl BloberClient {
             priority,
         )
         .await?;
-        let mut compute_unit_limit = 0u32;
-        let mut num_signatures = 0u16;
+        let mut compute_unit_limit = 0;
+        let mut num_signatures = 0;
 
         compute_unit_limit += tx::declare_blob::COMPUTE_UNIT_LIMIT;
-        num_signatures += tx::declare_blob::NUM_SIGNATURES as u16;
+        num_signatures += tx::declare_blob::NUM_SIGNATURES;
 
         let num_chunks = blob_size.div_ceil(CHUNK_SIZE as usize) as u16;
         compute_unit_limit += num_chunks as u32 * tx::insert_chunk::COMPUTE_UNIT_LIMIT;
-        num_signatures += num_chunks * tx::insert_chunk::NUM_SIGNATURES as u16;
+        num_signatures += num_chunks * tx::insert_chunk::NUM_SIGNATURES;
 
         compute_unit_limit += tx::finalize_blob::COMPUTE_UNIT_LIMIT;
-        num_signatures += tx::finalize_blob::NUM_SIGNATURES as u16;
+        num_signatures += tx::finalize_blob::NUM_SIGNATURES;
 
         Ok(Fee {
             num_signatures,
@@ -148,25 +172,18 @@ impl BloberClient {
     }
 
     /// Fetches all blobs for a given slot.
-    pub async fn get_blobs(&self, slot: u64, blober: Pubkey) -> Result<Vec<Vec<u8>>, IndexerError> {
-        let blobs = async move {
-            loop {
-                let blobs = self.indexer().get_blobs(blober, slot).await?;
-                if let Some(blobs) = blobs {
-                    return Ok(blobs);
-                }
-                tokio::time::sleep(Duration::from_millis(100)).await;
+    pub async fn get_blobs(&self, slot: u64, blober: Pubkey) -> BloberClientResult<Vec<Vec<u8>>> {
+        loop {
+            let blobs = self
+                .indexer()
+                .get_blobs(blober, slot)
+                .await
+                .map_err(|e| IndexerError::Blobs(slot, e.to_string()))?;
+            if let Some(blobs) = blobs {
+                return Ok(blobs);
             }
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
-        .await
-        .map_err(|e: jsonrpsee::core::ClientError| {
-            IndexerError::Blobs(format!(
-                "Error when retrieving blobs for slot {}: {e:?}",
-                slot
-            ))
-        })?;
-
-        Ok(blobs)
     }
 
     /// Fetches compound proof for a given slot.
@@ -174,29 +191,26 @@ impl BloberClient {
         &self,
         slot: u64,
         blober: Pubkey,
-    ) -> Result<CompoundProof, IndexerError> {
-        let proof = async move {
-            loop {
-                let proof = self.indexer().get_proof(blober, slot).await?;
-                if let Some(proofs) = proof {
-                    return Ok(proofs);
-                }
-                tokio::time::sleep(Duration::from_millis(100)).await;
+    ) -> BloberClientResult<CompoundProof> {
+        loop {
+            let proof = self
+                .indexer()
+                .get_proof(blober, slot)
+                .await
+                .map_err(|e| IndexerError::Proof(slot, e.to_string()))?;
+            if let Some(proofs) = proof {
+                return Ok(proofs);
             }
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
-        .await
-        .map_err(|e: jsonrpsee::core::ClientError| {
-            IndexerError::Proof(format!(
-                "Error when retrieving proof for slot {}: {e:?}",
-                slot
-            ))
-        })?;
-
-        Ok(proof)
     }
 
     /// Fetches blob hashes for a given slot
-    pub async fn get_blob_hashes(&self, slot: u64, blober: Pubkey) -> Result<Vec<Hash>, Error> {
+    pub async fn get_blob_hashes(
+        &self,
+        slot: u64,
+        blober: Pubkey,
+    ) -> BloberClientResult<Vec<Hash>> {
         let messages = self.get_blob_messages(slot, blober).await?;
         let hashes = messages
             .into_iter()
@@ -211,7 +225,7 @@ impl BloberClient {
         &self,
         slot: u64,
         blober: Pubkey,
-    ) -> Result<Vec<(Pubkey, VersionedMessage)>, Error> {
+    ) -> BloberClientResult<Vec<(Pubkey, VersionedMessage)>> {
         let block: EncodedConfirmedBlock = self
             .rpc_client
             .get_block_with_config(

@@ -8,7 +8,7 @@ use solana_sdk::{
 
 use crate::{
     fees::{FeeStrategy, MicroLamports, Priority},
-    Error,
+    BloberClientResult,
 };
 
 /// Creates a transaction for setting the compute unit price for a transaction based on recent prioritization fees.
@@ -21,7 +21,7 @@ pub async fn set_compute_unit_price(
     client: &RpcClient,
     mutable_accounts: &[Pubkey],
     fee_strategy: FeeStrategy,
-) -> Result<Instruction, Error> {
+) -> BloberClientResult<Instruction> {
     let compute_unit_price = match fee_strategy {
         FeeStrategy::Fixed(fee) => fee.prioritization_fee_rate,
         FeeStrategy::BasedOnRecentFees(priority) => {
@@ -42,7 +42,7 @@ pub async fn calculate_compute_unit_price(
     client: &RpcClient,
     mutable_accounts: &[Pubkey],
     priority: Priority,
-) -> Result<MicroLamports, Error> {
+) -> BloberClientResult<MicroLamports> {
     let recent_prioritization_fees = client
         .get_recent_prioritization_fees(mutable_accounts)
         .await?;

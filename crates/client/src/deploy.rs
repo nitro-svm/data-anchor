@@ -159,6 +159,7 @@ impl BloberClient {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn send_deploy_messages(
         &self,
         initial_message: Option<Message>,

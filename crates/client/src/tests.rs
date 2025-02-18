@@ -109,6 +109,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
         .unwrap();
     let blober_client = BloberClient::builder()
         .payer(payer.clone())
+        .program_id(blober_pubkey)
         .rpc_client(blober_rpc_client.clone())
         .batch_client(batch_client)
         .build();
@@ -184,6 +185,7 @@ async fn failing_upload_returns_error() {
     // Give a successful RPC client to the BloberClient to allow other calls to succeed.
     let blober_client = BloberClient::builder()
         .payer(payer)
+        .program_id(Pubkey::new_unique())
         .rpc_client(successful_rpc_client.clone())
         .batch_client(batch_client)
         .build();

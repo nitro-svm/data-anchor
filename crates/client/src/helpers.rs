@@ -12,10 +12,10 @@ use solana_transaction_status::EncodedTransactionWithStatusMeta;
 use tracing::{info_span, Instrument, Span};
 
 use crate::{
-    tx,
-    tx::set_compute_unit_price::calculate_compute_unit_price,
+    tx::{self, set_compute_unit_price::calculate_compute_unit_price, MessageArguments},
     types::{TransactionType, UploadBlobError},
-    BloberClient, Fee, FeeStrategy, Lamports, SuccessfulTransaction, TransactionOutcome,
+    BloberClient, BloberClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
+    SuccessfulTransaction, TransactionOutcome,
 };
 
 impl BloberClient {
@@ -28,7 +28,7 @@ impl BloberClient {
         insert_chunks: Vec<(TransactionType, Message)>,
         finalize_blob: (TransactionType, Message),
         timeout: Option<Duration>,
-    ) -> Result<Vec<SuccessfulTransaction<TransactionType>>, (bool, UploadBlobError)> {
+    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let before = Instant::now();
 
         let span = info_span!(parent: Span::current(), "declare_blob");
@@ -38,7 +38,7 @@ impl BloberClient {
                 .instrument(span)
                 .await,
         )
-        .map_err(|err| (false, err))?;
+        .map_err(UploadBlobError::DeclareBlob)?;
 
         let span = info_span!(parent: Span::current(), "insert_chunks");
         let timeout = timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
@@ -48,7 +48,7 @@ impl BloberClient {
                 .instrument(span)
                 .await,
         )
-        .map_err(|err| (true, err))?;
+        .map_err(UploadBlobError::InsertChunks)?;
 
         let span = info_span!(parent: Span::current(), "finalize_blob");
         let timeout = timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
@@ -58,7 +58,7 @@ impl BloberClient {
                 .instrument(span)
                 .await,
         )
-        .map_err(|err| (true, err))?;
+        .map_err(UploadBlobError::FinalizeBlob)?;
 
         Ok(tx1
             .into_iter()
@@ -79,34 +79,35 @@ impl BloberClient {
         Vec<(TransactionType, Message)>,
         (TransactionType, Message),
     ) {
+        let args = MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy,
+        );
         let blob_size = chunks.iter().map(|(_, chunk)| chunk.len() as u32).sum();
         let declare_blob_msg = (
             TransactionType::DeclareBlob,
-            tx::declare_blob(
-                &self.rpc_client,
-                &self.payer,
-                blob,
-                blober,
-                timestamp,
-                blob_size,
-                chunks.len() as u16,
-                fee_strategy,
-            )
-            .in_current_span()
-            .await
-            .expect("infallible with a fixed fee strategy"),
+            tx::declare_blob(&args, blob, timestamp, blob_size, chunks.len() as u16)
+                .in_current_span()
+                .await
+                .expect("infallible with a fixed fee strategy"),
         );
 
         let insert_chunk_msgs =
             futures::future::join_all(chunks.iter().map(|(chunk_index, chunk_data)| async move {
                 let insert_tx = tx::insert_chunk(
-                    &self.rpc_client,
-                    &self.payer,
+                    &MessageArguments::new(
+                        self.program_id,
+                        blober,
+                        &self.payer,
+                        self.rpc_client.clone(),
+                        fee_strategy,
+                    ),
                     blob,
-                    blober,
                     *chunk_index,
                     chunk_data.to_vec(),
-                    fee_strategy,
                 )
                 .in_current_span()
                 .await
@@ -117,7 +118,7 @@ impl BloberClient {
 
         let complete_msg = (
             TransactionType::FinalizeBlob,
-            tx::finalize_blob(&self.rpc_client, &self.payer, blob, blober, fee_strategy)
+            tx::finalize_blob(&args, blob)
                 .in_current_span()
                 .await
                 .expect("infallible with a fixed fee strategy"),
@@ -130,7 +131,7 @@ impl BloberClient {
         &self,
         fee_strategy: FeeStrategy,
         blob: Pubkey,
-    ) -> Result<FeeStrategy, UploadBlobError> {
+    ) -> BloberClientResult<FeeStrategy> {
         if let FeeStrategy::Fixed(_) = fee_strategy {
             return Ok(fee_strategy);
         }
@@ -160,7 +161,7 @@ impl BloberClient {
                     Err(e) => {
                         fee_retries -= 1;
                         if fee_retries == 0 {
-                            return Err(UploadBlobError::PriorityFees(e));
+                            return Err(e);
                         }
                     }
                 }
@@ -169,7 +170,8 @@ impl BloberClient {
 
         Err(UploadBlobError::ConversionError(
             "Fee strategy conversion failed after retries".to_string(),
-        ))
+        )
+        .into())
     }
 
     /// Get a reference to the Indexer RPC client.
@@ -278,7 +280,7 @@ pub(crate) fn split_blob_into_chunks(data: &[u8]) -> Vec<(u16, &[u8])> {
 
 pub(crate) fn check_outcomes(
     outcomes: Vec<TransactionOutcome<TransactionType>>,
-) -> Result<Vec<SuccessfulTransaction<TransactionType>>, UploadBlobError> {
+) -> Result<Vec<SuccessfulTransaction<TransactionType>>, OutcomeError> {
     if outcomes.iter().all(|o| o.successful()) {
         let successful_transactions = outcomes
             .into_iter()
@@ -286,6 +288,6 @@ pub(crate) fn check_outcomes(
             .collect();
         Ok(successful_transactions)
     } else {
-        Err(UploadBlobError::Transactions(outcomes))
+        Err(OutcomeError::Unsuccesful(outcomes))
     }
 }

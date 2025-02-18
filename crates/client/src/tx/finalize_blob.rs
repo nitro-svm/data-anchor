@@ -1,43 +1,40 @@
 use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
-use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, message::Message,
-    signature::Keypair, signer::Signer,
 };
 
-use crate::{fees::FeeStrategy, tx::set_compute_unit_price::set_compute_unit_price, Error};
+use crate::{
+    tx::{set_compute_unit_price::set_compute_unit_price, MessageArguments},
+    BloberClientResult,
+};
 
 // TODO: Verify the value
 pub const COMPUTE_UNIT_LIMIT: u32 = 34_000;
 
-pub const NUM_SIGNATURES: u32 = 1;
+pub const NUM_SIGNATURES: u16 = 1;
 
-pub async fn finalize_blob(
-    client: &RpcClient,
-    payer: &Keypair,
-    blob: Pubkey,
-    blober: Pubkey, // blober program id
-    fee_strategy: FeeStrategy,
-) -> Result<Message, Error> {
+/// Finalizes a blob with the given blober.
+pub async fn finalize_blob(args: &MessageArguments, blob: Pubkey) -> BloberClientResult<Message> {
     let accounts = blober::accounts::FinalizeBlob {
         blob,
-        blober,
-        payer: payer.pubkey(),
+        blober: args.blober,
+        payer: args.payer,
     };
 
     let data = blober::instruction::FinalizeBlob {};
 
     let instruction = Instruction {
-        program_id: blober,
+        program_id: args.program_id,
         accounts: accounts.to_account_metas(None),
         data: data.data(),
     };
 
-    let set_price = set_compute_unit_price(client, &[blob, payer.pubkey()], fee_strategy).await?;
+    let set_price =
+        set_compute_unit_price(&args.client, &[blob, args.payer], args.fee_strategy).await?;
     // This limit is chosen empirically, should blow up in integration tests if it's set too low.
     let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(COMPUTE_UNIT_LIMIT);
 
-    let msg = Message::new(&[set_price, set_limit, instruction], Some(&payer.pubkey()));
+    let msg = Message::new(&[set_price, set_limit, instruction], Some(&args.payer));
 
     Ok(msg)
 }
