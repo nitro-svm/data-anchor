@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, Discriminator};
 
-use crate::{blob::Blob, SEED};
+use crate::{blob::Blob, state::blober::Blober, SEED};
 
 #[derive(Accounts)]
 #[instruction(timestamp: u64)]
@@ -17,6 +17,11 @@ pub struct DeclareBlob<'info> {
         bump
     )]
     pub blob: Account<'info, Blob>,
+
+    #[account(
+        constraint = blober.caller == *payer.key,
+    )]
+    pub blober: Account<'info, Blober>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -52,11 +57,13 @@ mod tests {
     #[test]
     fn test_first_account_is_the_blob() {
         let blob = Pubkey::new_unique();
+        let blober = Pubkey::new_unique();
         let payer = Pubkey::new_unique();
         let system_program = Pubkey::new_unique();
 
         let account = DeclareBlob {
             blob,
+            blober,
             payer,
             system_program,
         };

@@ -16,7 +16,10 @@ pub struct FinalizeBlob<'info> {
     )]
     pub blob: Account<'info, Blob>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = blober.caller == *payer.key,
+    )]
     pub blober: Account<'info, Blober>,
 
     #[account(mut)]

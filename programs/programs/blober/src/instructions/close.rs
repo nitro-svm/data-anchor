@@ -7,6 +7,7 @@ pub struct Close<'info> {
     #[account(
         mut,
         close = payer,
+        constraint = blober.caller == *payer.key,
     )]
     pub blober: Account<'info, Blober>,
 

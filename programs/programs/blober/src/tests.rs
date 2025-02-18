@@ -75,6 +75,7 @@ async fn upload_blob(
     data: &[u8],
     banks_client: &mut BanksClient,
     timestamp: u64,
+    blober: Pubkey,
 ) -> (Pubkey, [u8; 32]) {
     let chunks = data
         .chunks(CHUNK_SIZE as usize)
@@ -94,6 +95,7 @@ async fn upload_blob(
                 program_id,
                 accounts: accounts::DeclareBlob {
                     blob,
+                    blober,
                     payer: payer.pubkey(),
                     system_program,
                 }
@@ -124,6 +126,7 @@ async fn upload_blob(
                 program_id,
                 accounts: accounts::InsertChunk {
                     blob,
+                    blober,
                     payer: payer.pubkey(),
                 }
                 .to_account_metas(None),
@@ -156,6 +159,34 @@ async fn test_100k_blob() {
     let program_test = ProgramTest::new("blob", program_id, processor!(test_entry));
     let (mut banks_client, payer, _) = program_test.start().await;
 
+    let blober = Keypair::new();
+
+    // Create blober account.
+    {
+        let transaction = Transaction::new_signed_with_payer(
+            &[Instruction {
+                program_id,
+                accounts: accounts::Initialize {
+                    blober: blober.pubkey(),
+                    payer: payer.pubkey(),
+                    system_program,
+                }
+                .to_account_metas(None),
+                data: instruction::Initialize {
+                    caller: payer.pubkey(),
+                }
+                .data(),
+            }],
+            Some(&payer.pubkey()),
+            &[&payer, &blober],
+            banks_client.get_latest_blockhash().await.unwrap(),
+        );
+
+        process_transaction(&mut banks_client, transaction)
+            .await
+            .expect("failed to create blober account");
+    }
+
     let data_len = 100 * 1024;
     let data: Vec<_> = (0u8..255).cycle().take(data_len).collect();
 
@@ -166,6 +197,7 @@ async fn test_100k_blob() {
         &data,
         &mut banks_client,
         0,
+        blober.pubkey(),
     )
     .await;
 
@@ -195,6 +227,34 @@ async fn idle_blob_fails() {
 
     let blob = find_blob_address(payer.pubkey(), 0);
 
+    let blober = Keypair::new();
+
+    // Create blober account.
+    {
+        let transaction = Transaction::new_signed_with_payer(
+            &[Instruction {
+                program_id,
+                accounts: accounts::Initialize {
+                    blober: blober.pubkey(),
+                    payer: payer.pubkey(),
+                    system_program,
+                }
+                .to_account_metas(None),
+                data: instruction::Initialize {
+                    caller: payer.pubkey(),
+                }
+                .data(),
+            }],
+            Some(&payer.pubkey()),
+            &[&payer, &blober],
+            banks_client.get_latest_blockhash().await.unwrap(),
+        );
+
+        process_transaction(&mut banks_client, transaction)
+            .await
+            .expect("failed to create blober account");
+    }
+
     // Create blob
     {
         let transaction = Transaction::new_signed_with_payer(
@@ -202,6 +262,7 @@ async fn idle_blob_fails() {
                 program_id,
                 accounts: accounts::DeclareBlob {
                     blob,
+                    blober: blober.pubkey(),
                     payer: payer.pubkey(),
                     system_program,
                 }
@@ -236,6 +297,7 @@ async fn idle_blob_fails() {
                 program_id,
                 accounts: accounts::InsertChunk {
                     blob,
+                    blober: blober.pubkey(),
                     payer: payer.pubkey(),
                 }
                 .to_account_metas(None),
@@ -313,6 +375,7 @@ async fn hash_single_account() {
         &random_data,
         &mut banks_client,
         0,
+        blober.pubkey(),
     )
     .await;
 
@@ -406,6 +469,7 @@ async fn hash_two_accounts() {
         &source1_data,
         &mut banks_client,
         0,
+        blober.pubkey(),
     )
     .await;
     let (blob2, digest2) = upload_blob(
@@ -415,6 +479,7 @@ async fn hash_two_accounts() {
         &source2_data,
         &mut banks_client,
         1,
+        blober.pubkey(),
     )
     .await;
 
@@ -543,6 +608,7 @@ async fn hash_three_accounts() {
         &source1_data,
         &mut banks_client,
         0,
+        blober.pubkey(),
     )
     .await;
     let (blob2, digest2) = upload_blob(
@@ -552,6 +618,7 @@ async fn hash_three_accounts() {
         &source2_data,
         &mut banks_client,
         1,
+        blober.pubkey(),
     )
     .await;
     let (blob3, digest3) = upload_blob(
@@ -561,6 +628,7 @@ async fn hash_three_accounts() {
         &source3_data,
         &mut banks_client,
         2,
+        blober.pubkey(),
     )
     .await;
 
@@ -718,6 +786,7 @@ async fn hash_single_account_in_two_slots() {
         &source_data,
         &mut context.banks_client,
         0,
+        blober.pubkey(),
     )
     .await;
 

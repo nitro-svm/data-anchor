@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{blob::Blob, SEED};
+use crate::{blob::Blob, state::blober::Blober, SEED};
 
 #[derive(Accounts)]
 pub struct DiscardBlob<'info> {
@@ -12,9 +12,14 @@ pub struct DiscardBlob<'info> {
             payer.key().as_ref(),
             blob.timestamp.to_le_bytes().as_ref()
         ],
-        bump = blob.bump
+        bump = blob.bump,
     )]
     pub blob: Account<'info, Blob>,
+
+    #[account(
+        constraint = blober.caller == *payer.key,
+    )]
+    pub blober: Account<'info, Blober>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -36,9 +41,14 @@ mod tests {
     #[test]
     fn test_first_account_is_the_blob() {
         let blob = Pubkey::new_unique();
+        let blober = Pubkey::new_unique();
         let payer = Pubkey::new_unique();
 
-        let account = DiscardBlob { blob, payer };
+        let account = DiscardBlob {
+            blob,
+            blober,
+            payer,
+        };
 
         let expected = AccountMeta {
             pubkey: blob,

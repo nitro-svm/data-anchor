@@ -25,6 +25,7 @@ pub async fn declare_blob(
 ) -> Result<Message, Error> {
     let accounts = blober::accounts::DeclareBlob {
         blob,
+        blober: program_id,
         payer: payer.pubkey(),
         system_program: system_program::id(),
     };

@@ -19,6 +19,7 @@ pub async fn discard_blob(
 ) -> Result<Message, Error> {
     let accounts = blober::accounts::DiscardBlob {
         blob,
+        blober: program_id,
         payer: payer.pubkey(),
     };
 

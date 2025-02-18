@@ -34,6 +34,36 @@ async fn test_validator_transaction() {
     // some deadlock with the JsonRPC server shutdown. This is a test, so leak it to keep tests moving.
     std::mem::forget(test_validator);
 
+    let blober = Keypair::new();
+
+    // Create blober account.
+    {
+        let transaction = Transaction::new_signed_with_payer(
+            &[Instruction {
+                program_id,
+                accounts: accounts::Initialize {
+                    blober: blober.pubkey(),
+                    payer: payer.pubkey(),
+                    system_program,
+                }
+                .to_account_metas(None),
+                data: instruction::Initialize {
+                    caller: payer.pubkey(),
+                }
+                .data(),
+            }],
+            Some(&payer.pubkey()),
+            &[&payer, &blober],
+            rpc_client.get_latest_blockhash().await.unwrap(),
+        );
+
+        let sig = rpc_client
+            .send_transaction(&transaction)
+            .await
+            .expect("failed to initialize blober");
+        rpc_client.poll_for_signature(&sig).await.unwrap();
+    }
+
     let data_len = 20 * 1024;
     let data: Vec<u8> = (0u8..255).cycle().take(data_len).collect();
 
@@ -61,6 +91,7 @@ async fn test_validator_transaction() {
                 program_id,
                 accounts: accounts::DeclareBlob {
                     blob,
+                    blober: blober.pubkey(),
                     payer: payer.pubkey(),
                     system_program,
                 }
@@ -100,6 +131,7 @@ async fn test_validator_transaction() {
                 program_id,
                 accounts: accounts::InsertChunk {
                     blob,
+                    blober: blober.pubkey(),
                     payer: payer.pubkey(),
                 }
                 .to_account_metas(None),

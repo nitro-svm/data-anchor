@@ -23,6 +23,7 @@ pub async fn insert_chunk(
 ) -> Result<Message, Error> {
     let accounts = blober::accounts::InsertChunk {
         blob,
+        blober: program_id,
         payer: payer.pubkey(),
     };
 
