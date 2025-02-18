@@ -12,7 +12,7 @@ publish = { workspace = true }
 # External dependencies
 async-trait = { workspace = true }
 bincode = { workspace = true }
-bon = { workspace = true }
+bon = { workspace = true, features = ["experimental-getter"] }
 futures = { workspace = true }
 itertools = { workspace = true }
 jsonrpsee = { workspace = true, features = ["ws-client"] }
@@ -29,6 +29,7 @@ tracing-subscriber = { workspace = true }
 anchor-lang = { workspace = true }
 solana-bpf-loader-program = { workspace = true }
 solana-cli = { workspace = true }
+solana-cli-config = { workspace = true }
 solana-client = { workspace = true }
 solana-compute-budget = { workspace = true }
 solana-connection-cache = { workspace = true }
@@ -47,5 +48,3 @@ nitro-da-indexer-api = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros"] }
 rand = { workspace = true }
-
-

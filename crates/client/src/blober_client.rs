@@ -1,14 +1,18 @@
-use std::{sync::Arc, time::Duration};
+use std::{str::FromStr, sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
 use blober::{find_blob_address, state::blober::Blober, CHUNK_SIZE};
+use blober_client_builder::{IsSet, IsUnset, SetIndexerClient};
 use bon::Builder;
-use jsonrpsee::ws_client::WsClient;
+use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use nitro_da_indexer_api::{CompoundProof, IndexerRpcClient};
+use solana_cli_config::Config;
+use solana_client::{nonblocking::tpu_client::TpuClient, tpu_client::TpuClientConfig};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
-    hash::Hash, message::VersionedMessage, pubkey::Pubkey, signature::Keypair, signer::Signer,
+    commitment_config::CommitmentConfig, hash::Hash, message::VersionedMessage, pubkey::Pubkey,
+    signature::Keypair, signer::Signer,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 use tracing::{info_span, Instrument, Span};
@@ -27,12 +31,88 @@ use crate::{
 
 #[derive(Builder, Clone)]
 pub struct BloberClient {
+    #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
     pub(crate) program_id: Pubkey,
     pub(crate) rpc_client: Arc<RpcClient>,
     pub(crate) batch_client: BatchClient,
     // Optional for the sake of testing, because in some tests indexer client is not used
     pub(crate) indexer_client: Option<Arc<WsClient>>,
+}
+
+impl<State: blober_client_builder::State> BloberClientBuilder<State> {
+    /// Adds an indexer client to the builder based on the given indexer URL.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use blober_client::BloberClient;
+    ///
+    /// let builder_with_indexer = BloberClient::builder()
+    ///     .indexer_from_url("ws://localhost:8080")
+    ///     .await?;
+    /// ```
+    pub async fn indexer_from_url(
+        self,
+        indexer_url: &str,
+    ) -> BloberClientResult<BloberClientBuilder<SetIndexerClient<State>>>
+    where
+        State::IndexerClient: IsUnset,
+    {
+        let indexer_client = WsClientBuilder::new().build(indexer_url).await?;
+        Ok(self.indexer_client(Arc::new(indexer_client)))
+    }
+
+    /// Builds a new `BloberClient` with an RPC client and a batch client built from the given
+    /// Solana cli [`Config`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::sync::Arc;
+    ///
+    /// use blober_client::{BloberClient};
+    /// use solana_cli_config::Config;
+    /// use solana_sdk::{pubkey::Pubkey, signature::Keypair};
+    ///
+    /// let payer = Arc::new(Keypair::new());
+    /// let program_id = Pubkey::new_unique();
+    /// let solana_config = Config::default();
+    /// let client = BloberClient::builder()
+    ///     .payer(payer)
+    ///     .program_id(program_id)
+    ///     .build_with_config(solana_config)
+    ///     .await?;
+    /// ```
+    pub async fn build_with_config(self, solana_config: Config) -> BloberClientResult<BloberClient>
+    where
+        State::Payer: IsSet,
+        State::ProgramId: IsSet,
+        State::IndexerClient: IsSet,
+        State::RpcClient: IsUnset,
+        State::BatchClient: IsUnset,
+    {
+        let rpc_client = Arc::new(RpcClient::new_with_commitment(
+            solana_config.json_rpc_url.clone(),
+            CommitmentConfig::from_str(&solana_config.commitment)?,
+        ));
+        let tpu_client = TpuClient::new(
+            "blober_client",
+            rpc_client.clone(),
+            &solana_config.websocket_url,
+            TpuClientConfig::default(),
+        )
+        .await
+        .map(Arc::new)
+        .ok();
+        let payer = self.get_payer().clone();
+        Ok(self
+            .rpc_client(rpc_client.clone())
+            .batch_client(
+                BatchClient::new(rpc_client.clone(), tpu_client, vec![payer.clone()]).await?,
+            )
+            .build())
+    }
 }
 
 impl BloberClient {
@@ -51,6 +131,11 @@ impl BloberClient {
             batch_client,
             indexer_client,
         }
+    }
+
+    /// Returns the underlaying [`RpcClient`].
+    pub fn rpc_client(&self) -> Arc<RpcClient> {
+        self.rpc_client.clone()
     }
 
     pub async fn initialize_blober(

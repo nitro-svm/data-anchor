@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use solana_rpc_client_api::client_error::Error;
-use solana_sdk::clock::Slot;
+use solana_sdk::{clock::Slot, commitment_config::ParseCommitmentLevelError};
 use thiserror::Error;
 
 use crate::TransactionOutcome;
@@ -21,6 +21,12 @@ pub enum BloberClientError {
     /// Failed to query Solana RPC: {0}
     #[error("Failed to query Solana RPC: {0}")]
     SolanaRpc(#[from] Error),
+    /// Invalid commitment: {0}
+    #[error("Invalid commitment: {0}")]
+    InvalidCommitment(#[from] ParseCommitmentLevelError),
+    /// Invalid indexer url: {0}
+    #[error("Invalid indexer url: {0}")]
+    InvalidIndexerUrl(#[from] jsonrpsee::core::client::Error),
 }
 
 /// Result returned when interacting with the Blober client.

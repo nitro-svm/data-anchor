@@ -3215,6 +3215,7 @@ dependencies = [
  "serde_json",
  "solana-bpf-loader-program",
  "solana-cli",
+ "solana-cli-config",
  "solana-client",
  "solana-compute-budget",
  "solana-connection-cache",

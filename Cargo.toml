@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["crates/indexer", "crates/indexer-api", "crates/proofs", "crates/client"]
+members = [
+  "crates/indexer",
+  "crates/indexer-api",
+  "crates/proofs",
+  "crates/client",
+]
 exclude = ["programs"]
 
 [workspace.package]
@@ -51,6 +56,7 @@ agave-geyser-plugin-interface = "=2.0.5"
 solana-accounts-db = "=2.0.5"
 solana-bpf-loader-program = "=2.0.5"
 solana-cli = "=2.0.5"
+solana-cli-config = "=2.0.5"
 solana-client = "=2.0.5"
 solana-compute-budget = "=2.0.5"
 solana-connection-cache = "=2.0.5"
