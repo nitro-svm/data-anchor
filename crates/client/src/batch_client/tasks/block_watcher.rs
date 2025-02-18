@@ -9,7 +9,7 @@ use tokio::{
 };
 use tracing::warn;
 
-use super::super::messages::BlockMessage;
+use crate::batch_client::messages::BlockMessage;
 
 /// Spawns an independent task that periodically checks the latest blockhash and epoch info using
 /// the Solana RPC client, and broadcasts it as a [`BlockMessage`] on the given channel.
@@ -21,47 +21,47 @@ pub fn spawn_block_watcher(
     blockdata_tx: watch::Sender<BlockMessage>,
     rpc_client: Arc<RpcClient>,
 ) -> JoinHandle<()> {
-    tokio::spawn({
-        async move {
-            // This will never equal the new slot, so the first update is always broadcast.
-            let mut last_update = BlockMessage::default();
-            loop {
-                sleep(Duration::from_millis(DEFAULT_MS_PER_SLOT)).await;
-                let Ok((blockhash, last_valid_block_height)) = rpc_client
-                    .get_latest_blockhash_with_commitment(rpc_client.commitment())
-                    .await
-                else {
-                    warn!("failed to get latest blockhash");
-                    continue;
-                };
-                let Ok(epoch_info) = rpc_client
-                    .get_epoch_info_with_commitment(rpc_client.commitment())
-                    .await
-                else {
-                    warn!("failed to get epoch info");
-                    continue;
-                };
-                let block_height = epoch_info.block_height;
-                let new_update = BlockMessage {
-                    blockhash,
-                    last_valid_block_height,
-                    block_height,
-                };
-                if new_update != last_update {
-                    last_update = new_update;
-                    let res = blockdata_tx.send(new_update);
-                    if res.is_err() {
-                        // If there's no receiver alive, the watcher should shut down.
-                        break;
-                    }
-                } else if blockdata_tx.is_closed() {
-                    // Additionally check if the channel is closed even if the new update is unchanged,
-                    // mostly to prevent getting stuck in tests.
+    tokio::spawn(async move {
+        // This will never equal the new slot, so the first update is always broadcast.
+        let mut last_update = BlockMessage::default();
+        loop {
+            sleep(Duration::from_millis(DEFAULT_MS_PER_SLOT)).await;
+            let Ok((blockhash, last_valid_block_height)) = rpc_client
+                .get_latest_blockhash_with_commitment(rpc_client.commitment())
+                .await
+            else {
+                warn!("failed to get latest blockhash");
+                continue;
+            };
+
+            let Ok(epoch_info) = rpc_client
+                .get_epoch_info_with_commitment(rpc_client.commitment())
+                .await
+            else {
+                warn!("failed to get epoch info");
+                continue;
+            };
+
+            let block_height = epoch_info.block_height;
+            let new_update = BlockMessage {
+                blockhash,
+                last_valid_block_height,
+                block_height,
+            };
+
+            if new_update != last_update {
+                last_update = new_update;
+                if blockdata_tx.send(new_update).is_err() {
+                    warn!("no receivers for block updates, shutting down block watcher");
                     break;
                 }
+            } else if blockdata_tx.is_closed() {
+                // Additionally check if the channel is closed even if the new update is unchanged,
+                // mostly to prevent getting stuck in tests.
+                break;
             }
-            warn!("shutting down block watcher");
         }
+        warn!("shutting down block watcher");
     })
 }
 

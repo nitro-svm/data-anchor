@@ -10,11 +10,11 @@ use tokio::{
 };
 use tracing::{trace, warn};
 
-use super::super::{
+use crate::batch_client::{
     channels::upgrade_and_send,
-    messages::{BlockMessage, ConfirmTransactionMessage, SendTransactionMessage},
+    messages::{BlockMessage, ConfirmTransactionMessage, SendTransactionMessage, StatusMessage},
+    transaction::TransactionStatus,
 };
-use crate::batch_client::messages::{StatusMessage, TransactionStatus};
 
 /// Spawns an independent task that listens for [`ConfirmTransactionMessage`]s and checks their
 /// status using the Solana RPC client. Regardless of the transaction's outcome, status updates
@@ -54,10 +54,13 @@ pub fn spawn_transaction_confirmer(
                 use_tpu_client,
             )
             .await;
+
             if res.is_break() {
+                warn!("no receivers for transaction confirmations, shutting down transaction confirmer");
                 break;
             }
         }
+
         warn!("shutting down transaction confirmer");
     })
 }
@@ -293,7 +296,7 @@ mod tests {
     use tracing::{Level, Span};
 
     use super::*;
-    use crate::batch_client::messages::TransactionStatus;
+    use crate::batch_client::transaction::TransactionStatus;
 
     #[tokio::test]
     async fn test_categorize_transaction_response() {

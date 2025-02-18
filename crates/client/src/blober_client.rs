@@ -11,7 +11,7 @@ use solana_client::{nonblocking::tpu_client::TpuClient, tpu_client::TpuClientCon
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
-    commitment_config::CommitmentConfig, hash::Hash, message::VersionedMessage, pubkey::Pubkey,
+    commitment_config::CommitmentConfig, message::VersionedMessage, pubkey::Pubkey,
     signature::Keypair, signer::Signer,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
@@ -116,28 +116,12 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
 }
 
 impl BloberClient {
-    /// Creates a new `BloberClient` with the given payer and RPC client.
-    pub fn new(
-        payer: Arc<Keypair>,
-        program_id: Pubkey,
-        rpc_client: Arc<RpcClient>,
-        batch_client: BatchClient,
-        indexer_client: Option<Arc<WsClient>>,
-    ) -> Self {
-        Self {
-            payer,
-            program_id,
-            rpc_client,
-            batch_client,
-            indexer_client,
-        }
-    }
-
     /// Returns the underlaying [`RpcClient`].
     pub fn rpc_client(&self) -> Arc<RpcClient> {
         self.rpc_client.clone()
     }
 
+    /// Initializes a new [`Blober`] PDA account.
     pub async fn initialize_blober(
         &self,
         fee_strategy: FeeStrategy,
@@ -169,6 +153,7 @@ impl BloberClient {
         .map_err(UploadBlobError::InitializeBlober)?)
     }
 
+    /// Closes a [`Blober`] PDA account.
     pub async fn close_blober(
         &self,
         fee_strategy: FeeStrategy,
@@ -200,6 +185,12 @@ impl BloberClient {
         .map_err(UploadBlobError::CloseBlober)?)
     }
 
+    /// Uploads a blob of data with the given [`Blober`] PDA account.
+    /// Under the hood it creates a new [`blober::state::blob::Blob`] PDA which stores a incremental hash of the chunks
+    /// from the blob data. On completion of the blob upload, the blob PDA gets closed sending it's
+    /// funds back to the [`BloberClient::payer`].
+    /// If the blob upload fails, the blob PDA gets discarded and the funds also get sent to the
+    /// [`BloberClient::payer`].
     pub async fn upload_blob(
         &self,
         blob_data: &[u8],
@@ -220,7 +211,14 @@ impl BloberClient {
         let chunks = split_blob_into_chunks(blob_data);
 
         let (declare_blob_msg, insert_chunks_msgs, finalize_blob_msg) = self
-            .generate_messages(blob, timestamp, chunks, fee_strategy, blober)
+            .generate_messages(
+                blob,
+                blob_data.len() as u32,
+                timestamp,
+                chunks,
+                fee_strategy,
+                blober,
+            )
             .await;
 
         let res = self
@@ -240,6 +238,8 @@ impl BloberClient {
         }
     }
 
+    /// Discards a [`blober::state::blob::Blob`] PDA account registered with the provided
+    /// [`Blober`] PDA account.
     pub async fn discard_blob(
         &self,
         fee_strategy: FeeStrategy,
@@ -277,48 +277,50 @@ impl BloberClient {
         .map_err(UploadBlobError::DiscardBlob)?)
     }
 
+    /// Estimates fees for uploading a blob of the size `blob_size` with the given `priority`.
+    /// This whole functions is basically a simulation that doesn't run anything. Instead of executing transactions,
+    /// it just sums the expected fees and number of signatures.
+    ///
+    /// The [`blober::state::blob::Blob`] PDA account is always newly created, so for estimating compute fees
+    /// we don't even need the real keypair, any unused pubkey will do.
     pub async fn estimate_fees(
         &self,
         blob_size: usize,
         priority: Priority,
     ) -> BloberClientResult<Fee> {
-        // This whole functions is basically a simulation that doesn't run anything. Instead of executing transactions,
-        // it just sums the expected fees and number of signatures.
-
-        // The blob account is always newly created, so for estimating compute fees
-        // we don't even need the real keypair, any unused pubkey will do.
-        let fake_pubkey = Keypair::new().pubkey();
         let prioritization_fee_rate = calculate_compute_unit_price(
             &self.rpc_client,
-            &[fake_pubkey, self.payer.pubkey()],
+            &[Pubkey::new_unique(), self.payer.pubkey()],
             priority,
         )
         .await?;
-        let mut compute_unit_limit = 0;
-        let mut num_signatures = 0;
-
-        compute_unit_limit += tx::declare_blob::COMPUTE_UNIT_LIMIT;
-        num_signatures += tx::declare_blob::NUM_SIGNATURES;
 
         let num_chunks = blob_size.div_ceil(CHUNK_SIZE as usize) as u16;
-        compute_unit_limit += num_chunks as u32 * tx::insert_chunk::COMPUTE_UNIT_LIMIT;
-        num_signatures += num_chunks * tx::insert_chunk::NUM_SIGNATURES;
 
-        compute_unit_limit += tx::finalize_blob::COMPUTE_UNIT_LIMIT;
-        num_signatures += tx::finalize_blob::NUM_SIGNATURES;
+        let compute_unit_limit = tx::declare_blob::COMPUTE_UNIT_LIMIT
+            + num_chunks as u32 * tx::insert_chunk::COMPUTE_UNIT_LIMIT
+            + tx::finalize_blob::COMPUTE_UNIT_LIMIT;
+
+        let num_signatures = tx::declare_blob::NUM_SIGNATURES
+            + num_chunks * tx::insert_chunk::NUM_SIGNATURES
+            + tx::finalize_blob::NUM_SIGNATURES;
+
+        // The base Solana transaction fee = 5000.
+        // Reference link: https://solana.com/docs/core/fees#:~:text=While%20transaction%20fees%20are%20paid,of%205k%20lamports%20per%20signature.
+        let price_per_signature = Lamports::new(5000);
+
+        let blob_account_size = Blober::DISCRIMINATOR.len() + Blober::INIT_SPACE;
 
         Ok(Fee {
             num_signatures,
-            // The base Solana transaction fee = 5000.
-            // Reference link: https://solana.com/docs/core/fees#:~:text=While%20transaction%20fees%20are%20paid,of%205k%20lamports%20per%20signature.
-            price_per_signature: Lamports::new(5000),
+            price_per_signature,
             compute_unit_limit,
             prioritization_fee_rate,
-            blob_account_size: Blober::DISCRIMINATOR.len() + Blober::INIT_SPACE,
+            blob_account_size,
         })
     }
 
-    /// Fetches all blobs for a given slot.
+    /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
     pub async fn get_blobs(&self, slot: u64, blober: Pubkey) -> BloberClientResult<Vec<Vec<u8>>> {
         loop {
             let blobs = self
@@ -333,7 +335,7 @@ impl BloberClient {
         }
     }
 
-    /// Fetches compound proof for a given slot.
+    /// Fetches compound proof for a given slot from the [`IndexerRpcClient`].
     pub async fn get_slot_proof(
         &self,
         slot: u64,
@@ -352,22 +354,10 @@ impl BloberClient {
         }
     }
 
-    /// Fetches blob hashes for a given slot
-    pub async fn get_blob_hashes(
-        &self,
-        slot: u64,
-        blober: Pubkey,
-    ) -> BloberClientResult<Vec<Hash>> {
-        let messages = self.get_blob_messages(slot, blober).await?;
-        let hashes = messages
-            .into_iter()
-            .map(|(_blob, message)| message.hash())
-            .collect();
-        Ok(hashes)
-    }
-
     /// Fetches blob messages for a given slot
-    /// Returns a tuple of (Pubkey, VersionedMessage)
+    /// Returns a tuple of ([`Pubkey`], [`VersionedMessage`]) where the Pubkey is the address of
+    /// the [`blober::state::blob::Blob`] account and the VersionedMessage is the message that
+    /// included the [`blober::instruction::FinalizeBlob`] instruction.
     pub async fn get_blob_messages(
         &self,
         slot: u64,
@@ -385,12 +375,14 @@ impl BloberClient {
             )
             .await?
             .into();
-        // Directly pass the closure returned by the function
-        let messages = block
+
+        Ok(block
             .transactions
             .iter()
-            .filter_map(find_finalize_blob_transactions_for_blober(blober))
-            .collect::<Vec<_>>();
-        Ok(messages)
+            .filter_map(find_finalize_blob_transactions_for_blober(
+                blober,
+                self.program_id,
+            ))
+            .collect())
     }
 }

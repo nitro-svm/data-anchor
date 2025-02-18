@@ -29,6 +29,7 @@ impl Priority {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

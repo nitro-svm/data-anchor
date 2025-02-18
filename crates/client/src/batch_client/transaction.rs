@@ -1,6 +1,9 @@
-use solana_sdk::{clock::Slot, signature::Signature};
+use solana_sdk::{
+    clock::Slot, commitment_config::CommitmentConfig, signature::Signature,
+    transaction::TransactionError,
+};
+use solana_transaction_status::TransactionStatus as SolanaTransactionStatus;
 
-use super::messages::TransactionStatus;
 use crate::Error;
 
 /// The final outcome of a transaction after the [`BatchClient`] is done, either successfully
@@ -63,6 +66,69 @@ impl<T> TransactionOutcome<T> {
     }
 }
 
+/// Tracks the progress of a transaction, and holds on to its associated data.
+pub struct TransactionProgress<T> {
+    pub data: T,
+    pub landed_as: Option<(Slot, Signature)>,
+    pub status: TransactionStatus,
+}
+
+impl<T> TransactionProgress<T> {
+    pub fn new(data: T) -> Self {
+        Self {
+            data,
+            landed_as: None,
+            status: TransactionStatus::Pending,
+        }
+    }
+}
+
+/// Describes the current status of a transaction, whether it has been submitted or not.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TransactionStatus {
+    Pending,
+    Processing,
+    Committed,
+    Failed(TransactionError),
+}
+
+impl TransactionStatus {
+    /// Translates from a [`SolanaTransactionStatus`] and a [commitment level](`CommitmentConfig`)
+    /// to a [`TransactionStatus`].
+    pub fn from_solana_status(
+        status: SolanaTransactionStatus,
+        commitment: CommitmentConfig,
+    ) -> Self {
+        if let Some(TransactionError::AlreadyProcessed) = status.err {
+            TransactionStatus::Committed
+        } else if let Some(err) = status.err {
+            TransactionStatus::Failed(err)
+        } else if status.satisfies_commitment(commitment) {
+            TransactionStatus::Committed
+        } else {
+            TransactionStatus::Processing
+        }
+    }
+
+    /// Checks whether a transaction should be re-confirmed based on its status.
+    ///
+    /// These should be re-confirmed:
+    /// - [`TransactionStatus::Pending`]
+    /// - [`TransactionStatus::Processing`]
+    ///
+    /// These should *not* be re-confirmed:
+    /// - [`TransactionStatus::Committed`]
+    /// - [`TransactionStatus::Failed`]
+    pub fn should_be_reconfirmed(&self) -> bool {
+        match self {
+            TransactionStatus::Pending => true,
+            TransactionStatus::Processing => true,
+            TransactionStatus::Committed => false,
+            TransactionStatus::Failed(_) => false,
+        }
+    }
+}
+
 impl<T> From<TransactionProgress<T>> for TransactionOutcome<T> {
     fn from(progress: TransactionProgress<T>) -> Self {
         match progress.status {
@@ -80,23 +146,6 @@ impl<T> From<TransactionProgress<T>> for TransactionOutcome<T> {
                 slot: progress.landed_as.unwrap().0,
                 signature: progress.landed_as.unwrap().1,
             }),
-        }
-    }
-}
-
-/// Tracks the progress of a transaction, and holds on to its associated data.
-pub struct TransactionProgress<T> {
-    pub data: T,
-    pub landed_as: Option<(Slot, Signature)>,
-    pub status: TransactionStatus,
-}
-
-impl<T> TransactionProgress<T> {
-    pub fn new(data: T) -> Self {
-        Self {
-            data,
-            landed_as: None,
-            status: TransactionStatus::Pending,
         }
     }
 }

@@ -9,6 +9,7 @@ This folder contains a few different crates that together form the DA adapter fo
 3. [`proofs`](./crates/proofs/README.md) contains the various proofs that are used to verify the state of the `blober`. This is how data availability can be proven all the way from a blob's chunks.
 4. [`indexer`](./crates/indexer/README.md) contains the code that runs the indexer, which is a geyser plugin used to monitor the `blober` accounts as they are being used. The indexer stores data in an embedded `native_db` database, and must be configured to monitor specific `blober` accounts.
 5. [`indexer_api`](./crates/indexer_api/README.md) contains the shared interface between the indexer and the client.
+6. [`cli`](./crates/cli/README.md) contains the CLI used to interact with the data module. This includes interacting with the on chain program to manage `blober` accounts and upload blobs, as well as the `indexer` to retrieve blob data and proofs.
 
 ## Installation
 

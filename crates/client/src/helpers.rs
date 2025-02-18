@@ -19,9 +19,7 @@ use crate::{
 };
 
 impl BloberClient {
-    /// Uploads the blob: DeclareBlob, InsertChunks * N, FinalizeBlob.  Returns a vec of successful
-    /// transactions if everything succeeds, or tuple of boolean and UploadBlobError where boolean
-    /// indicates if blob was declared
+    /// Uploads the blob: [`blober::DeclareBlob`], [`blober::InsertChunk`] * N, [`blober::FinalizeBlob`].
     pub(crate) async fn do_upload(
         &self,
         declare_blob: (TransactionType, Message),
@@ -67,9 +65,11 @@ impl BloberClient {
             .collect())
     }
 
+    /// Generates a [`blober::DeclareBlob`], vector of [`blober::InsertChunk`] and a [`blober::FinalizeBlob`] message.
     pub(crate) async fn generate_messages(
         &self,
         blob: Pubkey,
+        blob_size: u32,
         timestamp: u64,
         chunks: Vec<(u16, &[u8])>,
         fee_strategy: FeeStrategy,
@@ -86,7 +86,7 @@ impl BloberClient {
             self.rpc_client.clone(),
             fee_strategy,
         );
-        let blob_size = chunks.iter().map(|(_, chunk)| chunk.len() as u32).sum();
+
         let declare_blob_msg = (
             TransactionType::DeclareBlob,
             tx::declare_blob(&args, blob, timestamp, blob_size, chunks.len() as u16)
@@ -127,42 +127,41 @@ impl BloberClient {
         (declare_blob_msg, insert_chunk_msgs, complete_msg)
     }
 
+    /// Converts a [`FeeStrategy`] into a [`FeeStrategy::Fixed`] with the current compute unit price.
     pub(crate) async fn convert_fee_strategy_to_fixed(
         &self,
         fee_strategy: FeeStrategy,
         blob: Pubkey,
     ) -> BloberClientResult<FeeStrategy> {
-        if let FeeStrategy::Fixed(_) = fee_strategy {
+        let FeeStrategy::BasedOnRecentFees(priority) = fee_strategy else {
             return Ok(fee_strategy);
-        }
+        };
 
-        if let FeeStrategy::BasedOnRecentFees(priority) = fee_strategy {
-            let mut fee_retries = 5;
+        let mut fee_retries = 5;
 
-            while fee_retries > 0 {
-                let res = calculate_compute_unit_price(
-                    &self.rpc_client,
-                    &[blob, self.payer.pubkey()],
-                    priority,
-                )
-                .in_current_span()
-                .await;
+        while fee_retries > 0 {
+            let res = calculate_compute_unit_price(
+                &self.rpc_client,
+                &[blob, self.payer.pubkey()],
+                priority,
+            )
+            .in_current_span()
+            .await;
 
-                match res {
-                    Ok(fee) => {
-                        return Ok(FeeStrategy::Fixed(Fee {
-                            prioritization_fee_rate: fee,
-                            num_signatures: 0,
-                            price_per_signature: Lamports::ZERO,
-                            compute_unit_limit: 0,
-                            blob_account_size: 0,
-                        }));
-                    }
-                    Err(e) => {
-                        fee_retries -= 1;
-                        if fee_retries == 0 {
-                            return Err(e);
-                        }
+            match res {
+                Ok(fee) => {
+                    return Ok(FeeStrategy::Fixed(Fee {
+                        prioritization_fee_rate: fee,
+                        num_signatures: 0,
+                        price_per_signature: Lamports::ZERO,
+                        compute_unit_limit: 0,
+                        blob_account_size: 0,
+                    }));
+                }
+                Err(e) => {
+                    fee_retries -= 1;
+                    if fee_retries == 0 {
+                        return Err(e);
                     }
                 }
             }
@@ -188,14 +187,14 @@ impl BloberClient {
 /// Finds finalize blob transactions for the supplied [`blober`] Pubkey
 pub(crate) fn find_finalize_blob_transactions_for_blober(
     blober: Pubkey,
+    program_id: Pubkey,
 ) -> impl FnMut(&EncodedTransactionWithStatusMeta) -> Option<(Pubkey, VersionedMessage)> {
     move |tx| {
-        if let Some(meta) = tx.meta.as_ref() {
-            if meta.status.is_err() {
-                // Ignore transactions that failed
-                return None;
-            }
+        // Ignore transactions that failed
+        if matches!(tx.meta.as_ref(), Some(meta) if meta.status.is_err()) {
+            return None;
         }
+
         let versioned_tx = tx.transaction.decode()?;
         let account_keys = versioned_tx.message.static_account_keys();
         let blob_address = versioned_tx
@@ -205,40 +204,45 @@ pub(crate) fn find_finalize_blob_transactions_for_blober(
             .filter_map(find_finalize_blob_instruction_for_blober(
                 account_keys,
                 blober,
+                program_id,
             ))
             .next();
-        if let Some(blob_address) = blob_address {
-            Some((blob_address, versioned_tx.message.clone()))
-        } else {
-            None
-        }
+
+        blob_address.map(|blob_address| (blob_address, versioned_tx.message))
     }
 }
+
+/// Filters [`blober::instruction::FinalizeBlob`] instructions for the supplied `blober` Pubkey on the given `program_id`.
 fn find_finalize_blob_instruction_for_blober(
     account_keys: &[Pubkey],
     blober: Pubkey,
+    program_id: Pubkey,
 ) -> impl FnMut(&solana_sdk::instruction::CompiledInstruction) -> Option<Pubkey> + '_ {
     move |instruction| {
-        let is_blober_instruction = instruction.program_id(account_keys) == &blober::id();
+        if instruction.program_id(account_keys) != &program_id {
+            return None;
+        }
+
         let discriminator = blober::instruction::FinalizeBlob::DISCRIMINATOR;
-        let has_blober_discriminator =
-            instruction.data.get(..discriminator.len()) == Some(discriminator);
-        let first_account_address = instruction
-            .accounts
-            .first()
-            .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize));
-        let second_account_address = instruction
+
+        if instruction.data.get(..discriminator.len()) != Some(discriminator) {
+            return None;
+        }
+
+        if instruction
             .accounts
             .get(1)
-            .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize));
-        if is_blober_instruction
-            && has_blober_discriminator
-            && second_account_address == Some(&blober)
+            .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize))
+            != Some(&blober)
         {
-            first_account_address.copied()
-        } else {
-            None
+            return None;
         }
+
+        instruction
+            .accounts
+            .first()
+            .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize))
+            .copied()
     }
 }
 
@@ -270,7 +274,7 @@ pub(crate) fn get_unique_timestamp() -> u64 {
     }
 }
 
-/// Splits a blob of data into chunks of size `[Blober::CHUNK_SIZE]`.
+/// Splits a blob of data into chunks of size [`CHUNK_SIZE`].
 pub(crate) fn split_blob_into_chunks(data: &[u8]) -> Vec<(u16, &[u8])> {
     data.chunks(CHUNK_SIZE as usize)
         .enumerate()

@@ -14,15 +14,13 @@ use tokio::{
 use tracing::{info, warn, Span};
 
 use super::{
-    channels::{create_channels, Channels},
-    messages,
-    messages::{SendTransactionMessage, StatusMessage, TransactionStatus},
+    channels::Channels,
+    messages::{self, SendTransactionMessage, StatusMessage},
     tasks::{
         block_watcher::spawn_block_watcher, transaction_confirmer::spawn_transaction_confirmer,
         transaction_sender::spawn_transaction_sender,
     },
-    transaction::TransactionProgress,
-    TransactionOutcome,
+    transaction::{TransactionOutcome, TransactionProgress, TransactionStatus},
 };
 use crate::Error;
 
@@ -79,7 +77,7 @@ where
             transaction_confirmer_rx,
             transaction_sender_tx,
             transaction_sender_rx,
-        } = create_channels();
+        } = Channels::new();
 
         spawn_block_watcher(blockdata_tx, rpc_client.clone());
         // Wait for the first update so the default value is never visible.
@@ -179,8 +177,7 @@ pub async fn wait_for_responses<T>(
         }
 
         let mut buffer = vec![];
-        let res = timeout_at(deadline, response_rx.recv_many(&mut buffer, num_messages)).await;
-        match res {
+        match timeout_at(deadline, response_rx.recv_many(&mut buffer, num_messages)).await {
             Ok(0) => {
                 // If this is ever zero, that means the channel was closed.
                 // This will return the received transactions even if not all of them landed.

@@ -103,6 +103,7 @@ pub enum DeploymentError {
     Bytecode(String),
 }
 
+/// Transaction types which can be performed by the [`blober::blober`] program.
 #[derive(Debug, Clone, Copy)]
 pub enum TransactionType {
     CloseBlober,
