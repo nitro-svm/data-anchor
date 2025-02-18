@@ -24,7 +24,6 @@ tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-
 # Solana & Agave
 anchor-lang = { workspace = true }
 solana-bpf-loader-program = { workspace = true }
