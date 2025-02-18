@@ -5,15 +5,19 @@ use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 
 use crate::FeeStrategy;
 
+pub mod close_blober;
 pub mod declare_blob;
 pub mod discard_blob;
 pub mod finalize_blob;
+pub mod initialize_blober;
 pub mod insert_chunk;
 pub mod set_compute_unit_price;
 
+pub use close_blober::close_blober;
 pub use declare_blob::declare_blob;
 pub use discard_blob::discard_blob;
 pub use finalize_blob::finalize_blob;
+pub use initialize_blober::initialize_blober;
 pub use insert_chunk::insert_chunk;
 
 pub struct MessageArguments {

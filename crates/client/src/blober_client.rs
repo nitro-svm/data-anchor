@@ -53,6 +53,68 @@ impl BloberClient {
         }
     }
 
+    pub async fn initialize_blober(
+        &self,
+        fee_strategy: FeeStrategy,
+        blober: Pubkey,
+        timeout: Option<Duration>,
+    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let fee_strategy = self
+            .convert_fee_strategy_to_fixed(fee_strategy, blober)
+            .in_current_span()
+            .await?;
+
+        let msg = tx::initialize_blober(&MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy,
+        ))
+        .await
+        .expect("infallible with a fixed fee strategy");
+
+        let span = info_span!(parent: Span::current(), "initialize_blober");
+        Ok(check_outcomes(
+            self.batch_client
+                .send(vec![(TransactionType::InitializeBlober, msg)], timeout)
+                .instrument(span)
+                .await,
+        )
+        .map_err(UploadBlobError::InitializeBlober)?)
+    }
+
+    pub async fn close_blober(
+        &self,
+        fee_strategy: FeeStrategy,
+        blober: Pubkey,
+        timeout: Option<Duration>,
+    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let fee_strategy = self
+            .convert_fee_strategy_to_fixed(fee_strategy, blober)
+            .in_current_span()
+            .await?;
+
+        let msg = tx::close_blober(&MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy,
+        ))
+        .await
+        .expect("infallible with a fixed fee strategy");
+
+        let span = info_span!(parent: Span::current(), "close_blober");
+        Ok(check_outcomes(
+            self.batch_client
+                .send(vec![(TransactionType::CloseBlober, msg)], timeout)
+                .instrument(span)
+                .await,
+        )
+        .map_err(UploadBlobError::CloseBlober)?)
+    }
+
     pub async fn upload_blob(
         &self,
         blob_data: &[u8],
