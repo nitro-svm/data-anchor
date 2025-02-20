@@ -10,7 +10,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("H4PN42nybdZjCjjBiPH2FZf4myEV7VrnhrvGcLNmQMRQ");
+declare_id!("CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP");
 
 #[program]
 pub mod blober {
