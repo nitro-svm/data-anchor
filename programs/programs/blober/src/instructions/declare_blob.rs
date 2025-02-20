@@ -12,6 +12,7 @@ pub struct DeclareBlob<'info> {
         seeds = [
             SEED,
             payer.key().as_ref(),
+            blober.key().as_ref(),
             timestamp.to_le_bytes().as_ref()
         ],
         bump
@@ -19,7 +20,7 @@ pub struct DeclareBlob<'info> {
     pub blob: Account<'info, Blob>,
 
     #[account(
-        constraint = blober.caller == *payer.key,
+        constraint = blober.caller == payer.key(),
     )]
     pub blober: Account<'info, Blober>,
 

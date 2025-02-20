@@ -10,6 +10,7 @@ pub struct FinalizeBlob<'info> {
         seeds = [
             SEED,
             payer.key().as_ref(),
+            blober.key().as_ref(),
             blob.timestamp.to_le_bytes().as_ref()
         ],
         bump = blob.bump,
@@ -18,7 +19,7 @@ pub struct FinalizeBlob<'info> {
 
     #[account(
         mut,
-        constraint = blober.caller == *payer.key,
+        constraint = blober.caller == payer.key(),
     )]
     pub blober: Account<'info, Blober>,
 

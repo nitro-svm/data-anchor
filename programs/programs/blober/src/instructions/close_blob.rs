@@ -17,7 +17,7 @@ pub struct DiscardBlob<'info> {
     pub blob: Account<'info, Blob>,
 
     #[account(
-        constraint = blober.caller == *payer.key,
+        constraint = blober.caller == payer.key(),
     )]
     pub blober: Account<'info, Blober>,
 

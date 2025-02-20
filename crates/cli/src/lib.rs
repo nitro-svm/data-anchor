@@ -2,13 +2,18 @@
 
 use std::sync::Arc;
 
+use ::blober::find_blober_address;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{Parser, Subcommand};
 use indexer::IndexerSubCommand;
 use nitro_da_client::{BloberClient, BloberClientResult};
 use solana_cli_config::Config;
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
+use solana_sdk::{
+    pubkey::Pubkey,
+    signature::Keypair,
+    signer::{EncodableKey, Signer},
+};
 use tracing::trace;
 
 mod blob;
@@ -34,12 +39,12 @@ struct Cli {
     #[arg(short, long)]
     pub indexer_url: String,
 
-    /// The [`Pubkey`] of the Blober account.
+    /// The namespace to use to generate the blober PDA.
     #[arg(short, long)]
-    pub blober: Pubkey,
+    pub namespace: String,
 
     /// The path to the Solana [`Config`] file.
-    #[arg(short, long, default_value = "solana_cli_config::CONFIG_FILE")]
+    #[arg(short, long, default_value_t = solana_cli_config::CONFIG_FILE.as_ref().unwrap().clone())]
     pub config_file: String,
 }
 
@@ -61,7 +66,7 @@ pub struct Options {
     program_id: Pubkey,
     payer: Arc<Keypair>,
     indexer_url: String,
-    blober: Pubkey,
+    namespace: String,
     config: Config,
 }
 
@@ -77,10 +82,10 @@ impl Options {
         trace!("Parsed options: {args:?} {config:?} {payer:?}");
 
         Self {
+            namespace: args.namespace,
             indexer_url: args.indexer_url,
             command: args.command,
             program_id: args.program_id,
-            blober: args.blober,
             payer,
             config,
         }
@@ -88,6 +93,8 @@ impl Options {
 
     /// Run the parsed CLI command.
     pub async fn run(self) -> BloberClientResult {
+        let blober = find_blober_address(self.payer.pubkey(), &self.namespace);
+
         let client = Arc::new(
             BloberClient::builder()
                 .payer(self.payer.clone())
@@ -100,13 +107,15 @@ impl Options {
 
         match self.command {
             Command::Blober(subcommand) => {
-                subcommand.run(client.clone(), self.blober).await?;
+                subcommand
+                    .run(client.clone(), blober, self.namespace)
+                    .await?;
             }
             Command::Blob(subcommand) => {
-                subcommand.run(client.clone(), self.blober).await?;
+                subcommand.run(client.clone(), blober).await?;
             }
             Command::Indexer(subcommand) => {
-                subcommand.run(client.clone(), self.blober).await?;
+                subcommand.run(client.clone(), blober).await?;
             }
         }
         Ok(())

@@ -9,6 +9,7 @@ pub struct InsertChunk<'info> {
         seeds = [
             SEED,
             payer.key().as_ref(),
+            blober.key().as_ref(),
             blob.timestamp.to_le_bytes().as_ref()
         ],
         bump = blob.bump
@@ -16,7 +17,7 @@ pub struct InsertChunk<'info> {
     pub blob: Account<'info, Blob>,
 
     #[account(
-        constraint = blober.caller == *payer.key,
+        constraint = blober.caller == payer.key(),
     )]
     pub blober: Account<'info, Blober>,
 

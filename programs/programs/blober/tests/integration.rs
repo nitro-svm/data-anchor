@@ -4,16 +4,16 @@ use anchor_lang::{
     solana_program::instruction::Instruction, AccountDeserialize, Discriminator, InstructionData,
     Space, ToAccountMetas,
 };
-use blober::{accounts, find_blob_address, hash_leaf, instruction, state::blob::Blob, CHUNK_SIZE};
+use blober::{
+    accounts, find_blob_address, find_blober_address, hash_leaf, instruction, state::blob::Blob,
+    CHUNK_SIZE,
+};
 use futures::{stream::FuturesOrdered, StreamExt};
 use rand::prelude::SliceRandom;
 use solana_program_test::*;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
-    commitment_config::CommitmentConfig,
-    hash,
-    signature::{Keypair, Signer},
-    transaction::Transaction,
+    commitment_config::CommitmentConfig, hash, signature::Signer, transaction::Transaction,
 };
 use solana_test_validator::TestValidatorGenesis;
 
@@ -34,7 +34,7 @@ async fn test_validator_transaction() {
     // some deadlock with the JsonRPC server shutdown. This is a test, so leak it to keep tests moving.
     std::mem::forget(test_validator);
 
-    let blober = Keypair::new();
+    let blober = find_blober_address(payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -42,18 +42,19 @@ async fn test_validator_transaction() {
             &[Instruction {
                 program_id,
                 accounts: accounts::Initialize {
-                    blober: blober.pubkey(),
+                    blober,
                     payer: payer.pubkey(),
                     system_program,
                 }
                 .to_account_metas(None),
                 data: instruction::Initialize {
-                    caller: payer.pubkey(),
+                    namespace: "test".to_string(),
+                    trusted: payer.pubkey(),
                 }
                 .data(),
             }],
             Some(&payer.pubkey()),
-            &[&payer, &blober],
+            &[&payer],
             rpc_client.get_latest_blockhash().await.unwrap(),
         );
 
@@ -80,9 +81,8 @@ async fn test_validator_transaction() {
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    // Convert from remote agave Keypair to local nitro Keypair
-    let payer = Keypair::from_bytes(&payer.to_bytes()).unwrap();
-    let blob = find_blob_address(payer.pubkey(), timestamp);
+
+    let blob = find_blob_address(payer.pubkey(), blober, timestamp);
 
     // Create blob
     {
@@ -91,7 +91,7 @@ async fn test_validator_transaction() {
                 program_id,
                 accounts: accounts::DeclareBlob {
                     blob,
-                    blober: blober.pubkey(),
+                    blober,
                     payer: payer.pubkey(),
                     system_program,
                 }
@@ -131,7 +131,7 @@ async fn test_validator_transaction() {
                 program_id,
                 accounts: accounts::InsertChunk {
                     blob,
-                    blober: blober.pubkey(),
+                    blober,
                     payer: payer.pubkey(),
                 }
                 .to_account_metas(None),

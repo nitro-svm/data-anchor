@@ -8,7 +8,6 @@ use crate::{
     BloberClientResult,
 };
 
-// TODO: Verify the value
 pub const COMPUTE_UNIT_LIMIT: u32 = 40_000;
 
 #[allow(dead_code, reason = "Might be used for fee calculation later")]

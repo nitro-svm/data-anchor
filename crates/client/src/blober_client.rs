@@ -1,7 +1,7 @@
 use std::{str::FromStr, sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
-use blober::{find_blob_address, state::blober::Blober, CHUNK_SIZE};
+use blober::{find_blob_address, find_blober_address, state::blober::Blober, CHUNK_SIZE};
 use blober_client_builder::{IsSet, IsUnset, SetIndexerClient};
 use bon::Builder;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
@@ -125,21 +125,26 @@ impl BloberClient {
     pub async fn initialize_blober(
         &self,
         fee_strategy: FeeStrategy,
-        blober: Pubkey,
+        namespace: String,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let blober = find_blober_address(self.payer.pubkey(), &namespace);
+
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(fee_strategy, blober)
             .in_current_span()
             .await?;
 
-        let msg = tx::initialize_blober(&MessageArguments::new(
-            self.program_id,
-            blober,
-            &self.payer,
-            self.rpc_client.clone(),
-            fee_strategy,
-        ))
+        let msg = tx::initialize_blober(
+            &MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy,
+            ),
+            namespace,
+        )
         .await
         .expect("infallible with a fixed fee strategy");
 
@@ -200,7 +205,7 @@ impl BloberClient {
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let timestamp = get_unique_timestamp();
 
-        let blob = find_blob_address(self.payer.pubkey(), timestamp);
+        let blob = find_blob_address(self.payer.pubkey(), blober, timestamp);
 
         // Convert priority-based fee strategy to a fixed fee by calculating once up-front.
         let fee_strategy = self

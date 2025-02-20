@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clap::Parser;
 use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
 use solana_sdk::pubkey::Pubkey;
-use tracing::instrument;
+use tracing::{info, instrument};
 
 #[derive(Debug, Parser)]
 pub enum BloberSubCommand {
@@ -17,16 +17,23 @@ pub enum BloberSubCommand {
 
 impl BloberSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run(&self, client: Arc<BloberClient>, blober: Pubkey) -> BloberClientResult {
+    pub async fn run(
+        &self,
+        client: Arc<BloberClient>,
+        blober: Pubkey,
+        namespace: String,
+    ) -> BloberClientResult {
         match self {
             BloberSubCommand::Initialize => {
+                info!("Initializing blober account with address: {blober}");
                 client
                     .initialize_blober(
                         FeeStrategy::BasedOnRecentFees(Priority::Medium),
-                        blober,
+                        namespace,
                         None,
                     )
                     .await?;
+                println!("Blober account initialized successfully with address: {blober}");
             }
             BloberSubCommand::Close => {
                 client
@@ -36,6 +43,7 @@ impl BloberSubCommand {
                         None,
                     )
                     .await?;
+                println!("Blober account with address: {blober} closed successfully");
             }
         }
         Ok(())

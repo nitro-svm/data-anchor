@@ -9,21 +9,26 @@ use crate::{
     BloberClientResult,
 };
 
-// TODO: Verify the value
-pub const COMPUTE_UNIT_LIMIT: u32 = 8_000;
+pub const COMPUTE_UNIT_LIMIT: u32 = 15_000;
 
 #[allow(dead_code, reason = "Might be used for fee calculation later")]
-pub const NUM_SIGNATURES: u16 = 2;
+pub const NUM_SIGNATURES: u16 = 1;
 
 /// Initializes the blober account with a given trusted caller set as the payer of this transaction.
-pub async fn initialize_blober(args: &MessageArguments) -> BloberClientResult<Message> {
+pub async fn initialize_blober(
+    args: &MessageArguments,
+    namespace: String,
+) -> BloberClientResult<Message> {
     let accounts = blober::accounts::Initialize {
         blober: args.blober,
         payer: args.payer,
         system_program: system_program::id(),
     };
 
-    let data = blober::instruction::Initialize { caller: args.payer };
+    let data = blober::instruction::Initialize {
+        namespace,
+        trusted: args.payer,
+    };
 
     let instruction = Instruction {
         program_id: args.program_id,

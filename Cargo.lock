@@ -3305,6 +3305,7 @@ dependencies = [
  "blober",
  "clap 4.5.29",
  "nitro-da-client",
+ "serde_json",
  "solana-cli-config",
  "solana-sdk",
  "tokio",

@@ -3,6 +3,7 @@ use solana_sdk::{
     transaction::TransactionError,
 };
 use solana_transaction_status::TransactionStatus as SolanaTransactionStatus;
+use tracing::info;
 
 use crate::Error;
 
@@ -99,6 +100,7 @@ impl TransactionStatus {
         status: SolanaTransactionStatus,
         commitment: CommitmentConfig,
     ) -> Self {
+        info!("Transaction status: {status:?}");
         if let Some(TransactionError::AlreadyProcessed) = status.err {
             TransactionStatus::Committed
         } else if let Some(err) = status.err {

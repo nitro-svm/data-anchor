@@ -8,8 +8,7 @@ use crate::{
     BloberClientResult,
 };
 
-// TODO: Verify the value
-pub const COMPUTE_UNIT_LIMIT: u32 = 7_000;
+pub const COMPUTE_UNIT_LIMIT: u32 = 6_000;
 
 pub const NUM_SIGNATURES: u16 = 1;
 
