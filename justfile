@@ -9,11 +9,13 @@ fmt-justfile:
 lint-programs:
     cargo +nightly fmt -- --check
     cargo clippy --all-targets --all-features
+    zepter run check
 
 # Run lint and formatting checks for the entire project
 lint: lint-programs fmt-justfile
     cargo +nightly fmt -- --check
     cargo clippy --all-targets --all-features
+    zepter
 
 [private]
 fmt-justfile-fix:
@@ -24,20 +26,22 @@ fmt-justfile-fix:
 lint-programs-fix:
     cargo +nightly fmt
     cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
+    zepter
 
 # Fix lint and formatting issues in the entire project
 lint-fix: lint-programs-fix fmt-justfile-fix
     cargo +nightly fmt
     cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
+    zepter
 
 # Run tests for the programs directory
 [working-directory('programs')]
-test-programs:
-    cargo nextest run
+test-programs: build-programs
+    cargo nextest run --workspace --status-level skip
 
 # Run tests for the entire project
 test: test-programs
-    cargo nextest run
+    cargo nextest run --workspace --status-level skip
 
 # Build the programs
 [working-directory('programs')]

@@ -47,7 +47,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    branches: ["main"]
+    branches: ["*"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -68,10 +68,14 @@ concurrency:
 jobs:
   lint:
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: buildjet-8vcpu-ubuntu-2204
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          version: "23.2"
       - name: Install Rust
         run: rustup show && rustup install nightly && rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu # Nightly is needed for our configuration of cargo fmt
       - name: cargo install zepter
@@ -85,8 +89,15 @@ jobs:
             ${{ secrets.SVM_ENGINE_PRIVATE_KEY }}
       - name: Configure git to use SSH
         run: git config --global url.ssh://git@github.com/.insteadOf https://github.com/
-      - run: cargo +nightly fmt --all -- --check
-      - run: zepter
+      - name: Install just
+        uses: extractions/setup-just@v2
+      # Install system dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential cmake pkg-config libudev-dev
+      - name: Run lint and formatting checks
+        run: just lint
 
   nextest:
     name: nextest
@@ -118,8 +129,8 @@ jobs:
       # Install system dependencies
       - name: Install system dependencies
         run: |
-            sudo apt update
-            sudo apt install -y build-essential cmake pkg-config libudev-dev
+          sudo apt update
+          sudo apt install -y build-essential cmake pkg-config libudev-dev
       # add swap space to accommodate memory spikes
       - name: Set up swap space
         run: |
@@ -130,9 +141,39 @@ jobs:
           sudo swapon /swapfile
           sudo swapon --show
           free -h
-      - run: cargo nextest run --workspace --status-level skip
+      - name: Install Solana tools
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
+      - name: Add Solana to path
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install Anchor management tools
+        run: cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+      - name: Install Anchor
+        run: avm install "$ANCHOR_CLI"
+      - name: Install just
+        uses: extractions/setup-just@v2
+      - run: just test
+
+  changes:
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    # Required permissions
+    permissions:
+      pull-requests: read
+      contents: read
+    # Set job outputs to values from filter step
+    outputs:
+      programs: ${{ steps.filter.outputs.programs }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            programs:
+              - 'programs/**'
 
   nextest-programs:
+    needs: changes
+    if: ${{ needs.changes.outputs.programs == 'true' }}
     name: nextest-programs
     runs-on: buildjet-8vcpu-ubuntu-2204
     timeout-minutes: 60
@@ -170,12 +211,10 @@ jobs:
         run: cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
       - name: Install Anchor
         run: avm install "$ANCHOR_CLI"
-      - name: Sync keys and build programs
-        working-directory: programs
-        run: anchor keys sync && anchor build
+      - name: Install just
+        uses: extractions/setup-just@v2
       - name: Run program tests
-        working-directory: programs
         env:
           # Run property testing with arbitrary for 10s
           ARBTEST_BUDGET_MS: 10000
-        run: cargo nextest run --workspace --status-level skip
+        run: just test-programs

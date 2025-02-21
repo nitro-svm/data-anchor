@@ -14,11 +14,11 @@ name = "blober"
 
 [features]
 default = []
-cpi = ["no-entrypoint"]
+cpi = [ "no-entrypoint" ]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = [ "anchor-lang/idl-build" ]
 
 [dependencies]
 # External dependencies from crates.io
