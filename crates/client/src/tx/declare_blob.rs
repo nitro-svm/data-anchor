@@ -9,7 +9,7 @@ use crate::{
     BloberClientResult,
 };
 
-pub const COMPUTE_UNIT_LIMIT: u32 = 18_000;
+pub const COMPUTE_UNIT_LIMIT: u32 = 20_000;
 
 pub const NUM_SIGNATURES: u16 = 1;
 
