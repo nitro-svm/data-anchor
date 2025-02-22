@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use ::blober::find_blober_address;
+use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{Parser, Subcommand};
@@ -16,6 +17,7 @@ use solana_sdk::{
 };
 use tracing::trace;
 
+mod benchmark;
 mod blob;
 mod blober;
 mod indexer;
@@ -59,6 +61,9 @@ enum Command {
     /// Subcommands for querying the indexer.
     #[command(subcommand, visible_alias = "i")]
     Indexer(IndexerSubCommand),
+    /// Subcommands for benchmarking the blober.
+    #[command(subcommand, visible_alias = "m")]
+    Benchmark(BenchmarkSubCommand),
 }
 
 pub struct Options {
@@ -107,17 +112,11 @@ impl Options {
 
         match self.command {
             Command::Blober(subcommand) => {
-                subcommand
-                    .run(client.clone(), blober, self.namespace)
-                    .await?;
+                subcommand.run(client.clone(), blober, self.namespace).await
             }
-            Command::Blob(subcommand) => {
-                subcommand.run(client.clone(), blober).await?;
-            }
-            Command::Indexer(subcommand) => {
-                subcommand.run(client.clone(), blober).await?;
-            }
+            Command::Blob(subcommand) => subcommand.run(client.clone(), blober).await,
+            Command::Indexer(subcommand) => subcommand.run(client.clone(), blober).await,
+            Command::Benchmark(subcommand) => subcommand.run(client.clone(), blober).await,
         }
-        Ok(())
     }
 }

@@ -121,6 +121,11 @@ impl BloberClient {
         self.rpc_client.clone()
     }
 
+    /// Returns the transaction payer [`Keypair`].
+    pub fn payer(&self) -> Arc<Keypair> {
+        self.payer.clone()
+    }
+
     /// Initializes a new [`Blober`] PDA account.
     pub async fn initialize_blober(
         &self,

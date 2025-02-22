@@ -3,7 +3,7 @@
 This crate allows users to interact with the `blober` program in order to register new `blober` PDA accounts, upload blobs and retrieve data from the indexer.
 
 The mandatory parameters for this tool are the address of the `blober` program (`--program-id` or `-p`), the path to the `payer` keypair of the transactions (`--payer` or `-s`),
-the address of the `blober` PDA to interact with (`--blober` or `-b`) and the indexer URL (`--indexer-url` or `-i`).
+the namespace of the `blober` PDA to interact with (`--namespace` or `-n`) and the indexer URL (`--indexer-url` or `-i`).
 
 The CLI has a `help` command (available for each subcommand as well) which you can use to check the usage.
 Here is a high level overview of the available commands.
@@ -28,3 +28,10 @@ This subcommand allows you to fetch blobs and proofs for a given `blober` PDA an
 
 - `nitro-da-cli i blobs` or `nitro-da-cli i b` to fetch blobs
 - `nitro-da-cli i proofs` or `nitro-da-cli i p` to fetch proofs
+
+## `nitro-da-cli measure` or `nitro-da-cli m`
+
+This subcommand allow you to generate data files and upload them to capture some measurements using the following commands:
+
+- `nitro-da-cli m generate` or `nitro-da-cli m g` to generate data files to a given directory
+- `nitro-da-cli m measure` or `nitro-da-cli m m` to upload data from a given directory and capture measurements

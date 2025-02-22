@@ -30,6 +30,9 @@ pub enum BloberClientError {
     /// Invalid key or namespace for blober
     #[error("Invalid key or namespace for blober")]
     InvalidKeyOrNamespace,
+    /// IO error
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 /// Result returned when interacting with the Blober client.

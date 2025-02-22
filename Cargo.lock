@@ -3303,8 +3303,11 @@ name = "nitro-da-cli"
 version = "0.1.0"
 dependencies = [
  "blober",
+ "bytesize",
  "clap 4.5.29",
+ "futures",
  "nitro-da-client",
+ "rand 0.7.3",
  "serde_json",
  "solana-cli-config",
  "solana-sdk",
