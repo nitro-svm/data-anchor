@@ -1,4 +1,10 @@
+# The Pubkey of the payer account for image building
+
 export PAYER_PUBKEY := "2MCVmcuUcREwQKDS3HazuYctkkbZV3XRMspM5eLWRZUV"
+
+# The budget for the arbtest program in milliseconds
+
+export ARBTEST_BUDGET_MS := "10000"
 
 [private]
 fmt-justfile:
@@ -38,6 +44,10 @@ lint-fix: lint-programs-fix fmt-justfile-fix
 [working-directory('programs')]
 test-programs: build-programs
     cargo nextest run --workspace --status-level skip
+
+# Run compute budget tests for transaction fees
+test-compute-unit-limit:
+    cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
 
 # Run tests for the entire project
 test: test-programs

@@ -45,5 +45,11 @@ blober = { workspace = true }
 nitro-da-indexer-api = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["test-util", "macros"] }
+# External dependencies
+arbitrary = { workspace = true, features = ["derive"] }
+arbtest = { workspace = true }
 rand = { workspace = true }
+tokio = { workspace = true, features = ["test-util", "macros"] }
+
+# Solana & Agave
+solana-test-validator = { workspace = true }

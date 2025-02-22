@@ -217,4 +217,6 @@ jobs:
         env:
           # Run property testing with arbitrary for 10s
           ARBTEST_BUDGET_MS: 10000
-        run: just test-programs
+        run: |
+          just test-programs
+          just test-compute-unit-limit
