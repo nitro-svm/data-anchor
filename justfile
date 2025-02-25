@@ -65,8 +65,13 @@ build: build-programs
 # Deploy the blober program
 [confirm('Are you sure you want to deploy the blober program?')]
 [working-directory('programs')]
-deploy:
-    anchor deploy
+deploy network:
+    anchor keys sync --provider.cluster {{ network }}
+    anchor build --no-idl
+    anchor deploy --provider.cluster {{ network }}
+
+init-blober program_id namespace:
+    cargo run -p nitro-da-cli -- -p {{ program_id }} -i ws://localhost:9696 -n {{ namespace }} br i
 
 # Clean the programs directory
 [working-directory('programs')]
@@ -87,7 +92,7 @@ run-indexer: build
 [macos]
 [working-directory('crates/indexer/scripts')]
 run-indexer: build
-    ./run-macos.sh
+    ./run-mac.sh
 
 # Build the docker image for the indexer
 [linux]
