@@ -4,16 +4,12 @@ use solana_sdk::{
 };
 
 use crate::{
-    tx::{
-        set_compute_unit_price::set_compute_unit_price, MessageArguments,
-        SET_PRICE_AND_CU_LIMIT_COST,
-    },
+    tx::{MessageArguments, SET_PRICE_AND_CU_LIMIT_COST},
     BloberClientResult,
 };
 
 pub const COMPUTE_UNIT_LIMIT: u32 = 40_000;
 
-#[allow(dead_code, reason = "Might be used for fee calculation later")]
 pub const NUM_SIGNATURES: u16 = 1;
 
 fn generate_instruction(
@@ -41,8 +37,10 @@ fn generate_instruction(
 pub async fn discard_blob(args: &MessageArguments, blob: Pubkey) -> BloberClientResult<Message> {
     let instruction = generate_instruction(blob, args.blober, args.payer, args.program_id);
 
-    let set_price =
-        set_compute_unit_price(&args.client, &[blob, args.payer], args.fee_strategy).await?;
+    let set_price = args
+        .fee_strategy
+        .set_compute_unit_price(&args.client, &[blob, args.payer])
+        .await?;
     // This limit is chosen empirically, should blow up in integration tests if it's set too low.
     let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(
         COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,

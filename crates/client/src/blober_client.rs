@@ -24,7 +24,7 @@ use crate::{
         check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp,
         split_blob_into_chunks,
     },
-    tx::{self, set_compute_unit_price::calculate_compute_unit_price, MessageArguments},
+    tx::{self, MessageArguments},
     types::{IndexerError, TransactionType, UploadBlobError},
     BloberClientError, BloberClientResult,
 };
@@ -136,7 +136,11 @@ impl BloberClient {
         let blober = find_blober_address(self.payer.pubkey(), &namespace);
 
         let fee_strategy = self
-            .convert_fee_strategy_to_fixed(fee_strategy, blober)
+            .convert_fee_strategy_to_fixed(
+                fee_strategy,
+                &[blober],
+                TransactionType::InitializeBlober,
+            )
             .in_current_span()
             .await?;
 
@@ -171,7 +175,7 @@ impl BloberClient {
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let fee_strategy = self
-            .convert_fee_strategy_to_fixed(fee_strategy, blober)
+            .convert_fee_strategy_to_fixed(fee_strategy, &[blober], TransactionType::CloseBlober)
             .in_current_span()
             .await?;
 
@@ -212,12 +216,6 @@ impl BloberClient {
 
         let blob = find_blob_address(self.payer.pubkey(), blober, timestamp);
 
-        // Convert priority-based fee strategy to a fixed fee by calculating once up-front.
-        let fee_strategy = self
-            .convert_fee_strategy_to_fixed(fee_strategy, blob)
-            .in_current_span()
-            .await?;
-
         let chunks = split_blob_into_chunks(blob_data);
 
         let (declare_blob_msg, insert_chunks_msgs, finalize_blob_msg) = self
@@ -229,7 +227,7 @@ impl BloberClient {
                 fee_strategy,
                 blober,
             )
-            .await;
+            .await?;
 
         let res = self
             .do_upload(
@@ -258,7 +256,7 @@ impl BloberClient {
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let fee_strategy = self
-            .convert_fee_strategy_to_fixed(fee_strategy, blob)
+            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DiscardBlob)
             .in_current_span()
             .await?;
 
@@ -298,12 +296,12 @@ impl BloberClient {
         blob_size: usize,
         priority: Priority,
     ) -> BloberClientResult<Fee> {
-        let prioritization_fee_rate = calculate_compute_unit_price(
-            &self.rpc_client,
-            &[Pubkey::new_unique(), self.payer.pubkey()],
-            priority,
-        )
-        .await?;
+        let prioritization_fee_rate = priority
+            .calculate_compute_unit_price(
+                &self.rpc_client,
+                &[Pubkey::new_unique(), self.payer.pubkey()],
+            )
+            .await?;
 
         let num_chunks = blob_size.div_ceil(CHUNK_SIZE as usize) as u16;
 

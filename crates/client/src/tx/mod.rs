@@ -11,7 +11,6 @@ pub mod discard_blob;
 pub mod finalize_blob;
 pub mod initialize_blober;
 pub mod insert_chunk;
-pub mod set_compute_unit_price;
 
 pub use close_blober::close_blober;
 pub use declare_blob::declare_blob;

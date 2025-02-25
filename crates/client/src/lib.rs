@@ -1,6 +1,5 @@
 mod batch_client;
 mod blober_client;
-mod deploy;
 mod fees;
 mod helpers;
 #[cfg(test)]

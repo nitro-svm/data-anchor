@@ -13,6 +13,7 @@ publish = { workspace = true }
 async-trait = { workspace = true }
 bincode = { workspace = true }
 bon = { workspace = true, features = ["experimental-getter"] }
+clap = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
 jsonrpsee = { workspace = true, features = ["ws-client"] }
@@ -26,19 +27,14 @@ tracing-subscriber = { workspace = true }
 
 # Solana & Agave
 anchor-lang = { workspace = true }
-solana-bpf-loader-program = { workspace = true }
-solana-cli = { workspace = true }
 solana-cli-config = { workspace = true }
 solana-client = { workspace = true }
-solana-compute-budget = { workspace = true }
 solana-connection-cache = { workspace = true }
-solana-program-runtime = { workspace = true }
 solana-quic-client = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
-solana_rbpf = { workspace = true }
 
 # Locals
 blober = { workspace = true }

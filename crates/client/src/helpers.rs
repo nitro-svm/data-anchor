@@ -12,7 +12,7 @@ use solana_transaction_status::EncodedTransactionWithStatusMeta;
 use tracing::{info_span, Instrument, Span};
 
 use crate::{
-    tx::{self, set_compute_unit_price::calculate_compute_unit_price, MessageArguments},
+    tx::{self, MessageArguments},
     types::{TransactionType, UploadBlobError},
     BloberClient, BloberClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
     SuccessfulTransaction, TransactionOutcome,
@@ -74,26 +74,38 @@ impl BloberClient {
         chunks: Vec<(u16, &[u8])>,
         fee_strategy: FeeStrategy,
         blober: Pubkey,
-    ) -> (
+    ) -> BloberClientResult<(
         (TransactionType, Message),
         Vec<(TransactionType, Message)>,
         (TransactionType, Message),
-    ) {
-        let args = MessageArguments::new(
-            self.program_id,
-            blober,
-            &self.payer,
-            self.rpc_client.clone(),
-            fee_strategy,
-        );
+    )> {
+        let fee_strategy_declare = self
+            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DeclareBlob)
+            .await?;
 
         let declare_blob_msg = (
             TransactionType::DeclareBlob,
-            tx::declare_blob(&args, blob, timestamp, blob_size, chunks.len() as u16)
-                .in_current_span()
-                .await
-                .expect("infallible with a fixed fee strategy"),
+            tx::declare_blob(
+                &MessageArguments::new(
+                    self.program_id,
+                    blober,
+                    &self.payer,
+                    self.rpc_client.clone(),
+                    fee_strategy_declare,
+                ),
+                blob,
+                timestamp,
+                blob_size,
+                chunks.len() as u16,
+            )
+            .in_current_span()
+            .await
+            .expect("infallible with a fixed fee strategy"),
         );
+
+        let fee_strategy_insert = self
+            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::InsertChunk(0))
+            .await?;
 
         let insert_chunk_msgs =
             futures::future::join_all(chunks.iter().map(|(chunk_index, chunk_data)| async move {
@@ -103,7 +115,7 @@ impl BloberClient {
                         blober,
                         &self.payer,
                         self.rpc_client.clone(),
-                        fee_strategy,
+                        fee_strategy_insert,
                     ),
                     blob,
                     *chunk_index,
@@ -116,22 +128,40 @@ impl BloberClient {
             }))
             .await;
 
+        let fee_strategy_finalize = self
+            .convert_fee_strategy_to_fixed(
+                fee_strategy,
+                &[blober, blob],
+                TransactionType::FinalizeBlob,
+            )
+            .await?;
+
         let complete_msg = (
             TransactionType::FinalizeBlob,
-            tx::finalize_blob(&args, blob)
-                .in_current_span()
-                .await
-                .expect("infallible with a fixed fee strategy"),
+            tx::finalize_blob(
+                &MessageArguments::new(
+                    self.program_id,
+                    blober,
+                    &self.payer,
+                    self.rpc_client.clone(),
+                    fee_strategy_finalize,
+                ),
+                blob,
+            )
+            .in_current_span()
+            .await
+            .expect("infallible with a fixed fee strategy"),
         );
 
-        (declare_blob_msg, insert_chunk_msgs, complete_msg)
+        Ok((declare_blob_msg, insert_chunk_msgs, complete_msg))
     }
 
     /// Converts a [`FeeStrategy`] into a [`FeeStrategy::Fixed`] with the current compute unit price.
     pub(crate) async fn convert_fee_strategy_to_fixed(
         &self,
         fee_strategy: FeeStrategy,
-        blob: Pubkey,
+        mutating_accounts: &[Pubkey],
+        tx_type: TransactionType,
     ) -> BloberClientResult<FeeStrategy> {
         let FeeStrategy::BasedOnRecentFees(priority) = fee_strategy else {
             return Ok(fee_strategy);
@@ -139,22 +169,22 @@ impl BloberClient {
 
         let mut fee_retries = 5;
 
+        let mutating_accounts =
+            [mutating_accounts, &[self.payer.pubkey(), self.program_id]].concat();
+
         while fee_retries > 0 {
-            let res = calculate_compute_unit_price(
-                &self.rpc_client,
-                &[blob, self.payer.pubkey()],
-                priority,
-            )
-            .in_current_span()
-            .await;
+            let res = priority
+                .calculate_compute_unit_price(&self.rpc_client, &mutating_accounts)
+                .in_current_span()
+                .await;
 
             match res {
                 Ok(fee) => {
                     return Ok(FeeStrategy::Fixed(Fee {
                         prioritization_fee_rate: fee,
-                        num_signatures: 0,
-                        price_per_signature: Lamports::ZERO,
-                        compute_unit_limit: 0,
+                        num_signatures: tx_type.num_signatures(),
+                        compute_unit_limit: tx_type.compute_unit_limit(),
+                        price_per_signature: Lamports(5000),
                         blob_account_size: 0,
                     }));
                 }

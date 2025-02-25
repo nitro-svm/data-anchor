@@ -4,7 +4,7 @@ use solana_rpc_client_api::client_error::Error;
 use solana_sdk::{clock::Slot, commitment_config::ParseCommitmentLevelError};
 use thiserror::Error;
 
-use crate::TransactionOutcome;
+use crate::{tx, TransactionOutcome};
 
 /// Errors that can occur when interacting with the Blober client.
 #[derive(Debug, Error)]
@@ -129,6 +129,32 @@ impl Display for TransactionType {
             TransactionType::FinalizeBlob => write!(f, "FinalizeBlob"),
             TransactionType::InitializeBlober => write!(f, "InitializeBlober"),
             TransactionType::InsertChunk(i) => write!(f, "InsertChunk {i}"),
+        }
+    }
+}
+
+impl TransactionType {
+    /// Returns the number of signatures required for the transaction type.
+    pub(crate) fn num_signatures(&self) -> u16 {
+        match self {
+            TransactionType::CloseBlober => tx::close_blober::NUM_SIGNATURES,
+            TransactionType::DeclareBlob => tx::declare_blob::NUM_SIGNATURES,
+            TransactionType::DiscardBlob => tx::discard_blob::NUM_SIGNATURES,
+            TransactionType::FinalizeBlob => tx::finalize_blob::NUM_SIGNATURES,
+            TransactionType::InitializeBlober => tx::initialize_blober::NUM_SIGNATURES,
+            TransactionType::InsertChunk(_) => tx::insert_chunk::NUM_SIGNATURES,
+        }
+    }
+
+    /// Returns the compute unit limit for the transaction type.
+    pub(crate) fn compute_unit_limit(&self) -> u32 {
+        match self {
+            TransactionType::CloseBlober => tx::close_blober::COMPUTE_UNIT_LIMIT,
+            TransactionType::DeclareBlob => tx::declare_blob::COMPUTE_UNIT_LIMIT,
+            TransactionType::DiscardBlob => tx::discard_blob::COMPUTE_UNIT_LIMIT,
+            TransactionType::FinalizeBlob => tx::finalize_blob::COMPUTE_UNIT_LIMIT,
+            TransactionType::InitializeBlober => tx::initialize_blober::COMPUTE_UNIT_LIMIT,
+            TransactionType::InsertChunk(_) => tx::insert_chunk::COMPUTE_UNIT_LIMIT,
         }
     }
 }
