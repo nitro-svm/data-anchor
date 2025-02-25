@@ -9,6 +9,7 @@ use std::{
 };
 
 use bytesize::ByteSize;
+use chrono::Utc;
 use clap::Parser;
 use futures::StreamExt;
 use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
@@ -44,6 +45,9 @@ pub enum BenchmarkSubCommand {
         /// Concurrent uploads.
         #[arg(short, long, default_value_t = 100)]
         concurrency: u64,
+        /// The priority to use for the uploads.
+        #[arg(short, long, value_enum, default_value_t = Priority::Medium)]
+        priority: Priority,
     },
 }
 
@@ -83,6 +87,7 @@ impl BenchmarkSubCommand {
                 data_path,
                 timeout,
                 concurrency,
+                priority,
             } => {
                 let reads = data_path
                     .read_dir()?
@@ -97,6 +102,11 @@ impl BenchmarkSubCommand {
 
                 let total_size = ByteSize(data.iter().map(|d| d.len() as u64).sum());
                 let total_files = data.len();
+                let total_txs = data
+                    .iter()
+                    .map(|d| d.len().div_ceil(blober::CHUNK_SIZE as usize))
+                    .sum::<usize>()
+                    + total_files * 2;
                 trace!("Read {total_files} files with a total size of {total_size}");
 
                 let start_balance = client
@@ -113,16 +123,18 @@ impl BenchmarkSubCommand {
                         let client = client.clone();
 
                         async move {
+                            let (sent, uploaded, fail) = status.increment_sent();
+                            log(sent, uploaded, fail, total_files);
                             let result = client
                                 .upload_blob(
                                     &blob_data,
-                                    FeeStrategy::BasedOnRecentFees(Priority::Medium),
+                                    FeeStrategy::BasedOnRecentFees(*priority),
                                     blober,
                                     Some(Duration::from_secs(*timeout)),
                                 )
                                 .await;
-                            let (uploaded, fail) = status.increment(result.is_ok());
-                            log(uploaded, fail, total_files);
+                            let (sent, uploaded, fail) = status.increment_status(result.is_ok());
+                            log(sent, uploaded, fail, total_files);
                             result
                         }
                     })
@@ -139,19 +151,30 @@ impl BenchmarkSubCommand {
                     .get_balance(&client.payer().pubkey())
                     .await?;
 
-                println!("\nUploaded {total_size} bytes in {elapsed}");
-                println!("Aproximate speed: {bps}/s");
+                let balance_diff = start_balance - end_balance;
+
+                println!();
                 println!(
-                    "Cost: {start_balance} - {end_balance} = {} lamports",
-                    start_balance - end_balance
+                    "------ Benchmark Results at {time} ------",
+                    time = Utc::now()
                 );
                 println!(
-                    "Average cost per blob: {} lamports",
-                    (start_balance - end_balance) / total_files as u64
+                    "Priority in the {priority} percentile",
+                    priority = priority.percentile()
+                );
+                println!("Uploaded {total_size} bytes in {elapsed}s via {total_txs} transactions");
+                println!(
+                    "Aproximate speed: {bps}/s ({tx_per_sec} tx/s)",
+                    tx_per_sec = total_txs as f64 / elapsed
+                );
+                println!("Cost: {start_balance} - {end_balance} = {balance_diff} lamports");
+                println!(
+                    "Average cost per blob: {cost_per_blob} lamports",
+                    cost_per_blob = balance_diff / total_files as u64
                 );
                 println!(
-                    "Average cost per byte: {} lamports",
-                    (start_balance - end_balance) / total_size.0
+                    "Average cost per byte: {cost_per_byte} lamports",
+                    cost_per_byte = balance_diff / total_size.0
                 );
             }
         }
@@ -174,6 +197,7 @@ async fn delete_all_in_dir<P: AsRef<Path>>(dir: P) -> tokio::io::Result<()> {
 }
 
 struct StatusData {
+    sent: AtomicUsize,
     completed: AtomicUsize,
     failed: AtomicUsize,
 }
@@ -181,19 +205,30 @@ struct StatusData {
 impl StatusData {
     fn new() -> Arc<Self> {
         Arc::new(Self {
+            sent: AtomicUsize::new(0),
             completed: AtomicUsize::new(0),
             failed: AtomicUsize::new(0),
         })
     }
 
-    fn increment(&self, success: bool) -> (usize, usize) {
+    fn increment_sent(&self) -> (usize, usize, usize) {
+        (
+            self.sent.fetch_add(1, Ordering::SeqCst) + 1,
+            self.completed.load(Ordering::SeqCst),
+            self.failed.load(Ordering::SeqCst),
+        )
+    }
+
+    fn increment_status(&self, success: bool) -> (usize, usize, usize) {
         if success {
             (
+                self.sent.load(Ordering::SeqCst),
                 self.completed.fetch_add(1, Ordering::SeqCst) + 1,
                 self.failed.load(Ordering::SeqCst),
             )
         } else {
             (
+                self.sent.load(Ordering::SeqCst),
                 self.completed.load(Ordering::SeqCst),
                 self.failed.fetch_add(1, Ordering::SeqCst) + 1,
             )
@@ -201,7 +236,7 @@ impl StatusData {
     }
 }
 
-fn log(completed: usize, failed: usize, total_files: usize) {
-    print!("\rUploaded {completed} | Failed {failed} | Total {total_files}");
+fn log(sent: usize, completed: usize, failed: usize, total_files: usize) {
+    print!("\rSent {sent} | Uploaded {completed} | Failed {failed} | Total {total_files}");
     std::io::stdout().flush().unwrap();
 }
