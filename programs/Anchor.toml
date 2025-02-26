@@ -8,6 +8,9 @@ skip-lint = false
 [programs.localnet]
 blober = "CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP"
 
+[programs.devnet]
+blober = "2RWsr92iL39YCLiZu7dZ5hron4oexEMbgWDg35v5U5tH"
+
 [registry]
 url = "https://api.apr.dev"
 
