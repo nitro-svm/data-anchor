@@ -226,7 +226,7 @@ fn log_progress_bar<T>(progress: &[TransactionProgress<T>]) {
             TransactionStatus::Pending => ' ',
             TransactionStatus::Processing => '.',
             TransactionStatus::Committed => 'x',
-            TransactionStatus::Failed(_) => '!',
+            TransactionStatus::Failed(..) => '!',
         })
         .join("");
     info!("[{dots}]");

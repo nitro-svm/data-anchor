@@ -3,7 +3,9 @@ use std::{ops::ControlFlow, option::Option, sync::Arc};
 use solana_client::rpc_client::SerializableTransaction;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{clock::Slot, transaction::TransactionError};
-use solana_transaction_status::TransactionStatus as SolanaTransactionStatus;
+use solana_transaction_status::{
+    TransactionStatus as SolanaTransactionStatus, UiTransactionEncoding,
+};
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
@@ -98,8 +100,8 @@ async fn transaction_confirm_loop(
         blockdata.last_valid_block_height,
     );
 
-    for (status, msg) in status_updates {
-        let status = TransactionStatus::from_solana_status(status, rpc_client.commitment());
+    for (status, logs, msg) in status_updates {
+        let status = TransactionStatus::from_solana_status(status, logs, rpc_client.commitment());
 
         // If the transaction wasn't committed or failed, it has to be checked again.
         if status.should_be_reconfirmed() {
@@ -124,7 +126,11 @@ async fn transaction_confirm_loop(
 
 #[derive(Default)]
 struct TransactionResponseCategories {
-    pub status_updates: Vec<(SolanaTransactionStatus, ConfirmTransactionMessage)>,
+    pub status_updates: Vec<(
+        SolanaTransactionStatus,
+        Vec<String>,
+        ConfirmTransactionMessage,
+    )>,
     pub resend: Vec<SendTransactionMessage>,
     pub reconfirm: Vec<ConfirmTransactionMessage>,
 }
@@ -136,7 +142,12 @@ struct TransactionResponseCategories {
 ///
 /// The transaction categories are not mutually exclusive.
 fn categorize_transaction_responses(
-    responses: impl Iterator<Item = (Option<SolanaTransactionStatus>, ConfirmTransactionMessage)>,
+    responses: impl Iterator<
+        Item = (
+            (Option<SolanaTransactionStatus>, Vec<String>),
+            ConfirmTransactionMessage,
+        ),
+    >,
     use_tpu_client: bool,
     last_valid_block_height: u64,
 ) -> TransactionResponseCategories {
@@ -160,13 +171,14 @@ fn categorize_transaction_responses(
 /// See [`categorize_transaction_responses`].
 fn categorize_transaction_response(
     categories: &mut TransactionResponseCategories,
-    status: Option<SolanaTransactionStatus>,
+    status: (Option<SolanaTransactionStatus>, Vec<String>),
     msg: ConfirmTransactionMessage,
     use_tpu_client: bool,
     last_valid_block_height: u64,
 ) {
     let _enter = msg.span.clone().entered();
-    let Some(status) = status else {
+    let logs = status.1;
+    let Some(status) = status.0 else {
         // If there is no status, the transaction was not recognized by the RPC server.
         if use_tpu_client && msg.last_valid_block_height + 100 < last_valid_block_height {
             // TPU transactions can be dropped on the way there, so if at least 100 slots have passed
@@ -189,7 +201,7 @@ fn categorize_transaction_response(
     match status.err {
         None | Some(TransactionError::AlreadyProcessed) => {
             // Either the transaction succeeded (no error) or it was already processed.
-            categories.status_updates.push((status, msg));
+            categories.status_updates.push((status, logs, msg));
         }
         Some(ref err) => {
             // Some instructions are expected to fail, for example inserting too far ahead
@@ -208,7 +220,7 @@ fn categorize_transaction_response(
                 last_valid_block_height: 0,
                 response_tx: msg.response_tx.clone(),
             });
-            categories.status_updates.push((status, msg));
+            categories.status_updates.push((status, logs, msg));
         }
     }
 }
@@ -227,7 +239,12 @@ async fn get_transaction_statuses(
 ) -> ControlFlow<
     (),
     Option<(
-        impl Iterator<Item = (Option<SolanaTransactionStatus>, ConfirmTransactionMessage)>,
+        impl Iterator<
+            Item = (
+                (Option<SolanaTransactionStatus>, Vec<String>),
+                ConfirmTransactionMessage,
+            ),
+        >,
         Slot,
     )>,
 > {
@@ -249,7 +266,49 @@ async fn get_transaction_statuses(
         "got status for {} signatures",
         response.value.iter().flatten().count()
     );
-    let responses = response.value.into_iter().zip(batch.into_iter());
+
+    let mut all_logs = Vec::with_capacity(response.value.len());
+
+    for (status, signature) in response.value.iter().zip(signatures.into_iter()) {
+        let Some(status) = status else {
+            // The RPC server didn't recognize the transaction, so it will be re-queued.
+            all_logs.push(Vec::new());
+            continue;
+        };
+
+        if status.err.is_none() {
+            // The transaction was recognized and processed, so it will be reported.
+            all_logs.push(Vec::new());
+            continue;
+        }
+
+        let tx = match rpc_client
+            .get_transaction(&signature, UiTransactionEncoding::Json)
+            .await
+        {
+            Ok(tx) => tx,
+            Err(e) => {
+                warn!("failed to get failed transaction: {e:?}");
+                all_logs.push(Vec::new());
+                continue;
+            }
+        };
+
+        let Some(logs) = tx.transaction.meta.map(|meta| meta.log_messages) else {
+            // The transaction was recognized but not processed, so it will be re-queued.
+            all_logs.push(Vec::new());
+            continue;
+        };
+
+        all_logs.push(logs.unwrap_or(Vec::new()));
+    }
+
+    let responses = response
+        .value
+        .into_iter()
+        .zip(all_logs.into_iter())
+        .zip(batch.into_iter());
+
     let slot = response.context.slot;
     ControlFlow::Continue(Some((responses, slot)))
 }
@@ -419,7 +478,7 @@ mod tests {
         };
         categorize_transaction_response(
             &mut categories,
-            status,
+            (status, Vec::new()),
             msg,
             use_tpu_client,
             last_valid_block_height,
@@ -502,11 +561,11 @@ mod tests {
         assert_eq!(messages.len(), 2);
         assert_eq!(messages[0].1.index, 0);
         assert_eq!(
-            messages[0].0.as_ref().unwrap().confirmation_status,
+            messages[0].0 .0.as_ref().unwrap().confirmation_status,
             Some(TransactionConfirmationStatus::Confirmed)
         );
         assert_eq!(messages[1].1.index, 1);
-        assert_eq!(messages[1].0, None);
+        assert_eq!(messages[1].0 .0, None);
 
         // Nothing should have been queued for re-confirmation.
         transaction_confirmer_rx.try_recv().unwrap_err();
@@ -880,9 +939,9 @@ mod tests {
         let status = response_rx.recv().await.unwrap();
         response_rx.try_recv().unwrap_err();
         assert_eq!(status.index, 11);
-        assert!(matches!(status.status, TransactionStatus::Failed(_)));
+        assert!(matches!(status.status, TransactionStatus::Failed(..)));
         let sent_requests: Vec<TrackedRequest> = mock_sender.get_and_clear_sent_requests();
-        assert_eq!(sent_requests.len(), 1);
+        assert_eq!(sent_requests.len(), 2);
 
         // If getting signatures itself fails, the transactions should be re-confirmed.
         *mock_sender.mode.lock().unwrap() = TrackingMockSenderMode::RpcError;

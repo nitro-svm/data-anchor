@@ -13,7 +13,7 @@ use chrono::{DateTime, Utc};
 use clap::Parser;
 use futures::StreamExt;
 use itertools::iproduct;
-use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
+use nitro_da_client::{BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority};
 use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
@@ -77,23 +77,23 @@ impl BenchmarkSubCommand {
                 concurrency,
                 priority,
             } => {
-                println!(
-                    "\n{}",
-                    write_measurements(vec![
-                        measure_performance(
-                            data_path,
-                            *timeout,
-                            *concurrency,
-                            *priority,
-                            client,
-                            blober,
-                        )
-                        .await?,
-                    ])?
-                );
+                let (measurement, errors) = measure_performance(
+                    data_path,
+                    *timeout,
+                    *concurrency,
+                    *priority,
+                    client,
+                    blober,
+                )
+                .await?;
+
+                for error in errors {
+                    eprintln!("Error: {error}");
+                }
+
+                println!("\n{}", write_measurements(vec![measurement])?);
             }
             BenchmarkSubCommand::Automate { data_path } => {
-                let mut measurements = Vec::new();
                 // Generate data files with different sizes and counts.
                 let combination_matrix =
                     iproduct!([100, 1000, 10000], [10, 100, 1000], [false, true]);
@@ -104,6 +104,10 @@ impl BenchmarkSubCommand {
                     Priority::High,
                     Priority::VeryHigh,
                 ];
+                // We preallocate the vectors to avoid reallocations.
+                // 3 sizes * 3 counts * 2 random lengths * 5 priorities
+                let mut measurements = Vec::with_capacity(3 * 3 * 2 * 5);
+                let mut all_errors = Vec::new();
 
                 let _: BloberClientResult = async {
                     for (size, count, random_length) in combination_matrix {
@@ -121,23 +125,28 @@ impl BenchmarkSubCommand {
                                 "Measuring performance with percentile priority {}...",
                                 priority.percentile()
                             );
-                            measurements.push(
-                                measure_performance(
-                                    data_path,
-                                    600,
-                                    100,
-                                    priority,
-                                    client.clone(),
-                                    blober,
-                                )
-                                .await?,
-                            );
+                            let (measurement, errors) = measure_performance(
+                                data_path,
+                                600,
+                                100,
+                                priority,
+                                client.clone(),
+                                blober,
+                            )
+                            .await?;
+                            measurements.push(measurement);
+                            all_errors.extend(errors);
                         }
                     }
                     Ok(())
                 }
                 .await;
                 delete_all_in_dir(data_path).await?;
+
+                for error in all_errors {
+                    eprintln!("Error: {error}");
+                }
+
                 println!("\n{}", write_measurements(measurements)?);
             }
         }
@@ -192,7 +201,7 @@ async fn measure_performance(
     priority: Priority,
     client: Arc<BloberClient>,
     blober: Pubkey,
-) -> BloberClientResult<BenchMeasurement> {
+) -> BloberClientResult<(BenchMeasurement, Vec<BloberClientError>)> {
     let reads = data_path
         .read_dir()?
         .filter_map(|entry| {
@@ -219,34 +228,33 @@ async fn measure_performance(
         .await?;
     let start_time = tokio::time::Instant::now();
 
-    let status = StatusData::new();
+    let status = StatusData::new(total_files);
 
-    futures::stream::iter(data)
+    let errors = futures::stream::iter(data)
         .map(|blob_data| {
             let status = status.clone();
             let client = client.clone();
 
             async move {
-                let (sent, uploaded, fail) = status.increment_sent();
-                log(sent, uploaded, fail, total_files);
-                let result = client
+                status.increment_sent();
+                client
                     .upload_blob(
                         &blob_data,
                         FeeStrategy::BasedOnRecentFees(priority),
                         blober,
                         Some(Duration::from_secs(timeout)),
                     )
-                    .await;
-                let (sent, uploaded, fail) = status.increment_status(result.is_ok());
-                log(sent, uploaded, fail, total_files);
-                result
+                    .await
+                    .inspect(|_| status.increment_success())
+                    .inspect_err(|_| status.increment_failure())
             }
         })
         .buffer_unordered(concurrency as usize)
         .collect::<Vec<BloberClientResult<_>>>()
         .await
         .into_iter()
-        .collect::<BloberClientResult<Vec<_>>>()?;
+        .filter_map(|e| e.err())
+        .collect();
 
     let elapsed = start_time.elapsed();
     let end_balance = client
@@ -255,14 +263,17 @@ async fn measure_performance(
         .await?;
 
     println!();
-    Ok(BenchMeasurement::new(
-        priority.percentile(),
-        elapsed,
-        total_size,
-        total_txs,
-        start_balance,
-        end_balance,
-        total_files,
+    Ok((
+        BenchMeasurement::new(
+            priority.percentile(),
+            elapsed,
+            total_size,
+            total_txs,
+            start_balance,
+            end_balance,
+            total_files,
+        ),
+        errors,
     ))
 }
 
@@ -350,14 +361,16 @@ impl BenchMeasurement {
 
 /// Shared data for tracking the status of uploads.
 struct StatusData {
+    total_files: usize,
     sent: AtomicUsize,
     completed: AtomicUsize,
     failed: AtomicUsize,
 }
 
 impl StatusData {
-    fn new() -> Arc<Self> {
+    fn new(total_files: usize) -> Arc<Self> {
         Arc::new(Self {
+            total_files,
             sent: AtomicUsize::new(0),
             completed: AtomicUsize::new(0),
             failed: AtomicUsize::new(0),
@@ -365,34 +378,32 @@ impl StatusData {
     }
 
     /// Increments the counter for sent uploads.
-    fn increment_sent(&self) -> (usize, usize, usize) {
-        (
-            self.sent.fetch_add(1, Ordering::SeqCst) + 1,
-            self.completed.load(Ordering::SeqCst),
-            self.failed.load(Ordering::SeqCst),
-        )
+    fn increment_sent(&self) {
+        self.sent.fetch_add(1, Ordering::SeqCst);
+        self.log();
     }
 
-    /// Increments the counters for completed and failed uploads.
-    fn increment_status(&self, success: bool) -> (usize, usize, usize) {
-        if success {
-            (
-                self.sent.load(Ordering::SeqCst),
-                self.completed.fetch_add(1, Ordering::SeqCst) + 1,
-                self.failed.load(Ordering::SeqCst),
-            )
-        } else {
-            (
-                self.sent.load(Ordering::SeqCst),
-                self.completed.load(Ordering::SeqCst),
-                self.failed.fetch_add(1, Ordering::SeqCst) + 1,
-            )
-        }
+    /// Increments on success
+    fn increment_success(&self) {
+        self.completed.fetch_add(1, Ordering::SeqCst);
+        self.log();
     }
-}
 
-/// Logs progress when benchmarking.
-fn log(sent: usize, completed: usize, failed: usize, total_files: usize) {
-    print!("\rSent {sent} | Uploaded {completed} | Failed {failed} | Total {total_files}");
-    std::io::stdout().flush().unwrap();
+    /// Increments on failure
+    fn increment_failure(&self) {
+        self.failed.fetch_add(1, Ordering::SeqCst);
+        self.log();
+    }
+
+    /// Logs progress when benchmarking.
+    fn log(&self) {
+        print!(
+            "\rSent {sent} | Uploaded {completed} | Failed {failed} | Total {total_files}",
+            sent = self.sent.load(Ordering::SeqCst),
+            completed = self.completed.load(Ordering::SeqCst),
+            failed = self.failed.load(Ordering::SeqCst),
+            total_files = self.total_files
+        );
+        std::io::stdout().flush().unwrap();
+    }
 }

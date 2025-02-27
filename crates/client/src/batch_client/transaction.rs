@@ -37,6 +37,7 @@ pub struct UnknownTransaction<T> {
 pub struct FailedTransaction<T> {
     pub data: T,
     pub error: Error,
+    pub logs: Vec<String>,
 }
 
 impl<T> TransactionOutcome<T> {
@@ -89,7 +90,7 @@ pub enum TransactionStatus {
     Pending,
     Processing,
     Committed,
-    Failed(TransactionError),
+    Failed(TransactionError, Vec<String>),
 }
 
 impl TransactionStatus {
@@ -97,12 +98,13 @@ impl TransactionStatus {
     /// to a [`TransactionStatus`].
     pub fn from_solana_status(
         status: SolanaTransactionStatus,
+        logs: Vec<String>,
         commitment: CommitmentConfig,
     ) -> Self {
         if let Some(TransactionError::AlreadyProcessed) = status.err {
             TransactionStatus::Committed
         } else if let Some(err) = status.err {
-            TransactionStatus::Failed(err)
+            TransactionStatus::Failed(err, logs)
         } else if status.satisfies_commitment(commitment) {
             TransactionStatus::Committed
         } else {
@@ -124,7 +126,7 @@ impl TransactionStatus {
             TransactionStatus::Pending => true,
             TransactionStatus::Processing => true,
             TransactionStatus::Committed => false,
-            TransactionStatus::Failed(_) => false,
+            TransactionStatus::Failed(..) => false,
         }
     }
 }
@@ -137,10 +139,13 @@ impl<T> From<TransactionProgress<T>> for TransactionOutcome<T> {
                     data: progress.data,
                 })
             }
-            TransactionStatus::Failed(err) => TransactionOutcome::Failure(FailedTransaction {
-                data: progress.data,
-                error: err.into(),
-            }),
+            TransactionStatus::Failed(err, logs) => {
+                TransactionOutcome::Failure(FailedTransaction {
+                    data: progress.data,
+                    error: err.into(),
+                    logs,
+                })
+            }
             TransactionStatus::Committed => TransactionOutcome::Success(SuccessfulTransaction {
                 data: progress.data,
                 slot: progress.landed_as.unwrap().0,
