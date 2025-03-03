@@ -10,6 +10,7 @@ pub struct DiscardBlob<'info> {
         seeds = [
             SEED,
             payer.key().as_ref(),
+            blober.key().as_ref(),
             blob.timestamp.to_le_bytes().as_ref()
         ],
         bump = blob.bump,
