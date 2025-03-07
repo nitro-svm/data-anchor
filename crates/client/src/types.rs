@@ -43,7 +43,7 @@ pub type BloberClientResult<T = ()> = Result<T, BloberClientError>;
 pub enum OutcomeError {
     #[error(
         "Transaction outcomes were not successfull: \n{}",
-        .0.iter().filter_map(TransactionOutcome::error).map(|t| format!("- {}: {}", t.data, t.error)).collect::<Vec<_>>().join("\n")
+        .0.iter().filter_map(TransactionOutcome::error).map(|t| format!("- {}: {} [{}]", t.data, t.error, t.logs.join("\n"))).collect::<Vec<_>>().join("\n")
     )]
     Unsuccesful(Vec<TransactionOutcome<TransactionType>>),
 }
@@ -72,6 +72,9 @@ pub enum UploadBlobError {
     /// Failed to discard blob: {0}
     #[error("Failed to discard blob: {0}")]
     DiscardBlob(OutcomeError),
+    /// Failed to compound upload: {0}
+    #[error("Failed to compound upload: {0}")]
+    CompoundUpload(OutcomeError),
     /// Failed to initialize blober: {0}
     #[error("Failed to initialize blober: {0}")]
     InitializeBlober(OutcomeError),
@@ -112,6 +115,7 @@ pub enum DeploymentError {
 /// Transaction types which can be performed by the [`blober::blober`] program.
 #[derive(Debug, Clone, Copy)]
 pub enum TransactionType {
+    Compound,
     CloseBlober,
     DeclareBlob,
     DiscardBlob,
@@ -124,6 +128,7 @@ impl Display for TransactionType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TransactionType::CloseBlober => write!(f, "CloseBlober"),
+            TransactionType::Compound => write!(f, "CompoundUpload"),
             TransactionType::DeclareBlob => write!(f, "DeclareBlob"),
             TransactionType::DiscardBlob => write!(f, "DiscardBlob"),
             TransactionType::FinalizeBlob => write!(f, "FinalizeBlob"),
@@ -138,6 +143,7 @@ impl TransactionType {
     pub(crate) fn num_signatures(&self) -> u16 {
         match self {
             TransactionType::CloseBlober => tx::close_blober::NUM_SIGNATURES,
+            TransactionType::Compound => tx::compound::NUM_SIGNATURES,
             TransactionType::DeclareBlob => tx::declare_blob::NUM_SIGNATURES,
             TransactionType::DiscardBlob => tx::discard_blob::NUM_SIGNATURES,
             TransactionType::FinalizeBlob => tx::finalize_blob::NUM_SIGNATURES,
@@ -150,6 +156,7 @@ impl TransactionType {
     pub(crate) fn compute_unit_limit(&self) -> u32 {
         match self {
             TransactionType::CloseBlober => tx::close_blober::COMPUTE_UNIT_LIMIT,
+            TransactionType::Compound => tx::compound::COMPUTE_UNIT_LIMIT,
             TransactionType::DeclareBlob => tx::declare_blob::COMPUTE_UNIT_LIMIT,
             TransactionType::DiscardBlob => tx::discard_blob::COMPUTE_UNIT_LIMIT,
             TransactionType::FinalizeBlob => tx::finalize_blob::COMPUTE_UNIT_LIMIT,

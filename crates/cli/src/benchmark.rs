@@ -13,11 +13,16 @@ use chrono::{DateTime, Utc};
 use clap::Parser;
 use futures::StreamExt;
 use itertools::iproduct;
-use nitro_da_client::{BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority};
+use nitro_da_client::{
+    BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority, UploadBlobError,
+};
 use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use tracing::{instrument, trace};
+
+/// Imperically chosen constant from trial and error.
+const DEFAULT_CONCURRENCY: u64 = 100;
 
 #[derive(Debug, Parser)]
 pub enum BenchmarkSubCommand {
@@ -45,7 +50,7 @@ pub enum BenchmarkSubCommand {
         #[arg(short, long, default_value_t = 60)]
         timeout: u64,
         /// Concurrent uploads.
-        #[arg(short, long, default_value_t = 100)]
+        #[arg(short, long, default_value_t = DEFAULT_CONCURRENCY)]
         concurrency: u64,
         /// The priority to use for the uploads.
         #[arg(short, long, value_enum, default_value_t = Priority::Medium)]
@@ -77,7 +82,7 @@ impl BenchmarkSubCommand {
                 concurrency,
                 priority,
             } => {
-                let (measurement, errors) = measure_performance(
+                let measurement = measure_performance(
                     data_path,
                     *timeout,
                     *concurrency,
@@ -87,16 +92,15 @@ impl BenchmarkSubCommand {
                 )
                 .await?;
 
-                for error in errors {
-                    eprintln!("Error: {error}");
-                }
-
-                println!("\n{}", write_measurements(vec![measurement])?);
+                println!("\n{}", write_measurements(vec![measurement], true)?);
             }
             BenchmarkSubCommand::Automate { data_path } => {
                 // Generate data files with different sizes and counts.
-                let combination_matrix =
-                    iproduct!([100, 1000, 10000], [10, 100, 1000], [false, true]);
+                let combination_matrix = iproduct!(
+                    [blober::CHUNK_SIZE as usize - 2, 1_000, 10_000],
+                    [10, 100, 1_000],
+                    [false, true]
+                );
                 let priorities = [
                     Priority::Min,
                     Priority::Low,
@@ -107,7 +111,10 @@ impl BenchmarkSubCommand {
                 // We preallocate the vectors to avoid reallocations.
                 // 3 sizes * 3 counts * 2 random lengths * 5 priorities
                 let mut measurements = Vec::with_capacity(3 * 3 * 2 * 5);
-                let mut all_errors = Vec::new();
+
+                let mut writer = csv::WriterBuilder::new()
+                    .has_headers(false)
+                    .from_writer(std::fs::File::create("measurements.csv")?);
 
                 let _: BloberClientResult = async {
                     for (size, count, random_length) in combination_matrix {
@@ -125,17 +132,20 @@ impl BenchmarkSubCommand {
                                 "Measuring performance with percentile priority {}...",
                                 priority.percentile()
                             );
-                            let (measurement, errors) = measure_performance(
+                            let measurement = measure_performance(
                                 data_path,
-                                600,
-                                100,
+                                300,
+                                DEFAULT_CONCURRENCY,
                                 priority,
                                 client.clone(),
                                 blober,
                             )
                             .await?;
+                            writer.serialize(measurement.clone()).unwrap();
                             measurements.push(measurement);
-                            all_errors.extend(errors);
+                            writer.flush().unwrap();
+                            println!("Waiting 10 seconds...");
+                            tokio::time::sleep(Duration::from_secs(2)).await;
                         }
                     }
                     Ok(())
@@ -143,11 +153,7 @@ impl BenchmarkSubCommand {
                 .await;
                 delete_all_in_dir(data_path).await?;
 
-                for error in all_errors {
-                    eprintln!("Error: {error}");
-                }
-
-                println!("\n{}", write_measurements(measurements)?);
+                println!("\n{}", write_measurements(measurements, true)?);
             }
         }
         Ok(())
@@ -201,7 +207,7 @@ async fn measure_performance(
     priority: Priority,
     client: Arc<BloberClient>,
     blober: Pubkey,
-) -> BloberClientResult<(BenchMeasurement, Vec<BloberClientError>)> {
+) -> BloberClientResult<BenchMeasurement> {
     let reads = data_path
         .read_dir()?
         .filter_map(|entry| {
@@ -217,9 +223,15 @@ async fn measure_performance(
     let total_files = data.len();
     let total_txs = data
         .iter()
-        .map(|d| d.len().div_ceil(blober::CHUNK_SIZE as usize))
-        .sum::<usize>()
-        + total_files * 2;
+        .map(|d| {
+            let len = d.len();
+            if len < blober::CHUNK_SIZE as usize - 1 {
+                1
+            } else {
+                (len.div_ceil(blober::CHUNK_SIZE as usize)) + 2
+            }
+        })
+        .sum::<usize>();
     trace!("Read {total_files} files with a total size of {total_size}");
 
     let start_balance = client
@@ -230,31 +242,35 @@ async fn measure_performance(
 
     let status = StatusData::new(total_files);
 
-    let errors = futures::stream::iter(data)
-        .map(|blob_data| {
-            let status = status.clone();
-            let client = client.clone();
+    let (results, upload_times): (Vec<BloberClientResult<_>>, Vec<f64>) =
+        futures::stream::iter(data)
+            .map(|blob_data| {
+                let status = status.clone();
+                let client = client.clone();
 
-            async move {
-                status.increment_sent();
-                client
-                    .upload_blob(
-                        &blob_data,
-                        FeeStrategy::BasedOnRecentFees(priority),
-                        blober,
-                        Some(Duration::from_secs(timeout)),
+                async move {
+                    status.increment_sent();
+                    let start = tokio::time::Instant::now();
+                    (
+                        client
+                            .upload_blob(
+                                &blob_data,
+                                FeeStrategy::BasedOnRecentFees(priority),
+                                blober,
+                                Some(Duration::from_secs(timeout)),
+                            )
+                            .await
+                            .inspect(|_| status.increment_success())
+                            .inspect_err(|_| status.increment_failure()),
+                        start.elapsed().as_secs_f64(),
                     )
-                    .await
-                    .inspect(|_| status.increment_success())
-                    .inspect_err(|_| status.increment_failure())
-            }
-        })
-        .buffer_unordered(concurrency as usize)
-        .collect::<Vec<BloberClientResult<_>>>()
-        .await
-        .into_iter()
-        .filter_map(|e| e.err())
-        .collect();
+                }
+            })
+            .buffer_unordered(concurrency as usize)
+            .collect::<Vec<(BloberClientResult<_>, f64)>>()
+            .await
+            .into_iter()
+            .unzip();
 
     let elapsed = start_time.elapsed();
     let end_balance = client
@@ -263,23 +279,27 @@ async fn measure_performance(
         .await?;
 
     println!();
-    Ok((
-        BenchMeasurement::new(
-            priority.percentile(),
-            elapsed,
-            total_size,
-            total_txs,
-            start_balance,
-            end_balance,
-            total_files,
-        ),
-        errors,
+    Ok(BenchMeasurement::new(
+        priority.percentile(),
+        elapsed,
+        total_size,
+        total_txs,
+        start_balance,
+        end_balance,
+        total_files,
+        results.into_iter().filter_map(Result::err).collect(),
+        &upload_times,
     ))
 }
 
 /// Writes a list of measurements to a CSV string.
-fn write_measurements(measurements: Vec<BenchMeasurement>) -> BloberClientResult<String> {
-    let mut writer = csv::Writer::from_writer(Vec::new());
+fn write_measurements(
+    measurements: Vec<BenchMeasurement>,
+    has_headers: bool,
+) -> BloberClientResult<String> {
+    let mut writer = csv::WriterBuilder::new()
+        .has_headers(has_headers)
+        .from_writer(Vec::new());
     for measurement in measurements {
         writer.serialize(measurement).unwrap();
     }
@@ -302,7 +322,7 @@ async fn delete_all_in_dir<P: AsRef<Path>>(dir: P) -> tokio::io::Result<()> {
 }
 
 /// A measurement of the performance of the blober.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct BenchMeasurement {
     timestamp: DateTime<Utc>,
     priority: f32,
@@ -319,6 +339,10 @@ struct BenchMeasurement {
     cost_per_byte: u64,
     total_files: usize,
     cost_per_blob: u64,
+    upload_per_blob: f64,
+    declare_failures: u64,
+    insert_failures: u64,
+    finalize_failures: u64,
 }
 
 /// Serialize a [`ByteSize`] to a string.
@@ -330,6 +354,7 @@ fn serialize_byte_size<S: serde::Serializer>(
 }
 
 impl BenchMeasurement {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         priority: f32,
         elapsed: Duration,
@@ -338,9 +363,26 @@ impl BenchMeasurement {
         start_balance: u64,
         end_balance: u64,
         total_files: usize,
+        errors: Vec<BloberClientError>,
+        blob_upload_times: &[f64],
     ) -> Self {
         let balance_diff = start_balance - end_balance;
         let elapsed = elapsed.as_secs_f64();
+        let (declare_failures, insert_failures, finalize_failures) = errors.iter().fold(
+            (0u64, 0u64, 0u64),
+            |(declare, insert, finalize), error| match error {
+                BloberClientError::UploadBlob(UploadBlobError::DeclareBlob(_)) => {
+                    (declare + 1, insert, finalize)
+                }
+                BloberClientError::UploadBlob(UploadBlobError::InsertChunks(_)) => {
+                    (declare, insert + 1, finalize)
+                }
+                BloberClientError::UploadBlob(UploadBlobError::FinalizeBlob(_)) => {
+                    (declare, insert, finalize + 1)
+                }
+                _ => (declare, insert, finalize),
+            },
+        );
         Self {
             timestamp: Utc::now(),
             priority,
@@ -355,6 +397,10 @@ impl BenchMeasurement {
             cost_per_byte: balance_diff / total_size.0,
             total_files,
             cost_per_blob: balance_diff / total_files as u64,
+            upload_per_blob: blob_upload_times.iter().sum::<f64>() / blob_upload_times.len() as f64,
+            declare_failures,
+            insert_failures,
+            finalize_failures,
         }
     }
 }

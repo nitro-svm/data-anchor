@@ -9,12 +9,12 @@ use crate::{
     BloberClientResult,
 };
 
-pub const COMPUTE_UNIT_LIMIT: u32 = 36_000;
+pub const COMPUTE_UNIT_LIMIT: u32 = 38_000;
 
 pub const NUM_SIGNATURES: u16 = 1;
 
 #[allow(clippy::too_many_arguments, reason = "Only used internally")]
-fn generate_instruction(
+pub(super) fn generate_instruction(
     blob: Pubkey,
     blober: Pubkey,
     payer: Pubkey,

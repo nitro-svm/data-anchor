@@ -12,7 +12,7 @@ pub const COMPUTE_UNIT_LIMIT: u32 = 6_500;
 
 pub const NUM_SIGNATURES: u16 = 1;
 
-fn generate_instruction(
+pub(super) fn generate_instruction(
     blob: Pubkey,
     blober: Pubkey,
     payer: Pubkey,

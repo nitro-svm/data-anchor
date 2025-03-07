@@ -7,7 +7,6 @@ use bon::Builder;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use nitro_da_indexer_api::{CompoundProof, IndexerRpcClient};
 use solana_cli_config::Config;
-use solana_client::{nonblocking::tpu_client::TpuClient, tpu_client::TpuClientConfig};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
@@ -20,10 +19,7 @@ use tracing::{info_span, Instrument, Span};
 use crate::{
     batch_client::{BatchClient, SuccessfulTransaction},
     fees::{Fee, FeeStrategy, Lamports, Priority},
-    helpers::{
-        check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp,
-        split_blob_into_chunks,
-    },
+    helpers::{check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp},
     tx::{self, MessageArguments},
     types::{IndexerError, TransactionType, UploadBlobError},
     BloberClientError, BloberClientResult,
@@ -98,15 +94,7 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
             solana_config.json_rpc_url.clone(),
             CommitmentConfig::from_str(&solana_config.commitment)?,
         ));
-        let tpu_client = TpuClient::new(
-            "blober_client",
-            rpc_client.clone(),
-            &solana_config.websocket_url,
-            TpuClientConfig::default(),
-        )
-        .await
-        .map(Arc::new)
-        .ok();
+        let tpu_client = None;
         let payer = self.get_payer().clone();
         Ok(self
             .rpc_client(rpc_client.clone())
@@ -227,26 +215,19 @@ impl BloberClient {
 
         let blob = find_blob_address(self.payer.pubkey(), blober, timestamp);
 
-        let chunks = split_blob_into_chunks(blob_data);
-
-        let (declare_blob_msg, insert_chunks_msgs, finalize_blob_msg) = self
+        let upload_messages = self
             .generate_messages(
                 blob,
                 blob_data.len() as u32,
                 timestamp,
-                chunks,
+                blob_data,
                 fee_strategy,
                 blober,
             )
             .await?;
 
         let res = self
-            .do_upload(
-                declare_blob_msg,
-                insert_chunks_msgs,
-                finalize_blob_msg,
-                timeout,
-            )
+            .do_upload(upload_messages, timeout)
             .in_current_span()
             .await;
 

@@ -18,51 +18,88 @@ use crate::{
     SuccessfulTransaction, TransactionOutcome,
 };
 
+pub enum UploadMessages {
+    CompoundUpload(Message),
+    StaggeredUpload {
+        declare_blob: Message,
+        insert_chunks: Vec<Message>,
+        finalize_blob: Message,
+    },
+}
+
 impl BloberClient {
     /// Uploads the blob: [`blober::DeclareBlob`], [`blober::InsertChunk`] * N, [`blober::FinalizeBlob`].
     pub(crate) async fn do_upload(
         &self,
-        declare_blob: (TransactionType, Message),
-        insert_chunks: Vec<(TransactionType, Message)>,
-        finalize_blob: (TransactionType, Message),
+        upload_messages: UploadMessages,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let before = Instant::now();
 
-        let span = info_span!(parent: Span::current(), "declare_blob");
-        let tx1 = check_outcomes(
-            self.batch_client
-                .send(vec![declare_blob], timeout)
-                .instrument(span)
-                .await,
-        )
-        .map_err(UploadBlobError::DeclareBlob)?;
+        match upload_messages {
+            UploadMessages::CompoundUpload(tx) => {
+                let span = info_span!(parent: Span::current(), "compound_upload");
+                Ok(check_outcomes(
+                    self.batch_client
+                        .send(vec![(TransactionType::Compound, tx)], timeout)
+                        .instrument(span)
+                        .await,
+                )
+                .map_err(UploadBlobError::CompoundUpload)?)
+            }
+            UploadMessages::StaggeredUpload {
+                declare_blob,
+                insert_chunks,
+                finalize_blob,
+            } => {
+                let span = info_span!(parent: Span::current(), "declare_blob");
+                let tx1 = check_outcomes(
+                    self.batch_client
+                        .send(vec![(TransactionType::DeclareBlob, declare_blob)], timeout)
+                        .instrument(span)
+                        .await,
+                )
+                .map_err(UploadBlobError::DeclareBlob)?;
 
-        let span = info_span!(parent: Span::current(), "insert_chunks");
-        let timeout = timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
-        let tx2 = check_outcomes(
-            self.batch_client
-                .send(insert_chunks, timeout)
-                .instrument(span)
-                .await,
-        )
-        .map_err(UploadBlobError::InsertChunks)?;
+                let span = info_span!(parent: Span::current(), "insert_chunks");
+                let timeout =
+                    timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
+                let tx2 = check_outcomes(
+                    self.batch_client
+                        .send(
+                            insert_chunks
+                                .into_iter()
+                                .enumerate()
+                                .map(|(idx, tx)| (TransactionType::InsertChunk(idx as u16), tx))
+                                .collect(),
+                            timeout,
+                        )
+                        .instrument(span)
+                        .await,
+                )
+                .map_err(UploadBlobError::InsertChunks)?;
 
-        let span = info_span!(parent: Span::current(), "finalize_blob");
-        let timeout = timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
-        let tx3 = check_outcomes(
-            self.batch_client
-                .send(vec![finalize_blob], timeout)
-                .instrument(span)
-                .await,
-        )
-        .map_err(UploadBlobError::FinalizeBlob)?;
+                let span = info_span!(parent: Span::current(), "finalize_blob");
+                let timeout =
+                    timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
+                let tx3 = check_outcomes(
+                    self.batch_client
+                        .send(
+                            vec![(TransactionType::FinalizeBlob, finalize_blob)],
+                            timeout,
+                        )
+                        .instrument(span)
+                        .await,
+                )
+                .map_err(UploadBlobError::FinalizeBlob)?;
 
-        Ok(tx1
-            .into_iter()
-            .chain(tx2.into_iter())
-            .chain(tx3.into_iter())
-            .collect())
+                Ok(tx1
+                    .into_iter()
+                    .chain(tx2.into_iter())
+                    .chain(tx3.into_iter())
+                    .collect())
+            }
+        }
     }
 
     /// Generates a [`blober::DeclareBlob`], vector of [`blober::InsertChunk`] and a [`blober::FinalizeBlob`] message.
@@ -71,46 +108,70 @@ impl BloberClient {
         blob: Pubkey,
         blob_size: u32,
         timestamp: u64,
-        chunks: Vec<(u16, &[u8])>,
+        blob_data: &[u8],
         fee_strategy: FeeStrategy,
         blober: Pubkey,
-    ) -> BloberClientResult<(
-        (TransactionType, Message),
-        Vec<(TransactionType, Message)>,
-        (TransactionType, Message),
-    )> {
-        let fee_strategy_declare = self
-            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DeclareBlob)
-            .await?;
+    ) -> BloberClientResult<UploadMessages> {
+        if blob_data.len() < CHUNK_SIZE as usize - 1 {
+            let fee_strategy_compound = self
+                .convert_fee_strategy_to_fixed(
+                    fee_strategy,
+                    &[blober, blob],
+                    TransactionType::Compound,
+                )
+                .await?;
 
-        let declare_blob_msg = (
-            TransactionType::DeclareBlob,
-            tx::declare_blob(
+            let compound = tx::compound_upload(
                 &MessageArguments::new(
                     self.program_id,
                     blober,
                     &self.payer,
                     self.rpc_client.clone(),
-                    fee_strategy_declare,
+                    fee_strategy_compound,
                     self.helius_fee_estimate,
                 ),
                 blob,
                 timestamp,
-                blob_size,
-                chunks.len() as u16,
+                blob_data.to_vec(),
             )
             .in_current_span()
             .await
-            .expect("infallible with a fixed fee strategy"),
-        );
+            .expect("infallible with a fixed fee strategy");
+
+            return Ok(UploadMessages::CompoundUpload(compound));
+        }
+
+        let chunks = split_blob_into_chunks(blob_data);
+
+        let fee_strategy_declare = self
+            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DeclareBlob)
+            .await?;
+
+        let declare_blob = tx::declare_blob(
+            &MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_declare,
+                self.helius_fee_estimate,
+            ),
+            blob,
+            timestamp,
+            blob_size,
+            chunks.len() as u16,
+        )
+        .in_current_span()
+        .await
+        .expect("infallible with a fixed fee strategy");
 
         let fee_strategy_insert = self
             .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::InsertChunk(0))
             .await?;
 
-        let insert_chunk_msgs =
+        let insert_chunks =
             futures::future::join_all(chunks.iter().map(|(chunk_index, chunk_data)| async move {
-                let insert_tx = tx::insert_chunk(
+                tx::insert_chunk(
                     &MessageArguments::new(
                         self.program_id,
                         blober,
@@ -125,8 +186,7 @@ impl BloberClient {
                 )
                 .in_current_span()
                 .await
-                .expect("infallible with a fixed fee strategy");
-                (TransactionType::InsertChunk(*chunk_index), insert_tx)
+                .expect("infallible with a fixed fee strategy")
             }))
             .await;
 
@@ -138,25 +198,26 @@ impl BloberClient {
             )
             .await?;
 
-        let complete_msg = (
-            TransactionType::FinalizeBlob,
-            tx::finalize_blob(
-                &MessageArguments::new(
-                    self.program_id,
-                    blober,
-                    &self.payer,
-                    self.rpc_client.clone(),
-                    fee_strategy_finalize,
-                    self.helius_fee_estimate,
-                ),
-                blob,
-            )
-            .in_current_span()
-            .await
-            .expect("infallible with a fixed fee strategy"),
-        );
+        let finalize_blob = tx::finalize_blob(
+            &MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_finalize,
+                self.helius_fee_estimate,
+            ),
+            blob,
+        )
+        .in_current_span()
+        .await
+        .expect("infallible with a fixed fee strategy");
 
-        Ok((declare_blob_msg, insert_chunk_msgs, complete_msg))
+        Ok(UploadMessages::StaggeredUpload {
+            declare_blob,
+            insert_chunks,
+            finalize_blob,
+        })
     }
 
     /// Converts a [`FeeStrategy`] into a [`FeeStrategy::Fixed`] with the current compute unit price.

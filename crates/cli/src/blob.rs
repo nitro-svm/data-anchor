@@ -30,7 +30,7 @@ impl BlobSubCommand {
                 let results = client
                     .upload_blob(
                         &blob_data,
-                        FeeStrategy::BasedOnRecentFees(Priority::Medium),
+                        FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
                         blober,
                         None,
                     )
@@ -50,7 +50,7 @@ impl BlobSubCommand {
             BlobSubCommand::Discard { blob } => {
                 let results = client
                     .discard_blob(
-                        FeeStrategy::BasedOnRecentFees(Priority::Medium),
+                        FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
                         *blob,
                         blober,
                         None,

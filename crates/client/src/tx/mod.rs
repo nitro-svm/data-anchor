@@ -6,6 +6,7 @@ use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 use crate::FeeStrategy;
 
 pub mod close_blober;
+pub mod compound;
 pub mod declare_blob;
 pub mod discard_blob;
 pub mod finalize_blob;
@@ -13,6 +14,7 @@ pub mod initialize_blober;
 pub mod insert_chunk;
 
 pub use close_blober::close_blober;
+pub use compound::compound_upload;
 pub use declare_blob::declare_blob;
 pub use discard_blob::discard_blob;
 pub use finalize_blob::finalize_blob;

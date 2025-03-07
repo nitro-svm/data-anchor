@@ -1,41 +1,60 @@
-use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, message::Message,
+    pubkey::Pubkey, system_program,
 };
 
-use crate::{
-    tx::{MessageArguments, SET_PRICE_AND_CU_LIMIT_COST},
-    BloberClientResult,
+use super::{
+    declare_blob, finalize_blob, insert_chunk, MessageArguments, SET_PRICE_AND_CU_LIMIT_COST,
 };
+use crate::BloberClientResult;
 
-pub const COMPUTE_UNIT_LIMIT: u32 = 25_000;
+pub const COMPUTE_UNIT_LIMIT: u32 = declare_blob::COMPUTE_UNIT_LIMIT
+    + insert_chunk::COMPUTE_UNIT_LIMIT
+    + finalize_blob::COMPUTE_UNIT_LIMIT;
 
 pub const NUM_SIGNATURES: u16 = 1;
 
+#[allow(clippy::too_many_arguments, reason = "Only used internally")]
 pub(super) fn generate_instruction(
     blob: Pubkey,
     blober: Pubkey,
     payer: Pubkey,
+    system_program: Pubkey,
     program_id: Pubkey,
-) -> Instruction {
-    let accounts = blober::accounts::FinalizeBlob {
-        blob,
-        blober,
-        payer,
-    };
-
-    let data = blober::instruction::FinalizeBlob {};
-
-    Instruction {
-        program_id,
-        accounts: accounts.to_account_metas(None),
-        data: data.data(),
-    }
+    timestamp: u64,
+    data: Vec<u8>,
+) -> [Instruction; 3] {
+    [
+        declare_blob::generate_instruction(
+            blob,
+            blober,
+            payer,
+            system_program,
+            program_id,
+            timestamp,
+            data.len() as u32,
+            1,
+        ),
+        insert_chunk::generate_instruction(blob, blober, payer, program_id, 0, data),
+        finalize_blob::generate_instruction(blob, blober, payer, program_id),
+    ]
 }
 
-/// Finalizes a blob with the given blober.
-pub async fn finalize_blob(args: &MessageArguments, blob: Pubkey) -> BloberClientResult<Message> {
-    let instruction = generate_instruction(blob, args.blober, args.payer, args.program_id);
+pub async fn compound_upload(
+    args: &MessageArguments,
+    blob: Pubkey,
+    timestamp: u64,
+    data: Vec<u8>,
+) -> BloberClientResult<Message> {
+    let instructions = generate_instruction(
+        blob,
+        args.blober,
+        args.payer,
+        system_program::id(),
+        args.program_id,
+        timestamp,
+        data,
+    );
 
     let set_price = args
         .fee_strategy
@@ -50,7 +69,10 @@ pub async fn finalize_blob(args: &MessageArguments, blob: Pubkey) -> BloberClien
         COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
     );
 
-    let msg = Message::new(&[set_price, set_limit, instruction], Some(&args.payer));
+    let msg = Message::new(
+        &[&[set_price, set_limit], instructions.as_ref()].concat(),
+        Some(&args.payer),
+    );
 
     Ok(msg)
 }
@@ -59,7 +81,7 @@ pub async fn finalize_blob(args: &MessageArguments, blob: Pubkey) -> BloberClien
 mod tests {
     use arbtest::arbtest;
     use blober::find_blob_address;
-    use solana_sdk::{signer::Signer, transaction::Transaction};
+    use solana_sdk::{signer::Signer, system_program, transaction::Transaction};
 
     use crate::tx::utils::{close_blober, initialize_blober, new_tokio, setup_environment};
 
@@ -67,6 +89,7 @@ mod tests {
     #[ignore]
     fn test_compute_unit_limit() {
         let program_id = blober::id();
+        let system_program = system_program::id();
 
         let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
 
@@ -76,6 +99,7 @@ mod tests {
 
             new_tokio(async move {
                 let timestamp: u64 = u.arbitrary()?;
+                let data: Vec<u8> = u.arbitrary()?;
                 let namespace: String = u.arbitrary()?;
 
                 let blober = initialize_blober(rpc_client.clone(), program_id, &payer, &namespace)
@@ -84,13 +108,20 @@ mod tests {
 
                 let blob = find_blob_address(payer.pubkey(), blober, timestamp);
 
-                let instruction =
-                    super::generate_instruction(blob, blober, payer.pubkey(), program_id);
+                let instructions = super::generate_instruction(
+                    blob,
+                    blober,
+                    payer.pubkey(),
+                    system_program,
+                    program_id,
+                    timestamp,
+                    data,
+                );
 
                 let recent_blockhash = rpc_client.get_latest_blockhash().await.unwrap();
 
                 let tx = Transaction::new_signed_with_payer(
-                    &[instruction],
+                    &instructions,
                     Some(&payer.pubkey()),
                     &[payer.clone()],
                     recent_blockhash,

@@ -25,7 +25,7 @@ use super::{
 use crate::Error;
 
 /// Send at ~333 TPS
-pub const SEND_TRANSACTION_INTERVAL: Duration = Duration::from_millis(3);
+pub const SEND_TRANSACTION_INTERVAL: Duration = Duration::from_millis(1);
 
 /// A client that wraps an [`RpcClient`] and optionally a [`TpuClient`] and uses them to submit
 /// batches of transactions. Providing a [`TpuClient`] will enable the client to send transactions
