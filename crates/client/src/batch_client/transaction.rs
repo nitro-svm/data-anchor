@@ -1,10 +1,9 @@
+use solana_client::client_error::ClientError as Error;
 use solana_sdk::{
     clock::Slot, commitment_config::CommitmentConfig, signature::Signature,
     transaction::TransactionError,
 };
 use solana_transaction_status::TransactionStatus as SolanaTransactionStatus;
-
-use crate::Error;
 
 /// The final outcome of a transaction after the [`BatchClient`] is done, either successfully
 /// or due to reaching the timeout.

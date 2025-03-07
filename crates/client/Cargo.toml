@@ -11,7 +11,6 @@ publish = { workspace = true }
 [dependencies]
 # External dependencies
 async-trait = { workspace = true }
-bincode = { workspace = true }
 bon = { workspace = true, features = ["experimental-getter"] }
 clap = { workspace = true }
 futures = { workspace = true }
@@ -29,8 +28,6 @@ tracing-subscriber = { workspace = true }
 anchor-lang = { workspace = true }
 solana-cli-config = { workspace = true }
 solana-client = { workspace = true }
-solana-connection-cache = { workspace = true }
-solana-quic-client = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-sdk = { workspace = true }

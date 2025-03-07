@@ -1,11 +1,7 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
 use itertools::Itertools;
-use solana_client::nonblocking::{rpc_client::RpcClient, tpu_client::TpuClient};
-use solana_connection_cache::connection_cache::{
-    BaseClientConnection, ConnectionManager, ConnectionPool, NewConnectionConfig,
-};
-use solana_quic_client::{QuicConfig, QuicConnectionManager, QuicPool};
+use solana_client::{client_error::ClientError as Error, nonblocking::rpc_client::RpcClient};
 use solana_sdk::{message::Message, signer::keypair::Keypair, transaction::Transaction};
 use tokio::{
     sync::mpsc,
@@ -22,27 +18,13 @@ use super::{
     },
     transaction::{TransactionOutcome, TransactionProgress, TransactionStatus},
 };
-use crate::Error;
 
 /// Send at ~333 TPS
 pub const SEND_TRANSACTION_INTERVAL: Duration = Duration::from_millis(1);
 
-/// A client that wraps an [`RpcClient`] and optionally a [`TpuClient`] and uses them to submit
-/// batches of transactions. Providing a [`TpuClient`] will enable the client to send transactions
-/// directly to the upcoming slot leaders, which is much faster and thus highly recommended.
-///
-/// Implementation details:
-/// The type parameters and phantom data are technically not required to be on the struct itself
-/// (they could be moved to [`BatchClient::new`]), but putting them here allows for the
-/// [`BatchClient`] to be generic w.r.t. the [`TpuClient`] implementation but still have a good
-/// default (QUIC).
-///
-/// Moving the type parameters to [`BatchClient::new`] would require the user to specify the type
-/// parameters explicitly, when it's unlikely that they'll be different from the current defaults.
-pub struct BatchClient<P = QuicPool, M = QuicConnectionManager, C = QuicConfig> {
+/// A client that wraps an [`RpcClient`] and uses it to submit batches of transactions.
+pub struct BatchClient {
     transaction_sender_tx: Arc<mpsc::UnboundedSender<SendTransactionMessage>>,
-
-    _phantom: PhantomData<(P, M, C)>,
 }
 
 // Clone can't be derived because of the phantom references to the TPU implementation details.
@@ -50,24 +32,15 @@ impl Clone for BatchClient {
     fn clone(&self) -> Self {
         Self {
             transaction_sender_tx: self.transaction_sender_tx.clone(),
-
-            _phantom: self._phantom,
         }
     }
 }
 
-impl<P, M, C> BatchClient<P, M, C>
-where
-    P: ConnectionPool<NewConnectionConfig = C>,
-    M: ConnectionManager<ConnectionPool = P, NewConnectionConfig = C>,
-    C: NewConnectionConfig,
-    <P::BaseClientConnection as BaseClientConnection>::NonblockingClientConnection: Send + Sync,
-{
+impl BatchClient {
     /// Creates a new [`BatchClient`], and spawns the associated background tasks. The background
     /// tasks will run until the [`BatchClient`] is dropped.
     pub async fn new(
         rpc_client: Arc<RpcClient>,
-        tpu_client: Option<Arc<TpuClient<P, M, C>>>,
         signers: Vec<Arc<Keypair>>,
     ) -> Result<Self, Error> {
         let Channels {
@@ -85,7 +58,6 @@ where
 
         spawn_transaction_confirmer(
             rpc_client.clone(),
-            tpu_client.is_some(),
             blockdata_rx.clone(),
             transaction_sender_tx.downgrade(),
             transaction_confirmer_tx.downgrade(),
@@ -94,7 +66,6 @@ where
 
         spawn_transaction_sender(
             rpc_client.clone(),
-            tpu_client,
             signers.clone(),
             blockdata_rx.clone(),
             transaction_confirmer_tx.clone(),
@@ -104,7 +75,6 @@ where
 
         Ok(Self {
             transaction_sender_tx,
-            _phantom: PhantomData,
         })
     }
 

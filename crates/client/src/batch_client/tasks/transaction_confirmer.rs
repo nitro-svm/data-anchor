@@ -39,7 +39,6 @@ use crate::batch_client::{
 /// has exited, but this is not expected to happen under normal conditions.
 pub fn spawn_transaction_confirmer(
     rpc_client: Arc<RpcClient>,
-    use_tpu_client: bool,
     mut blockdata_rx: watch::Receiver<BlockMessage>,
     transaction_sender_tx: mpsc::WeakUnboundedSender<SendTransactionMessage>,
     transaction_confirmer_tx: mpsc::WeakUnboundedSender<ConfirmTransactionMessage>,
@@ -53,7 +52,6 @@ pub fn spawn_transaction_confirmer(
                 &rpc_client,
                 &transaction_sender_tx,
                 &transaction_confirmer_tx,
-                use_tpu_client,
             )
             .await;
 
@@ -73,7 +71,6 @@ async fn transaction_confirm_loop(
     rpc_client: &Arc<RpcClient>,
     transaction_sender_tx: &mpsc::WeakUnboundedSender<SendTransactionMessage>,
     transaction_confirmer_tx: &mpsc::WeakUnboundedSender<ConfirmTransactionMessage>,
-    use_tpu_client: bool,
 ) -> ControlFlow<()> {
     let res = blockdata_rx.changed().await;
     if res.is_err() {
@@ -94,11 +91,7 @@ async fn transaction_confirm_loop(
         status_updates,
         resend,
         mut reconfirm,
-    } = categorize_transaction_responses(
-        responses,
-        use_tpu_client,
-        blockdata.last_valid_block_height,
-    );
+    } = categorize_transaction_responses(responses, blockdata.last_valid_block_height);
 
     for (status, logs, msg) in status_updates {
         let status = TransactionStatus::from_solana_status(status, logs, rpc_client.commitment());
@@ -148,7 +141,6 @@ fn categorize_transaction_responses(
             ConfirmTransactionMessage,
         ),
     >,
-    use_tpu_client: bool,
     last_valid_block_height: u64,
 ) -> TransactionResponseCategories {
     let mut categories = TransactionResponseCategories::default();
@@ -157,13 +149,7 @@ fn categorize_transaction_responses(
             // The receiver has been dropped, ignore the transaction and move on to the next.
             continue;
         }
-        categorize_transaction_response(
-            &mut categories,
-            status,
-            msg,
-            use_tpu_client,
-            last_valid_block_height,
-        );
+        categorize_transaction_response(&mut categories, status, msg, last_valid_block_height);
     }
     categories
 }
@@ -173,22 +159,13 @@ fn categorize_transaction_response(
     categories: &mut TransactionResponseCategories,
     status: (Option<SolanaTransactionStatus>, Vec<String>),
     msg: ConfirmTransactionMessage,
-    use_tpu_client: bool,
     last_valid_block_height: u64,
 ) {
     let _enter = msg.span.clone().entered();
     let logs = status.1;
     let Some(status) = status.0 else {
         // If there is no status, the transaction was not recognized by the RPC server.
-        if use_tpu_client && msg.last_valid_block_height + 100 < last_valid_block_height {
-            // TPU transactions can be dropped on the way there, so if at least 100 slots have passed
-            // (the default TPU client fanout), the transaction can be re-sent.
-            // N.B. This is not "the current block height is 100 past the last valid block height
-            // for this transaction", but rather "the current block height is 100 past the
-            // *transaction's* block height - by proxy of the last valid block height since
-            // that is a constant offset.
-            categories.resend.push(msg.into());
-        } else if !use_tpu_client && msg.last_valid_block_height + 10 < last_valid_block_height {
+        if msg.last_valid_block_height + 10 < last_valid_block_height {
             // The request was not successful within 10 slots using RPC, try again.
             categories.resend.push(msg.into());
         } else {
@@ -365,7 +342,6 @@ mod tests {
             None,
             Some(TransactionConfirmationStatus::Processed),
             0,
-            true,
         );
         // Should result in a status update.
         assert_eq!(categories.status_updates.len(), 1);
@@ -378,7 +354,6 @@ mod tests {
             None,
             Some(TransactionConfirmationStatus::Confirmed),
             0,
-            true,
         );
         // Should result in a status update.
         assert_eq!(categories.status_updates.len(), 1);
@@ -391,7 +366,6 @@ mod tests {
             None,
             Some(TransactionConfirmationStatus::Confirmed),
             0,
-            true,
         );
         // Should result in a reconfirm.
         assert_eq!(categories.status_updates.len(), 0);
@@ -405,7 +379,6 @@ mod tests {
             None,
             Some(TransactionConfirmationStatus::Confirmed),
             101,
-            true,
         );
         // Should result in a resend.
         assert_eq!(categories.status_updates.len(), 0);
@@ -419,7 +392,6 @@ mod tests {
             None,
             Some(TransactionConfirmationStatus::Confirmed),
             11,
-            false,
         );
         // Should result in a resend.
         assert_eq!(categories.status_updates.len(), 0);
@@ -432,7 +404,6 @@ mod tests {
             Some(TransactionError::AlreadyProcessed),
             Some(TransactionConfirmationStatus::Confirmed),
             0,
-            true,
         );
         // Should result in a status update.
         assert_eq!(categories.status_updates.len(), 1);
@@ -445,7 +416,6 @@ mod tests {
             Some(TransactionError::AccountInUse),
             Some(TransactionConfirmationStatus::Confirmed),
             0,
-            true,
         );
         // Should result in a status update and a re-send.
         assert_eq!(categories.status_updates.len(), 1);
@@ -458,7 +428,6 @@ mod tests {
         signature_err: Option<TransactionError>,
         confirmation_status: Option<TransactionConfirmationStatus>,
         last_valid_block_height: u64,
-        use_tpu_client: bool,
     ) -> TransactionResponseCategories {
         let (response_tx, _) = mpsc::unbounded_channel();
         let mut categories = TransactionResponseCategories::default();
@@ -480,7 +449,6 @@ mod tests {
             &mut categories,
             (status, Vec::new()),
             msg,
-            use_tpu_client,
             last_valid_block_height,
         );
         categories
@@ -714,7 +682,6 @@ mod tests {
 
         let handle = spawn_transaction_confirmer(
             rpc_client,
-            true,
             blockdata_rx,
             transaction_sender_tx.downgrade(),
             transaction_confirmer_tx.downgrade(),

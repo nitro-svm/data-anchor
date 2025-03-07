@@ -94,13 +94,10 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
             solana_config.json_rpc_url.clone(),
             CommitmentConfig::from_str(&solana_config.commitment)?,
         ));
-        let tpu_client = None;
         let payer = self.get_payer().clone();
         Ok(self
             .rpc_client(rpc_client.clone())
-            .batch_client(
-                BatchClient::new(rpc_client.clone(), tpu_client, vec![payer.clone()]).await?,
-            )
+            .batch_client(BatchClient::new(rpc_client.clone(), vec![payer.clone()]).await?)
             .build())
     }
 

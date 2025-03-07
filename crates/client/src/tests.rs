@@ -7,9 +7,9 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use rand::Rng;
 use solana_client::{
-    nonblocking::{rpc_client::RpcClient, tpu_client::TpuClient},
+    client_error::{ClientError as Error, ClientErrorKind as ErrorKind},
+    nonblocking::rpc_client::RpcClient,
     rpc_response::{RpcBlockhash, RpcResponseContext},
-    tpu_client::TpuClientConfig,
 };
 use solana_rpc_client::{
     mock_sender::MockSender,
@@ -27,8 +27,7 @@ use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 
 use crate::{
-    batch_client, helpers::get_unique_timestamp, BatchClient, BloberClient, Error, ErrorKind,
-    FeeStrategy, Priority,
+    batch_client, helpers::get_unique_timestamp, BatchClient, BloberClient, FeeStrategy, Priority,
 };
 
 #[tokio::test]
@@ -104,7 +103,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
     let blober = Keypair::new();
     let blober_pubkey = blober.pubkey();
 
-    let batch_client = BatchClient::new(blober_rpc_client.clone(), None, vec![payer.clone()])
+    let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
         .await
         .unwrap();
     let blober_client = BloberClient::builder()
@@ -167,23 +166,10 @@ async fn failing_upload_returns_error() {
     let failing_rpc_client = Arc::new(RpcClient::new_mock("instruction_error".to_string()));
 
     // Give a failing RPC client to the Batch and TPU clients, so uploads will fail.
-    let tpu_client = Arc::new(
-        TpuClient::new(
-            "test",
-            failing_rpc_client.clone(),
-            "",
-            TpuClientConfig::default(),
-        )
-        .await
-        .unwrap(),
-    );
-    let batch_client = batch_client::BatchClient::new(
-        failing_rpc_client.clone(),
-        Some(tpu_client),
-        vec![payer.clone()],
-    )
-    .await
-    .unwrap();
+    let batch_client =
+        batch_client::BatchClient::new(failing_rpc_client.clone(), vec![payer.clone()])
+            .await
+            .unwrap();
     // Give a successful RPC client to the BloberClient to allow other calls to succeed.
     let blober_client = BloberClient::builder()
         .payer(payer)
