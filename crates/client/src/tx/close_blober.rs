@@ -31,7 +31,7 @@ pub async fn close_blober(args: &MessageArguments) -> BloberClientResult<Message
 
     let set_price = args
         .fee_strategy
-        .set_compute_unit_price(&args.client, &[args.blober, args.payer])
+        .set_compute_unit_price(&args.client, &[args.blober, args.payer], args.use_helius)
         .await?;
     // This limit is chosen empirically, should blow up in integration tests if it's set too low.
     let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(

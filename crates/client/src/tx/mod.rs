@@ -27,6 +27,7 @@ pub struct MessageArguments {
     pub payer: Pubkey,
     pub client: Arc<RpcClient>,
     pub fee_strategy: FeeStrategy,
+    pub use_helius: bool,
 }
 
 impl MessageArguments {
@@ -36,12 +37,14 @@ impl MessageArguments {
         payer: &Keypair,
         client: Arc<RpcClient>,
         fee_strategy: FeeStrategy,
+        use_helius: bool,
     ) -> Self {
         Self {
             client,
             blober,
             program_id,
             fee_strategy,
+            use_helius,
             payer: payer.pubkey(),
         }
     }

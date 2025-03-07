@@ -59,7 +59,7 @@ pub enum UploadBlobError {
     TransactionFailure(#[from] OutcomeError),
     /// Fee Strategy conversion failure: {0}
     #[error("Fee Strategy conversion failure: {0}")]
-    ConversionError(String),
+    ConversionError(&'static str),
     /// Failed to declare blob: {0}
     #[error("Failed to declare blob: {0}")]
     DeclareBlob(OutcomeError),

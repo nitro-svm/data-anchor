@@ -7,6 +7,8 @@ pub struct MicroLamports(pub(crate) u64);
 impl MicroLamports {
     /// Zero micro-lamports.
     pub const ZERO: Self = MicroLamports(0);
+    /// Minimum recommended fee for a transaction. Based on https://docs.helius.dev/solana-apis/priority-fee-api#helius-priority-fee-api
+    pub const MIN: Self = MicroLamports(10_000);
 
     /// Create an instance of `MicroLamports` from a given value.
     pub fn new(value: u64) -> Self {

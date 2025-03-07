@@ -2,7 +2,7 @@ use std::{str::FromStr, sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
 use blober::{find_blob_address, find_blober_address, state::blober::Blober, CHUNK_SIZE};
-use blober_client_builder::{IsSet, IsUnset, SetIndexerClient};
+use blober_client_builder::{IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient};
 use bon::Builder;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use nitro_da_indexer_api::{CompoundProof, IndexerRpcClient};
@@ -38,6 +38,8 @@ pub struct BloberClient {
     pub(crate) batch_client: BatchClient,
     // Optional for the sake of testing, because in some tests indexer client is not used
     pub(crate) indexer_client: Option<Arc<WsClient>>,
+    #[builder(default = false)]
+    pub(crate) helius_fee_estimate: bool,
 }
 
 impl<State: blober_client_builder::State> BloberClientBuilder<State> {
@@ -113,6 +115,13 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
             )
             .build())
     }
+
+    pub fn with_helius_fee_estimate(self) -> BloberClientBuilder<SetHeliusFeeEstimate<State>>
+    where
+        State::HeliusFeeEstimate: IsUnset,
+    {
+        self.helius_fee_estimate(true)
+    }
 }
 
 impl BloberClient {
@@ -151,6 +160,7 @@ impl BloberClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy,
+                self.helius_fee_estimate,
             ),
             namespace,
         )
@@ -185,6 +195,7 @@ impl BloberClient {
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy,
+            self.helius_fee_estimate,
         ))
         .await
         .expect("infallible with a fixed fee strategy");
@@ -267,6 +278,7 @@ impl BloberClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy,
+                self.helius_fee_estimate,
             ),
             blob,
         )
@@ -294,12 +306,14 @@ impl BloberClient {
     pub async fn estimate_fees(
         &self,
         blob_size: usize,
+        blober: Pubkey,
         priority: Priority,
     ) -> BloberClientResult<Fee> {
         let prioritization_fee_rate = priority
-            .calculate_compute_unit_price(
+            .get_priority_fee_estimate(
                 &self.rpc_client,
-                &[Pubkey::new_unique(), self.payer.pubkey()],
+                &[Pubkey::new_unique(), blober, self.payer.pubkey()],
+                self.helius_fee_estimate,
             )
             .await?;
 

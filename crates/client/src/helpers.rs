@@ -92,6 +92,7 @@ impl BloberClient {
                     &self.payer,
                     self.rpc_client.clone(),
                     fee_strategy_declare,
+                    self.helius_fee_estimate,
                 ),
                 blob,
                 timestamp,
@@ -116,6 +117,7 @@ impl BloberClient {
                         &self.payer,
                         self.rpc_client.clone(),
                         fee_strategy_insert,
+                        self.helius_fee_estimate,
                     ),
                     blob,
                     *chunk_index,
@@ -145,6 +147,7 @@ impl BloberClient {
                     &self.payer,
                     self.rpc_client.clone(),
                     fee_strategy_finalize,
+                    self.helius_fee_estimate,
                 ),
                 blob,
             )
@@ -169,12 +172,15 @@ impl BloberClient {
 
         let mut fee_retries = 5;
 
-        let mutating_accounts =
-            [mutating_accounts, &[self.payer.pubkey(), self.program_id]].concat();
+        let mutating_accounts = [mutating_accounts, &[self.payer.pubkey()]].concat();
 
         while fee_retries > 0 {
             let res = priority
-                .calculate_compute_unit_price(&self.rpc_client, &mutating_accounts)
+                .get_priority_fee_estimate(
+                    &self.rpc_client,
+                    &mutating_accounts,
+                    self.helius_fee_estimate,
+                )
                 .in_current_span()
                 .await;
 
@@ -197,10 +203,7 @@ impl BloberClient {
             }
         }
 
-        Err(UploadBlobError::ConversionError(
-            "Fee strategy conversion failed after retries".to_string(),
-        )
-        .into())
+        Err(UploadBlobError::ConversionError("Fee strategy conversion failed after retries").into())
     }
 
     /// Get a reference to the Indexer RPC client.

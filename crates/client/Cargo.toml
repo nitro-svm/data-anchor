@@ -16,7 +16,7 @@ bon = { workspace = true, features = ["experimental-getter"] }
 clap = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
-jsonrpsee = { workspace = true, features = ["ws-client"] }
+jsonrpsee = { workspace = true, features = ["ws-client", "http-client"] }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -35,6 +35,9 @@ solana-rpc-client = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
+
+# Helius
+helius = { workspace = true }
 
 # Locals
 blober = { workspace = true }

@@ -47,7 +47,7 @@ pub async fn insert_chunk(
 
     let set_price = args
         .fee_strategy
-        .set_compute_unit_price(&args.client, &[blob, args.payer])
+        .set_compute_unit_price(&args.client, &[blob, args.payer], args.use_helius)
         .await?;
     // This limit is chosen empirically, should blow up in integration tests if it's set too low.
     let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(

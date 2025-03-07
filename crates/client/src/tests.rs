@@ -123,7 +123,9 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
 
     // Retry in case of unreliable client
     let expected_fee = loop {
-        let res = blober_client.estimate_fees(data.len(), priority).await;
+        let res = blober_client
+            .estimate_fees(data.len(), blober_pubkey, priority)
+            .await;
         if let Ok(fee) = res {
             break fee;
         }
