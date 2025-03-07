@@ -16,7 +16,13 @@ pub const MAX_BLOB_SIZE: u32 = MAX_CHUNKS as u32 * CHUNK_SIZE as u32;
 
 /// The size of a chunk in bytes. Blobs larger than this must be split into chunks of at most this size.
 #[constant]
-pub const CHUNK_SIZE: u16 = 856;
+pub const CHUNK_SIZE: u16 = 915;
+
+/// The max size of data for a compound transaction containing all three (declare, insert and finalize) instructions.
+pub const COMPOUND_TX_SIZE: u16 = 854;
+
+/// The max size of data for a compound transaction containing the first two (declare and insert) instructions.
+pub const COMPOUND_DECLARE_TX_SIZE: u16 = 868;
 
 /// The size (in bytes) of the bitmap needed to track which chunks have arrived
 #[constant]

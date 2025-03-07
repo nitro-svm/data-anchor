@@ -24,7 +24,7 @@ fn blob_digest() {
     let data_len = 100 * 1024;
     let data: Vec<_> = (0u8..255).cycle().take(data_len).collect();
 
-    let expected_blob_digest = "458b28f0228b867b952a02bc8075b1c64950d66561b06a05ca5a6807b96da2e9";
+    let expected_blob_digest = "6a30e7413c9893dadd2bdad25da4b2012ca63a1fd48736f9323a5bb1981a2a24";
 
     let chunks = data
         .chunks(CHUNK_SIZE as usize)

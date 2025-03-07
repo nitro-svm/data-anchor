@@ -5,11 +5,14 @@ anchor_version = "0.30.1-db6da5c67d896e0a94c158f69e9b235e364b3064"
 resolution = true
 skip-lint = false
 
+[programs.devnet]
+blober = "8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc"
+
 [programs.localnet]
 blober = "CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP"
 
-[programs.devnet]
-blober = "2RWsr92iL39YCLiZu7dZ5hron4oexEMbgWDg35v5U5tH"
+[programs.mainnet]
+blober = "8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc"
 
 [registry]
 url = "https://api.apr.dev"

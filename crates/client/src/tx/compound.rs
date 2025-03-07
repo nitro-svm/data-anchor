@@ -80,7 +80,7 @@ pub async fn compound_upload(
 #[cfg(test)]
 mod tests {
     use arbtest::arbtest;
-    use blober::find_blob_address;
+    use blober::{find_blob_address, COMPOUND_TX_SIZE};
     use solana_sdk::{signer::Signer, system_program, transaction::Transaction};
 
     use crate::tx::utils::{close_blober, initialize_blober, new_tokio, setup_environment};
@@ -99,7 +99,7 @@ mod tests {
 
             new_tokio(async move {
                 let timestamp: u64 = u.arbitrary()?;
-                let data: Vec<u8> = u.arbitrary()?;
+                let data: [u8; COMPOUND_TX_SIZE as usize] = u.arbitrary()?;
                 let namespace: String = u.arbitrary()?;
 
                 let blober = initialize_blober(rpc_client.clone(), program_id, &payer, &namespace)
@@ -115,7 +115,7 @@ mod tests {
                     system_program,
                     program_id,
                     timestamp,
-                    data,
+                    data.to_vec(),
                 );
 
                 let recent_blockhash = rpc_client.get_latest_blockhash().await.unwrap();

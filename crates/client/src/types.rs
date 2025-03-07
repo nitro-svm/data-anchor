@@ -115,8 +115,10 @@ pub enum DeploymentError {
 /// Transaction types which can be performed by the [`blober::blober`] program.
 #[derive(Debug, Clone, Copy)]
 pub enum TransactionType {
-    Compound,
     CloseBlober,
+    Compound,
+    CompoundDeclare,
+    CompoundFinalize,
     DeclareBlob,
     DiscardBlob,
     FinalizeBlob,
@@ -129,6 +131,8 @@ impl Display for TransactionType {
         match self {
             TransactionType::CloseBlober => write!(f, "CloseBlober"),
             TransactionType::Compound => write!(f, "CompoundUpload"),
+            TransactionType::CompoundDeclare => write!(f, "CompoundDeclare"),
+            TransactionType::CompoundFinalize => write!(f, "CompoundFinalize"),
             TransactionType::DeclareBlob => write!(f, "DeclareBlob"),
             TransactionType::DiscardBlob => write!(f, "DiscardBlob"),
             TransactionType::FinalizeBlob => write!(f, "FinalizeBlob"),
@@ -144,6 +148,8 @@ impl TransactionType {
         match self {
             TransactionType::CloseBlober => tx::close_blober::NUM_SIGNATURES,
             TransactionType::Compound => tx::compound::NUM_SIGNATURES,
+            TransactionType::CompoundDeclare => tx::compound_declare::NUM_SIGNATURES,
+            TransactionType::CompoundFinalize => tx::compound_finalize::NUM_SIGNATURES,
             TransactionType::DeclareBlob => tx::declare_blob::NUM_SIGNATURES,
             TransactionType::DiscardBlob => tx::discard_blob::NUM_SIGNATURES,
             TransactionType::FinalizeBlob => tx::finalize_blob::NUM_SIGNATURES,
@@ -157,6 +163,8 @@ impl TransactionType {
         match self {
             TransactionType::CloseBlober => tx::close_blober::COMPUTE_UNIT_LIMIT,
             TransactionType::Compound => tx::compound::COMPUTE_UNIT_LIMIT,
+            TransactionType::CompoundDeclare => tx::compound_declare::COMPUTE_UNIT_LIMIT,
+            TransactionType::CompoundFinalize => tx::compound_finalize::COMPUTE_UNIT_LIMIT,
             TransactionType::DeclareBlob => tx::declare_blob::COMPUTE_UNIT_LIMIT,
             TransactionType::DiscardBlob => tx::discard_blob::COMPUTE_UNIT_LIMIT,
             TransactionType::FinalizeBlob => tx::finalize_blob::COMPUTE_UNIT_LIMIT,

@@ -5,7 +5,7 @@ use std::{
 };
 
 use anchor_lang::{solana_program::message::Message, Discriminator};
-use blober::CHUNK_SIZE;
+use blober::{CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE};
 use jsonrpsee::ws_client::WsClient;
 use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signer::Signer};
 use solana_transaction_status::EncodedTransactionWithStatusMeta;
@@ -112,7 +112,7 @@ impl BloberClient {
         fee_strategy: FeeStrategy,
         blober: Pubkey,
     ) -> BloberClientResult<UploadMessages> {
-        if blob_data.len() < CHUNK_SIZE as usize - 1 {
+        if blob_data.len() <= COMPOUND_TX_SIZE as usize {
             let fee_strategy_compound = self
                 .convert_fee_strategy_to_fixed(
                     fee_strategy,
@@ -139,6 +139,62 @@ impl BloberClient {
             .expect("infallible with a fixed fee strategy");
 
             return Ok(UploadMessages::CompoundUpload(compound));
+        }
+
+        if blob_data.len() <= COMPOUND_DECLARE_TX_SIZE as usize {
+            let fee_strategy_compound = self
+                .convert_fee_strategy_to_fixed(
+                    fee_strategy,
+                    &[blober, blob],
+                    TransactionType::Compound,
+                )
+                .await?;
+
+            let declare_blob = tx::compound_declare(
+                &MessageArguments::new(
+                    self.program_id,
+                    blober,
+                    &self.payer,
+                    self.rpc_client.clone(),
+                    fee_strategy_compound,
+                    self.helius_fee_estimate,
+                ),
+                blob,
+                timestamp,
+                blob_data.to_vec(),
+            )
+            .in_current_span()
+            .await
+            .expect("infallible with a fixed fee strategy");
+
+            let fee_strategy_finalize = self
+                .convert_fee_strategy_to_fixed(
+                    fee_strategy,
+                    &[blober, blob],
+                    TransactionType::FinalizeBlob,
+                )
+                .await?;
+
+            let finalize_blob = tx::finalize_blob(
+                &MessageArguments::new(
+                    self.program_id,
+                    blober,
+                    &self.payer,
+                    self.rpc_client.clone(),
+                    fee_strategy_finalize,
+                    self.helius_fee_estimate,
+                ),
+                blob,
+            )
+            .in_current_span()
+            .await
+            .expect("infallible with a fixed fee strategy");
+
+            return Ok(UploadMessages::StaggeredUpload {
+                declare_blob,
+                insert_chunks: Vec::new(),
+                finalize_blob,
+            });
         }
 
         let chunks = split_blob_into_chunks(blob_data);
@@ -169,8 +225,11 @@ impl BloberClient {
             .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::InsertChunk(0))
             .await?;
 
+        let mut chunk_iterator = chunks.iter();
+        let last_chunk = chunk_iterator.next_back();
+
         let insert_chunks =
-            futures::future::join_all(chunks.iter().map(|(chunk_index, chunk_data)| async move {
+            futures::future::join_all(chunk_iterator.map(|(chunk_index, chunk_data)| async move {
                 tx::insert_chunk(
                     &MessageArguments::new(
                         self.program_id,
@@ -198,20 +257,25 @@ impl BloberClient {
             )
             .await?;
 
-        let finalize_blob = tx::finalize_blob(
-            &MessageArguments::new(
-                self.program_id,
-                blober,
-                &self.payer,
-                self.rpc_client.clone(),
-                fee_strategy_finalize,
-                self.helius_fee_estimate,
-            ),
-            blob,
-        )
-        .in_current_span()
-        .await
-        .expect("infallible with a fixed fee strategy");
+        let args = MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy_finalize,
+            self.helius_fee_estimate,
+        );
+
+        let finalize_blob = if let Some((chunk_idx, chunk_data)) = last_chunk {
+            tx::compound_finalize(&args, blob, *chunk_idx, chunk_data.to_vec())
+                .await
+                .expect("infallible with a fixed fee strategy")
+        } else {
+            tx::finalize_blob(&args, blob)
+                .in_current_span()
+                .await
+                .expect("infallible with a fixed fee strategy")
+        };
 
         Ok(UploadMessages::StaggeredUpload {
             declare_blob,

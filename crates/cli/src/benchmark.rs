@@ -22,7 +22,7 @@ use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use tracing::{instrument, trace};
 
 /// Imperically chosen constant from trial and error.
-const DEFAULT_CONCURRENCY: u64 = 100;
+const DEFAULT_CONCURRENCY: u64 = 600;
 
 #[derive(Debug, Parser)]
 pub enum BenchmarkSubCommand {
@@ -96,28 +96,33 @@ impl BenchmarkSubCommand {
             }
             BenchmarkSubCommand::Automate { data_path } => {
                 // Generate data files with different sizes and counts.
+                // First iterate over file sizes, then over length randomness, then over counts.
                 let combination_matrix = iproduct!(
-                    [blober::CHUNK_SIZE as usize - 2, 1_000, 10_000],
-                    [10, 100, 1_000],
-                    [false, true]
+                    [100, 1_000, 3_000],
+                    [false, true],
+                    [
+                        blober::COMPOUND_TX_SIZE as usize,
+                        blober::COMPOUND_DECLARE_TX_SIZE as usize,
+                        1_000,
+                        10_000
+                    ],
                 );
                 let priorities = [
-                    Priority::Min,
-                    Priority::Low,
-                    Priority::Medium,
-                    Priority::High,
                     Priority::VeryHigh,
+                    Priority::High,
+                    Priority::Medium,
+                    Priority::Low,
+                    Priority::Min,
                 ];
                 // We preallocate the vectors to avoid reallocations.
-                // 3 sizes * 3 counts * 2 random lengths * 5 priorities
-                let mut measurements = Vec::with_capacity(3 * 3 * 2 * 5);
+                let mut measurements = Vec::with_capacity(3 * 2 * 4 * 5);
 
                 let mut writer = csv::WriterBuilder::new()
                     .has_headers(false)
                     .from_writer(std::fs::File::create("measurements.csv")?);
 
                 let _: BloberClientResult = async {
-                    for (size, count, random_length) in combination_matrix {
+                    for (count, random_length, size) in combination_matrix {
                         println!(
                             "Generating data files with size {size}{} and count {count}...",
                             if random_length {
@@ -144,8 +149,9 @@ impl BenchmarkSubCommand {
                             writer.serialize(measurement.clone()).unwrap();
                             measurements.push(measurement);
                             writer.flush().unwrap();
-                            println!("Waiting 10 seconds...");
-                            tokio::time::sleep(Duration::from_secs(2)).await;
+                            let sleep_time = 2;
+                            println!("Waiting {sleep_time} seconds...");
+                            tokio::time::sleep(Duration::from_secs(sleep_time)).await;
                         }
                     }
                     Ok(())
@@ -223,13 +229,10 @@ async fn measure_performance(
     let total_files = data.len();
     let total_txs = data
         .iter()
-        .map(|d| {
-            let len = d.len();
-            if len < blober::CHUNK_SIZE as usize - 1 {
-                1
-            } else {
-                (len.div_ceil(blober::CHUNK_SIZE as usize)) + 2
-            }
+        .map(|d| match d.len() {
+            len if len <= blober::COMPOUND_TX_SIZE as usize => 1,
+            len if len <= blober::COMPOUND_DECLARE_TX_SIZE as usize => 2,
+            len => len.div_ceil(blober::CHUNK_SIZE as usize) + 1,
         })
         .sum::<usize>();
     trace!("Read {total_files} files with a total size of {total_size}");

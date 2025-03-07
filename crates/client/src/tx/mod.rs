@@ -7,6 +7,8 @@ use crate::FeeStrategy;
 
 pub mod close_blober;
 pub mod compound;
+pub mod compound_declare;
+pub mod compound_finalize;
 pub mod declare_blob;
 pub mod discard_blob;
 pub mod finalize_blob;
@@ -15,6 +17,8 @@ pub mod insert_chunk;
 
 pub use close_blober::close_blober;
 pub use compound::compound_upload;
+pub use compound_declare::compound_declare;
+pub use compound_finalize::compound_finalize;
 pub use declare_blob::declare_blob;
 pub use discard_blob::discard_blob;
 pub use finalize_blob::finalize_blob;

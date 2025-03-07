@@ -1,15 +1,13 @@
-use anchor_lang::{InstructionData, ToAccountMetas};
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, message::Message,
-    pubkey::Pubkey, system_program,
+    pubkey::Pubkey,
 };
 
-use crate::{
-    tx::{MessageArguments, SET_PRICE_AND_CU_LIMIT_COST},
-    BloberClientResult,
-};
+use super::{finalize_blob, insert_chunk, MessageArguments, SET_PRICE_AND_CU_LIMIT_COST};
+use crate::BloberClientResult;
 
-pub const COMPUTE_UNIT_LIMIT: u32 = 44_000;
+pub const COMPUTE_UNIT_LIMIT: u32 =
+    insert_chunk::COMPUTE_UNIT_LIMIT + finalize_blob::COMPUTE_UNIT_LIMIT;
 
 pub const NUM_SIGNATURES: u16 = 1;
 
@@ -18,49 +16,29 @@ pub(super) fn generate_instruction(
     blob: Pubkey,
     blober: Pubkey,
     payer: Pubkey,
-    system_program: Pubkey,
     program_id: Pubkey,
-    timestamp: u64,
-    blob_size: u32,
-    num_chunks: u16,
-) -> Instruction {
-    let accounts = blober::accounts::DeclareBlob {
-        blob,
-        blober,
-        payer,
-        system_program,
-    };
-
-    let data = blober::instruction::DeclareBlob {
-        timestamp,
-        blob_size,
-        num_chunks,
-    };
-
-    Instruction {
-        program_id,
-        accounts: accounts.to_account_metas(None),
-        data: data.data(),
-    }
+    chunk_idx: u16,
+    chunk_data: Vec<u8>,
+) -> [Instruction; 2] {
+    [
+        insert_chunk::generate_instruction(blob, blober, payer, program_id, chunk_idx, chunk_data),
+        finalize_blob::generate_instruction(blob, blober, payer, program_id),
+    ]
 }
 
-/// Declares a blob with the given blober.
-pub async fn declare_blob(
+pub async fn compound_finalize(
     args: &MessageArguments,
     blob: Pubkey,
-    timestamp: u64,
-    blob_size: u32,
-    num_chunks: u16,
+    chunk_idx: u16,
+    chunk_data: Vec<u8>,
 ) -> BloberClientResult<Message> {
-    let instruction = generate_instruction(
+    let instructions = generate_instruction(
         blob,
         args.blober,
         args.payer,
-        system_program::id(),
         args.program_id,
-        timestamp,
-        blob_size,
-        num_chunks,
+        chunk_idx,
+        chunk_data,
     );
 
     let set_price = args
@@ -76,7 +54,10 @@ pub async fn declare_blob(
         COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
     );
 
-    let msg = Message::new(&[set_price, set_limit, instruction], Some(&args.payer));
+    let msg = Message::new(
+        &[&[set_price, set_limit], instructions.as_ref()].concat(),
+        Some(&args.payer),
+    );
 
     Ok(msg)
 }
@@ -85,7 +66,7 @@ pub async fn declare_blob(
 mod tests {
     use arbtest::arbtest;
     use blober::find_blob_address;
-    use solana_sdk::{signer::Signer, system_program, transaction::Transaction};
+    use solana_sdk::{signer::Signer, transaction::Transaction};
 
     use crate::tx::utils::{close_blober, initialize_blober, new_tokio, setup_environment};
 
@@ -93,7 +74,6 @@ mod tests {
     #[ignore]
     fn test_compute_unit_limit() {
         let program_id = blober::id();
-        let system_program = system_program::id();
 
         let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
 
@@ -103,8 +83,8 @@ mod tests {
 
             new_tokio(async move {
                 let timestamp: u64 = u.arbitrary()?;
-                let blob_size: u32 = u.arbitrary()?;
-                let num_chunks: u16 = u.arbitrary()?;
+                let chunk_idx: u16 = u.arbitrary()?;
+                let chunk_data: Vec<u8> = u.arbitrary()?;
                 let namespace: String = u.arbitrary()?;
 
                 let blober = initialize_blober(rpc_client.clone(), program_id, &payer, &namespace)
@@ -113,21 +93,19 @@ mod tests {
 
                 let blob = find_blob_address(payer.pubkey(), blober, timestamp);
 
-                let instruction = super::generate_instruction(
+                let instructions = super::generate_instruction(
                     blob,
                     blober,
                     payer.pubkey(),
-                    system_program,
                     program_id,
-                    timestamp,
-                    blob_size,
-                    num_chunks,
+                    chunk_idx,
+                    chunk_data,
                 );
 
                 let recent_blockhash = rpc_client.get_latest_blockhash().await.unwrap();
 
                 let tx = Transaction::new_signed_with_payer(
-                    &[instruction],
+                    &instructions,
                     Some(&payer.pubkey()),
                     &[payer.clone()],
                     recent_blockhash,
