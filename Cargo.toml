@@ -74,7 +74,7 @@ solana_rbpf = "=0.8.4"
 anchor-lang = { git = "https://github.com/coral-xyz/anchor", rev = "db6da5c67d896e0a94c158f69e9b235e364b3064", version = "0.30.1" }
 
 # Helius
-helius = "0.2.2"
+helius = "=0.2.2"
 
 # Nitro
 svm-engine-keys = "0.1.0-alpha"
