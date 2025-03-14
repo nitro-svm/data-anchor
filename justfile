@@ -57,10 +57,18 @@ test-programs: build-programs
 test-compute-unit-limit:
     cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
 
+# Run tests for the crates in the workspace
+[group('test')]
+test:
+    cargo nextest run --workspace --status-level skip
+
 # Run tests for the entire project
 [group('test')]
-test: test-programs
-    cargo nextest run --workspace --status-level skip
+test-all: test-programs test
+
+# Run pre-push checks
+[group('dev')]
+pre-push: lint-fix test-all
 
 # Build the programs
 [group('build')]
