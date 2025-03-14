@@ -297,7 +297,7 @@ async fn get_transaction_statuses(
 pub async fn get_next_batch_for_confirmation(
     transaction_confirmer_rx: &mut mpsc::UnboundedReceiver<ConfirmTransactionMessage>,
 ) -> ControlFlow<(), Vec<ConfirmTransactionMessage>> {
-    let mut batch = vec![];
+    let mut batch = Vec::new();
     let received_messages = transaction_confirmer_rx.recv_many(&mut batch, 256).await;
     if received_messages == 0 {
         // If this is ever zero, that means the channel was closed.
@@ -690,7 +690,7 @@ mod tests {
 
         // No requests should be sent yet.
         let sent_requests = mock_sender.get_and_clear_sent_requests();
-        assert_eq!(sent_requests, vec![]);
+        assert_eq!(sent_requests, Vec::new());
 
         // Queue a transaction for confirmation.
         let transaction = Transaction::new_signed_with_payer(
@@ -773,7 +773,7 @@ mod tests {
         // Trigger a "new" blockhash to make the confirmation loop iterate again.
         blockdata_tx.send_modify(|_| {});
 
-        let mut responses = vec![];
+        let mut responses = Vec::new();
         response_rx.recv_many(&mut responses, 100).await;
         assert_eq!(responses.len(), 5);
         // The first three in this batch should be committed, and the next two should be processing.
@@ -799,7 +799,7 @@ mod tests {
 
         // Iterate again.
         blockdata_tx.send_modify(|_| {});
-        let mut responses = vec![];
+        let mut responses = Vec::new();
         response_rx.recv_many(&mut responses, 100).await;
         assert_eq!(responses.len(), 5);
         // Again, the first three in this batch should be committed, and the next two should be processing.
@@ -836,7 +836,7 @@ mod tests {
 
         // One more round.
         blockdata_tx.send_modify(|_| {});
-        let mut responses = vec![];
+        let mut responses = Vec::new();
         response_rx.recv_many(&mut responses, 100).await;
         // This time there should only be three committed transactions, and nothing else.
         assert_eq!(responses.len(), 3);
@@ -969,7 +969,7 @@ mod tests {
         fn new(sender: MockSender) -> Self {
             Self {
                 sender: Arc::new(sender),
-                log: Arc::new(Mutex::new(vec![])),
+                log: Arc::new(Mutex::new(Vec::new())),
                 mode: Arc::new(Mutex::new(
                     TrackingMockSenderMode::ThreeConfirmedTwoProcessingRestNone,
                 )),

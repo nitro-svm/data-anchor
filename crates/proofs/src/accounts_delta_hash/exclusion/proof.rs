@@ -79,7 +79,7 @@ mod tests {
                 accounts,
                 accounts_delta_hash,
                 tree,
-            } = generate_accounts(u, BTreeSet::new(), vec![])?;
+            } = generate_accounts(u, BTreeSet::new(), Vec::new())?;
 
             let (proof, is_valid) = match u.int_in_range(0..=3)? {
                 0 => {

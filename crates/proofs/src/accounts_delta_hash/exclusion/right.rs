@@ -72,7 +72,7 @@ mod tests {
                 accounts,
                 mut accounts_delta_hash,
                 tree,
-            } = generate_accounts(u, BTreeSet::new(), vec![])?;
+            } = generate_accounts(u, BTreeSet::new(), Vec::new())?;
 
             let (excluded_index, excluded) = choose_or_generate(u, &accounts)?;
             let excluded = excluded.0.pubkey();

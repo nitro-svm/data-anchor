@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn hash_tree_empty_returns_default_hash() {
-        let leaves = vec![];
+        let leaves = Vec::new();
         let levels = hash_tree(leaves.clone());
         assert_eq!(
             levels,

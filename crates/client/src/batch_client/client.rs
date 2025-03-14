@@ -146,7 +146,7 @@ pub async fn wait_for_responses<T>(
             break;
         }
 
-        let mut buffer = vec![];
+        let mut buffer = Vec::new();
         match timeout_at(deadline, response_rx.recv_many(&mut buffer, num_messages)).await {
             Ok(0) => {
                 // If this is ever zero, that means the channel was closed.

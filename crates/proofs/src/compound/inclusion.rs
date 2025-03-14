@@ -448,7 +448,7 @@ mod tests {
             let blob_proofs = if u.ratio(1, 10)? {
                 // Missing blob proof.
                 unmodified = false;
-                vec![]
+                Vec::new()
             } else if u.ratio(1, 10)? {
                 // Extra blob proof.
                 unmodified = false;
@@ -468,14 +468,14 @@ mod tests {
             let blobs = if u.ratio(1, 10)? {
                 // No blobs.
                 unmodified = false;
-                vec![]
+                Vec::new()
             } else if u.ratio(1, 10)? {
                 // An extra blob.
                 unmodified = false;
                 vec![blob.to_vec(), blob.to_vec()]
             } else if u.ratio(1, 10)? {
                 // A single blob, the right size, but the wrong contents.
-                let mut new_blob = vec![];
+                let mut new_blob = Vec::new();
                 while new_blob.len() < blob.len() {
                     new_blob.push(u.arbitrary()?);
                 }
@@ -483,7 +483,7 @@ mod tests {
                 vec![new_blob]
             } else if u.ratio(1, 10)? {
                 // A single blob, but the wrong size.
-                let mut new_blob = vec![];
+                let mut new_blob = Vec::new();
                 while new_blob.len() == blob.len() {
                     new_blob = u.arbitrary()?;
                 }

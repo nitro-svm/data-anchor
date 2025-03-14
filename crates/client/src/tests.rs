@@ -307,10 +307,10 @@ impl RpcSender for UnreliableSender {
 
 #[test]
 fn timestamps_are_unique_under_contention() {
-    let mut threads = vec![];
+    let mut threads = Vec::new();
     for _ in 0..100 {
         threads.push(std::thread::spawn(|| {
-            let mut timestamps = vec![];
+            let mut timestamps = Vec::new();
             for _ in 0..1000 {
                 timestamps.push(get_unique_timestamp());
             }

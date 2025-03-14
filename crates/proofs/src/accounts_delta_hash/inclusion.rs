@@ -142,7 +142,7 @@ mod tests {
                 accounts,
                 accounts_delta_hash,
                 tree,
-            } = generate_accounts(u, BTreeSet::new(), vec![])?;
+            } = generate_accounts(u, BTreeSet::new(), Vec::new())?;
 
             let (mut index, included) = choose_or_generate(u, &accounts)?;
             if index.is_none() {

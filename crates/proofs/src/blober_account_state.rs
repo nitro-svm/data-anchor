@@ -143,7 +143,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn empty_accounts_panics() {
-        BloberAccountStateProof::new(0, vec![]);
+        BloberAccountStateProof::new(0, Vec::new());
     }
 
     #[test]

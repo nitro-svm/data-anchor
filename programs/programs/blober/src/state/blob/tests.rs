@@ -38,7 +38,7 @@ fn test(blob: Vec<u8>) {
 fn specific_blob_sizes() {
     let test_cases = [
         // Empty blob.
-        vec![],
+        Vec::new(),
         // One byte.
         vec![0u8; 1],
         // One byte short of a chunk.

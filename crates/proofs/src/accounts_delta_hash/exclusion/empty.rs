@@ -45,7 +45,7 @@ mod tests {
                 accounts,
                 accounts_delta_hash,
                 tree: levels,
-            } = generate_accounts(u, BTreeSet::new(), vec![])?;
+            } = generate_accounts(u, BTreeSet::new(), Vec::new())?;
 
             let proof = ExclusionEmptyProof;
 

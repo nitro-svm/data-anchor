@@ -182,7 +182,7 @@ mod tests {
                 accounts_delta_hash,
                 tree,
                 ..
-            } = generate_accounts(u, important_pubkeys.clone(), vec![])?;
+            } = generate_accounts(u, important_pubkeys.clone(), Vec::new())?;
 
             if tree.leaves().contains_key(&important_leaf.0.pubkey()) {
                 // This would be an inclusion proof, which is not what we're testing.
@@ -262,7 +262,7 @@ mod tests {
                 accounts,
                 accounts_delta_hash,
                 tree,
-            } = generate_accounts(u, [excluded].into_iter().collect(), vec![])?;
+            } = generate_accounts(u, [excluded].into_iter().collect(), Vec::new())?;
             let Err(right_index) = accounts.binary_search_by_key(&excluded, |(kp, _)| kp.pubkey())
             else {
                 return Ok(());
@@ -300,7 +300,7 @@ mod tests {
                 accounts,
                 accounts_delta_hash,
                 tree,
-            } = generate_accounts(u, [excluded].into_iter().collect(), vec![])?;
+            } = generate_accounts(u, [excluded].into_iter().collect(), Vec::new())?;
 
             let Some((leftmost, _)) = &accounts.first() else {
                 return Ok(());
@@ -333,7 +333,7 @@ mod tests {
                 accounts,
                 accounts_delta_hash,
                 tree,
-            } = generate_accounts(u, [excluded].into_iter().collect(), vec![])?;
+            } = generate_accounts(u, [excluded].into_iter().collect(), Vec::new())?;
 
             let Some((rightmost, _)) = &accounts.last() else {
                 return Ok(());
@@ -366,7 +366,7 @@ mod tests {
                 accounts_delta_hash,
                 tree,
                 ..
-            } = generate_accounts(u, [excluded].into_iter().collect(), vec![])?;
+            } = generate_accounts(u, [excluded].into_iter().collect(), Vec::new())?;
 
             if tree.leaves().contains_key(&excluded) {
                 return Ok(());
@@ -431,7 +431,7 @@ mod tests {
     fn inclusion_when_not_included_fails() {
         arbtest(move |u| {
             println!("--------------------------------------------------------------");
-            let TestAccounts { tree, .. } = generate_accounts(u, BTreeSet::new(), vec![])?;
+            let TestAccounts { tree, .. } = generate_accounts(u, BTreeSet::new(), Vec::new())?;
 
             let excluded: (ArbKeypair, ArbAccount) = u.arbitrary()?;
             if tree.leaves().contains_key(&excluded.0.pubkey()) {
@@ -450,7 +450,7 @@ mod tests {
         arbtest(move |u| {
             println!("--------------------------------------------------------------");
             let TestAccounts { accounts, tree, .. } =
-                generate_accounts(u, BTreeSet::new(), vec![])?;
+                generate_accounts(u, BTreeSet::new(), Vec::new())?;
 
             let included = u.choose(&accounts)?;
 
