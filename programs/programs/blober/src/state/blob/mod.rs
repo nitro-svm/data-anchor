@@ -16,7 +16,7 @@ mod tests;
 #[derive(InitSpace)]
 pub struct Blob {
     digest: [u8; hash::HASH_BYTES],
-    size: u32,
+    pub(crate) size: u32,
     bitmap: Bitmap,
     pub(crate) timestamp: u64,
     pub(crate) created_at: u64,
@@ -39,15 +39,8 @@ impl std::fmt::Debug for Blob {
 }
 
 impl Blob {
-    pub fn new(slot: u64, timestamp: u64, blob_size: u32, num_chunks: u16, bump: u8) -> Self {
-        if blob_size != 0 && num_chunks != 0 {
-            let size_min = (num_chunks as u32 - 1) * CHUNK_SIZE as u32;
-            let size_max = size_min + CHUNK_SIZE as u32;
-            assert!(
-                blob_size >= size_min && blob_size <= size_max,
-                "blob size must be between {size_min} and {size_max}, got {blob_size}"
-            );
-        }
+    pub fn new(slot: u64, timestamp: u64, blob_size: u32, bump: u8) -> Self {
+        let num_chunks = blob_size.div_ceil(CHUNK_SIZE as u32) as u16;
 
         Self {
             digest: initial_hash(),

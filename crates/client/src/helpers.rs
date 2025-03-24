@@ -106,7 +106,6 @@ impl BloberClient {
     pub(crate) async fn generate_messages(
         &self,
         blob: Pubkey,
-        blob_size: u32,
         timestamp: u64,
         blob_data: &[u8],
         fee_strategy: FeeStrategy,
@@ -214,8 +213,7 @@ impl BloberClient {
             ),
             blob,
             timestamp,
-            blob_size,
-            chunks.len() as u16,
+            blob_data.len(),
         )
         .in_current_span()
         .await

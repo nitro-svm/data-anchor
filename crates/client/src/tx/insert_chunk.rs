@@ -88,7 +88,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let blob = find_blob_address(payer.pubkey(), blober, timestamp);
+                let blob = find_blob_address(payer.pubkey(), blober, timestamp, data.len());
 
                 let instruction = super::generate_instruction(
                     blob,

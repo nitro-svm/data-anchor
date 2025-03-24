@@ -10,13 +10,7 @@ fn test(blob: Vec<u8>) {
         blob.len().div_ceil(CHUNK_SIZE as usize)
     );
 
-    let mut blober = Blob::new(
-        0,
-        0,
-        blob.len() as u32,
-        blob.len().div_ceil(CHUNK_SIZE as usize) as u16,
-        0,
-    );
+    let mut blober = Blob::new(0, 0, blob.len() as u32, 0);
 
     let mut chunks = blob
         .chunks(CHUNK_SIZE as usize)
@@ -62,7 +56,7 @@ fn specific_blob_sizes() {
 
 #[test]
 fn test_blob() {
-    let mut acc = Blob::new(0, 0, CHUNK_SIZE as u32 * 5, 5, 0);
+    let mut acc = Blob::new(0, 0, CHUNK_SIZE as u32 * 5, 0);
 
     let mut current_digest = initial_hash();
     assert_eq!(current_digest, acc.digest);

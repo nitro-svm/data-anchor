@@ -82,7 +82,7 @@ async fn test_validator_transaction() {
         .unwrap()
         .as_secs();
 
-    let blob = find_blob_address(payer.pubkey(), blober, timestamp);
+    let blob = find_blob_address(payer.pubkey(), blober, timestamp, data.len());
 
     // Create blob
     {
@@ -99,7 +99,6 @@ async fn test_validator_transaction() {
                 data: instruction::DeclareBlob {
                     timestamp,
                     blob_size: data.len() as u32,
-                    num_chunks: chunks.len() as u16,
                 }
                 .data(),
             }],

@@ -3,7 +3,7 @@ use anchor_lang::{prelude::*, Discriminator};
 use crate::{blob::Blob, state::blober::Blober, SEED};
 
 #[derive(Accounts)]
-#[instruction(timestamp: u64)]
+#[instruction(timestamp: u64, blob_size: u32)]
 pub struct DeclareBlob<'info> {
     #[account(
         init,
@@ -13,7 +13,8 @@ pub struct DeclareBlob<'info> {
             SEED,
             payer.key().as_ref(),
             blober.key().as_ref(),
-            timestamp.to_le_bytes().as_ref()
+            timestamp.to_le_bytes().as_ref(),
+            blob_size.to_le_bytes().as_ref(),
         ],
         bump
     )]
@@ -34,13 +35,11 @@ pub fn declare_blob_handler(
     ctx: Context<DeclareBlob>,
     timestamp: u64,
     blob_size: u32,
-    num_chunks: u16,
 ) -> Result<()> {
     ctx.accounts.blob.set_inner(Blob::new(
         Clock::get()?.slot,
         timestamp,
         blob_size,
-        num_chunks,
         ctx.bumps.blob,
     ));
     Ok(())

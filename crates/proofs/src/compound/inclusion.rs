@@ -275,7 +275,7 @@ mod tests {
                 unmodified = false;
                 u.arbitrary::<[u8; BLOB_DATA_END]>()?.to_vec()
             } else {
-                let mut blob_pda = Blob::new(0, 0, blob.len() as u32, chunks.len() as u16, 0);
+                let mut blob_pda = Blob::new(0, 0, blob.len() as u32, 0);
                 for (chunk_index, chunk_data) in &chunks {
                     blob_pda.insert(0, *chunk_index, chunk_data);
                 }

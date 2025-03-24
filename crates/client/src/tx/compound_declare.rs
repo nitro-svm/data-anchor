@@ -29,8 +29,7 @@ pub(super) fn generate_instruction(
             system_program,
             program_id,
             timestamp,
-            blob_data.len() as u32,
-            1,
+            blob_data.len(),
         ),
         insert_chunk::generate_instruction(blob, blober, payer, program_id, 0, blob_data),
     ]
@@ -98,7 +97,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let blob = find_blob_address(payer.pubkey(), blober, timestamp);
+                let blob = find_blob_address(payer.pubkey(), blober, timestamp, blob_data.len());
 
                 let instructions = super::generate_instruction(
                     blob,

@@ -10,7 +10,8 @@ pub struct InsertChunk<'info> {
             SEED,
             payer.key().as_ref(),
             blober.key().as_ref(),
-            blob.timestamp.to_le_bytes().as_ref()
+            blob.timestamp.to_le_bytes().as_ref(),
+            blob.size.to_le_bytes().as_ref(),
         ],
         bump = blob.bump
     )]

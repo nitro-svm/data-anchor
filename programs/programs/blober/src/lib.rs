@@ -10,7 +10,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP");
+declare_id!("8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc");
 
 #[program]
 pub mod blober {
@@ -20,13 +20,8 @@ pub mod blober {
         initialize_handler(ctx, namespace, trusted)
     }
 
-    pub fn declare_blob(
-        ctx: Context<DeclareBlob>,
-        timestamp: u64,
-        blob_size: u32,
-        num_chunks: u16,
-    ) -> Result<()> {
-        declare_blob_handler(ctx, timestamp, blob_size, num_chunks)
+    pub fn declare_blob(ctx: Context<DeclareBlob>, timestamp: u64, blob_size: u32) -> Result<()> {
+        declare_blob_handler(ctx, timestamp, blob_size)
     }
 
     pub fn insert_chunk(ctx: Context<InsertChunk>, idx: u16, data: Vec<u8>) -> Result<()> {
@@ -61,13 +56,19 @@ pub fn compute_blob_digest<A: AsRef<[u8]>>(chunks: &[(u16, A)]) -> [u8; 32] {
 }
 
 /// Retrieves the PDA address of a blob account to store chunks and digest the data.
-pub fn find_blob_address(payer: Pubkey, blober: Pubkey, timestamp: u64) -> Pubkey {
+pub fn find_blob_address(
+    payer: Pubkey,
+    blober: Pubkey,
+    timestamp: u64,
+    blob_size: usize,
+) -> Pubkey {
     Pubkey::find_program_address(
         &[
             SEED,
             payer.as_ref(),
             blober.as_ref(),
             timestamp.to_le_bytes().as_ref(),
+            (blob_size as u32).to_le_bytes().as_ref(),
         ],
         &id(),
     )

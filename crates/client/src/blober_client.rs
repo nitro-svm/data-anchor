@@ -210,17 +210,10 @@ impl BloberClient {
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let timestamp = get_unique_timestamp();
 
-        let blob = find_blob_address(self.payer.pubkey(), blober, timestamp);
+        let blob = find_blob_address(self.payer.pubkey(), blober, timestamp, blob_data.len());
 
         let upload_messages = self
-            .generate_messages(
-                blob,
-                blob_data.len() as u32,
-                timestamp,
-                blob_data,
-                fee_strategy,
-                blober,
-            )
+            .generate_messages(blob, timestamp, blob_data, fee_strategy, blober)
             .await?;
 
         let res = self

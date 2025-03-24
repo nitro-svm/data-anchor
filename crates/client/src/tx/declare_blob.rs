@@ -21,8 +21,7 @@ pub(super) fn generate_instruction(
     system_program: Pubkey,
     program_id: Pubkey,
     timestamp: u64,
-    blob_size: u32,
-    num_chunks: u16,
+    blob_size: usize,
 ) -> Instruction {
     let accounts = blober::accounts::DeclareBlob {
         blob,
@@ -33,8 +32,7 @@ pub(super) fn generate_instruction(
 
     let data = blober::instruction::DeclareBlob {
         timestamp,
-        blob_size,
-        num_chunks,
+        blob_size: blob_size as u32,
     };
 
     Instruction {
@@ -49,8 +47,7 @@ pub async fn declare_blob(
     args: &MessageArguments,
     blob: Pubkey,
     timestamp: u64,
-    blob_size: u32,
-    num_chunks: u16,
+    blob_size: usize,
 ) -> BloberClientResult<Message> {
     let instruction = generate_instruction(
         blob,
@@ -60,7 +57,6 @@ pub async fn declare_blob(
         args.program_id,
         timestamp,
         blob_size,
-        num_chunks,
     );
 
     let set_price = args
@@ -103,15 +99,14 @@ mod tests {
 
             new_tokio(async move {
                 let timestamp: u64 = u.arbitrary()?;
-                let blob_size: u32 = u.arbitrary()?;
-                let num_chunks: u16 = u.arbitrary()?;
+                let blob_size: usize = u.arbitrary()?;
                 let namespace: String = u.arbitrary()?;
 
                 let blober = initialize_blober(rpc_client.clone(), program_id, &payer, &namespace)
                     .await
                     .unwrap();
 
-                let blob = find_blob_address(payer.pubkey(), blober, timestamp);
+                let blob = find_blob_address(payer.pubkey(), blober, timestamp, blob_size);
 
                 let instruction = super::generate_instruction(
                     blob,
@@ -121,7 +116,6 @@ mod tests {
                     program_id,
                     timestamp,
                     blob_size,
-                    num_chunks,
                 );
 
                 let recent_blockhash = rpc_client.get_latest_blockhash().await.unwrap();

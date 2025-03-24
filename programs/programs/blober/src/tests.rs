@@ -88,7 +88,7 @@ async fn upload_blob(
 
     println!("num chunks: {} * {}", chunks.len(), chunks[0].1.len());
 
-    let blob = find_blob_address(payer.pubkey(), blober, timestamp);
+    let blob = find_blob_address(payer.pubkey(), blober, timestamp, data.len());
     // Create blob
     {
         let transaction = Transaction::new_signed_with_payer(
@@ -104,7 +104,6 @@ async fn upload_blob(
                 data: instruction::DeclareBlob {
                     timestamp,
                     blob_size: data.len() as u32,
-                    num_chunks: chunks.len() as u16,
                 }
                 .data(),
             }],
@@ -228,7 +227,7 @@ async fn idle_blob_fails() {
     println!("num chunks: {} * {}", chunks.len(), chunks[0].len());
 
     let blober = find_blober_address(payer.pubkey(), "test");
-    let blob = find_blob_address(payer.pubkey(), blober, 0);
+    let blob = find_blob_address(payer.pubkey(), blober, 0, data_len);
 
     // Create blober account.
     {
@@ -272,7 +271,6 @@ async fn idle_blob_fails() {
                 data: instruction::DeclareBlob {
                     timestamp: 0,
                     blob_size: data.len() as u32,
-                    num_chunks: chunks.len() as u16,
                 }
                 .data(),
             }],

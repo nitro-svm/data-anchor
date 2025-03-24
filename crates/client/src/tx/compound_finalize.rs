@@ -86,12 +86,13 @@ mod tests {
                 let chunk_idx: u16 = u.arbitrary()?;
                 let chunk_data: Vec<u8> = u.arbitrary()?;
                 let namespace: String = u.arbitrary()?;
+                let blob_size: usize = u.arbitrary()?;
 
                 let blober = initialize_blober(rpc_client.clone(), program_id, &payer, &namespace)
                     .await
                     .unwrap();
 
-                let blob = find_blob_address(payer.pubkey(), blober, timestamp);
+                let blob = find_blob_address(payer.pubkey(), blober, timestamp, blob_size);
 
                 let instructions = super::generate_instruction(
                     blob,
