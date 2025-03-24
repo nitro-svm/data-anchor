@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-blober = "8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc"
+blober = "2RWsr92iL39YCLiZu7dZ5hron4oexEMbgWDg35v5U5tH"
 
 [programs.localnet]
 blober = "CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP"
