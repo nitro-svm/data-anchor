@@ -138,7 +138,12 @@ mod tests {
             let proof = BlobProof::new(&chunks);
             // Swap the 0th byte with some other byte, which should change the digest.
             let other = 1 + u.choose_index(data.len() - 1)?;
+            let before = data.clone();
             data.swap(0, other);
+            if data == before {
+                // No change, invalid test.
+                return Ok(());
+            }
             proof.verify(&data).unwrap_err();
             Ok(())
         })
