@@ -1,7 +1,12 @@
 use std::{str::FromStr, sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
-use blober::{find_blob_address, find_blober_address, state::blober::Blober, CHUNK_SIZE};
+use blober::{
+    find_blob_address, find_blober_address,
+    instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
+    state::blober::Blober,
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
+};
 use blober_client_builder::{IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient};
 use bon::Builder;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
@@ -20,7 +25,7 @@ use crate::{
     batch_client::{BatchClient, SuccessfulTransaction},
     fees::{Fee, FeeStrategy, Lamports, Priority},
     helpers::{check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp},
-    tx::{self, MessageArguments},
+    tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{IndexerError, TransactionType, UploadBlobError},
     BloberClientError, BloberClientResult,
 };
@@ -138,17 +143,15 @@ impl BloberClient {
             .in_current_span()
             .await?;
 
-        let msg = tx::initialize_blober(
-            &MessageArguments::new(
-                self.program_id,
-                blober,
-                &self.payer,
-                self.rpc_client.clone(),
-                fee_strategy,
-                self.helius_fee_estimate,
-            ),
-            namespace,
-        )
+        let msg = Initialize::build_message(MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy,
+            self.helius_fee_estimate,
+            (namespace, blober),
+        ))
         .await
         .expect("infallible with a fixed fee strategy");
 
@@ -174,13 +177,14 @@ impl BloberClient {
             .in_current_span()
             .await?;
 
-        let msg = tx::close_blober(&MessageArguments::new(
+        let msg = Close::build_message(MessageArguments::new(
             self.program_id,
             blober,
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy,
             self.helius_fee_estimate,
+            (),
         ))
         .await
         .expect("infallible with a fixed fee strategy");
@@ -242,17 +246,15 @@ impl BloberClient {
             .in_current_span()
             .await?;
 
-        let msg = tx::discard_blob(
-            &MessageArguments::new(
-                self.program_id,
-                blober,
-                &self.payer,
-                self.rpc_client.clone(),
-                fee_strategy,
-                self.helius_fee_estimate,
-            ),
+        let msg = DiscardBlob::build_message(MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy,
+            self.helius_fee_estimate,
             blob,
-        )
+        ))
         .in_current_span()
         .await
         .expect("infallible with a fixed fee strategy");
@@ -290,13 +292,23 @@ impl BloberClient {
 
         let num_chunks = blob_size.div_ceil(CHUNK_SIZE as usize) as u16;
 
-        let compute_unit_limit = tx::declare_blob::COMPUTE_UNIT_LIMIT
-            + num_chunks as u32 * tx::insert_chunk::COMPUTE_UNIT_LIMIT
-            + tx::finalize_blob::COMPUTE_UNIT_LIMIT;
-
-        let num_signatures = tx::declare_blob::NUM_SIGNATURES
-            + num_chunks * tx::insert_chunk::NUM_SIGNATURES
-            + tx::finalize_blob::NUM_SIGNATURES;
+        let (compute_unit_limit, num_signatures) = if blob_size < COMPOUND_TX_SIZE as usize {
+            (Compound::COMPUTE_UNIT_LIMIT, Compound::NUM_SIGNATURES)
+        } else if blob_size < COMPOUND_DECLARE_TX_SIZE as usize {
+            (
+                CompoundDeclare::COMPUTE_UNIT_LIMIT + FinalizeBlob::COMPUTE_UNIT_LIMIT,
+                CompoundDeclare::NUM_SIGNATURES + FinalizeBlob::NUM_SIGNATURES,
+            )
+        } else {
+            (
+                DeclareBlob::COMPUTE_UNIT_LIMIT
+                    + (num_chunks - 1) as u32 * InsertChunk::COMPUTE_UNIT_LIMIT
+                    + CompoundFinalize::COMPUTE_UNIT_LIMIT,
+                DeclareBlob::NUM_SIGNATURES
+                    + (num_chunks - 1) * InsertChunk::NUM_SIGNATURES
+                    + CompoundFinalize::NUM_SIGNATURES,
+            )
+        };
 
         // The base Solana transaction fee = 5000.
         // Reference link: https://solana.com/docs/core/fees#:~:text=While%20transaction%20fees%20are%20paid,of%205k%20lamports%20per%20signature.

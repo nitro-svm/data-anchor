@@ -1,133 +1,88 @@
-use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction, instruction::Instruction, message::Message,
-    pubkey::Pubkey,
-};
+use blober::instruction::{FinalizeBlob, InsertChunk};
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
-use super::{finalize_blob, insert_chunk, MessageArguments, SET_PRICE_AND_CU_LIMIT_COST};
-use crate::BloberClientResult;
+use crate::tx::{MessageArguments, MessageBuilder};
 
-pub const COMPUTE_UNIT_LIMIT: u32 =
-    insert_chunk::COMPUTE_UNIT_LIMIT + finalize_blob::COMPUTE_UNIT_LIMIT;
-
-pub const NUM_SIGNATURES: u16 = 1;
-
-#[allow(clippy::too_many_arguments, reason = "Only used internally")]
-pub(super) fn generate_instruction(
+pub struct CompoundFinalize {
+    insert: InsertChunk,
     blob: Pubkey,
-    blober: Pubkey,
-    payer: Pubkey,
-    program_id: Pubkey,
-    chunk_idx: u16,
-    chunk_data: Vec<u8>,
-) -> [Instruction; 2] {
-    [
-        insert_chunk::generate_instruction(blob, blober, payer, program_id, chunk_idx, chunk_data),
-        finalize_blob::generate_instruction(blob, blober, payer, program_id),
-    ]
 }
 
-pub async fn compound_finalize(
-    args: &MessageArguments,
-    blob: Pubkey,
-    chunk_idx: u16,
-    chunk_data: Vec<u8>,
-) -> BloberClientResult<Message> {
-    let instructions = generate_instruction(
-        blob,
-        args.blober,
-        args.payer,
-        args.program_id,
-        chunk_idx,
-        chunk_data,
-    );
+impl CompoundFinalize {
+    pub fn new(idx: u16, data: Vec<u8>, blob: Pubkey) -> Self {
+        Self {
+            insert: InsertChunk { idx, data },
+            blob,
+        }
+    }
+}
 
-    let set_price = args
-        .fee_strategy
-        .set_compute_unit_price(
-            &args.client,
-            &[blob, args.blober, args.payer],
-            args.use_helius,
+impl From<&CompoundFinalize> for <InsertChunk as MessageBuilder>::Input {
+    fn from(value: &CompoundFinalize) -> Self {
+        (
+            InsertChunk {
+                idx: value.insert.idx,
+                data: value.insert.data.clone(),
+            },
+            value.blob,
         )
-        .await?;
-    // This limit is chosen empirically, should blow up in integration tests if it's set too low.
-    let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(
-        COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
-    );
+    }
+}
 
-    let msg = Message::new(
-        &[&[set_price, set_limit], instructions.as_ref()].concat(),
-        Some(&args.payer),
-    );
+impl From<&CompoundFinalize> for <FinalizeBlob as MessageBuilder>::Input {
+    fn from(value: &CompoundFinalize) -> Self {
+        value.blob
+    }
+}
 
-    Ok(msg)
+impl MessageBuilder for CompoundFinalize {
+    type Input = Self;
+    const COMPUTE_UNIT_LIMIT: u32 =
+        InsertChunk::COMPUTE_UNIT_LIMIT + FinalizeBlob::COMPUTE_UNIT_LIMIT;
+
+    fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
+        vec![args.input.blob, args.blober, args.payer]
+    }
+
+    fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
+        [
+            InsertChunk::generate_instructions(&args.to_other()),
+            FinalizeBlob::generate_instructions(&args.to_other()),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+
+    #[cfg(test)]
+    fn generate_arbitrary_input(
+        u: &mut arbitrary::Unstructured,
+        payer: Pubkey,
+        blober: Pubkey,
+    ) -> arbitrary::Result<Self::Input> {
+        let timestamp: u64 = u.arbitrary()?;
+        let chunk_idx: u16 = u.arbitrary()?;
+        let chunk_data: Vec<u8> = u.arbitrary()?;
+        let blob_size: usize = u.arbitrary()?;
+        let blob = blober::find_blob_address(payer, blober, timestamp, blob_size);
+
+        Ok(CompoundFinalize {
+            insert: InsertChunk {
+                idx: chunk_idx,
+                data: chunk_data.clone(),
+            },
+            blob,
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use arbtest::arbtest;
-    use blober::find_blob_address;
-    use solana_sdk::{signer::Signer, transaction::Transaction};
-
-    use crate::tx::utils::{close_blober, initialize_blober, new_tokio, setup_environment};
+    use crate::tx::{CompoundFinalize, MessageBuilder};
 
     #[test]
     #[ignore]
     fn test_compute_unit_limit() {
-        let program_id = blober::id();
-
-        let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
-
-        arbtest(|u| {
-            let rpc_client = rpc_client.clone();
-            let payer = payer.clone();
-
-            new_tokio(async move {
-                let timestamp: u64 = u.arbitrary()?;
-                let chunk_idx: u16 = u.arbitrary()?;
-                let chunk_data: Vec<u8> = u.arbitrary()?;
-                let namespace: String = u.arbitrary()?;
-                let blob_size: usize = u.arbitrary()?;
-
-                let blober = initialize_blober(rpc_client.clone(), program_id, &payer, &namespace)
-                    .await
-                    .unwrap();
-
-                let blob = find_blob_address(payer.pubkey(), blober, timestamp, blob_size);
-
-                let instructions = super::generate_instruction(
-                    blob,
-                    blober,
-                    payer.pubkey(),
-                    program_id,
-                    chunk_idx,
-                    chunk_data,
-                );
-
-                let recent_blockhash = rpc_client.get_latest_blockhash().await.unwrap();
-
-                let tx = Transaction::new_signed_with_payer(
-                    &instructions,
-                    Some(&payer.pubkey()),
-                    &[payer.clone()],
-                    recent_blockhash,
-                );
-
-                let result = rpc_client.simulate_transaction(&tx).await.unwrap();
-
-                let compute_units = result.value.units_consumed.unwrap() as u32;
-
-                assert!(
-                    compute_units <= super::COMPUTE_UNIT_LIMIT,
-                    "Used {compute_units}, more than {}",
-                    super::COMPUTE_UNIT_LIMIT
-                );
-
-                close_blober(rpc_client, program_id, &payer, &namespace)
-                    .await
-                    .unwrap();
-
-                Ok::<(), arbitrary::Error>(())
-            })
-        });
+        CompoundFinalize::test_compute_unit_limit();
     }
 }

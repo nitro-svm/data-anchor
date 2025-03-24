@@ -1,10 +1,14 @@
 use std::fmt::Display;
 
+use blober::instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk};
 use solana_rpc_client_api::client_error::Error;
 use solana_sdk::{clock::Slot, commitment_config::ParseCommitmentLevelError};
 use thiserror::Error;
 
-use crate::{tx, TransactionOutcome};
+use crate::{
+    tx::{Compound, CompoundDeclare, CompoundFinalize, MessageBuilder},
+    TransactionOutcome,
+};
 
 /// Errors that can occur when interacting with the Blober client.
 #[derive(Debug, Error)]
@@ -146,30 +150,30 @@ impl TransactionType {
     /// Returns the number of signatures required for the transaction type.
     pub(crate) fn num_signatures(&self) -> u16 {
         match self {
-            TransactionType::CloseBlober => tx::close_blober::NUM_SIGNATURES,
-            TransactionType::Compound => tx::compound::NUM_SIGNATURES,
-            TransactionType::CompoundDeclare => tx::compound_declare::NUM_SIGNATURES,
-            TransactionType::CompoundFinalize => tx::compound_finalize::NUM_SIGNATURES,
-            TransactionType::DeclareBlob => tx::declare_blob::NUM_SIGNATURES,
-            TransactionType::DiscardBlob => tx::discard_blob::NUM_SIGNATURES,
-            TransactionType::FinalizeBlob => tx::finalize_blob::NUM_SIGNATURES,
-            TransactionType::InitializeBlober => tx::initialize_blober::NUM_SIGNATURES,
-            TransactionType::InsertChunk(_) => tx::insert_chunk::NUM_SIGNATURES,
+            TransactionType::CloseBlober => Close::NUM_SIGNATURES,
+            TransactionType::Compound => Compound::NUM_SIGNATURES,
+            TransactionType::CompoundDeclare => CompoundDeclare::NUM_SIGNATURES,
+            TransactionType::CompoundFinalize => CompoundFinalize::NUM_SIGNATURES,
+            TransactionType::DeclareBlob => DeclareBlob::NUM_SIGNATURES,
+            TransactionType::DiscardBlob => DiscardBlob::NUM_SIGNATURES,
+            TransactionType::FinalizeBlob => FinalizeBlob::NUM_SIGNATURES,
+            TransactionType::InitializeBlober => Initialize::NUM_SIGNATURES,
+            TransactionType::InsertChunk(_) => InsertChunk::NUM_SIGNATURES,
         }
     }
 
     /// Returns the compute unit limit for the transaction type.
     pub(crate) fn compute_unit_limit(&self) -> u32 {
         match self {
-            TransactionType::CloseBlober => tx::close_blober::COMPUTE_UNIT_LIMIT,
-            TransactionType::Compound => tx::compound::COMPUTE_UNIT_LIMIT,
-            TransactionType::CompoundDeclare => tx::compound_declare::COMPUTE_UNIT_LIMIT,
-            TransactionType::CompoundFinalize => tx::compound_finalize::COMPUTE_UNIT_LIMIT,
-            TransactionType::DeclareBlob => tx::declare_blob::COMPUTE_UNIT_LIMIT,
-            TransactionType::DiscardBlob => tx::discard_blob::COMPUTE_UNIT_LIMIT,
-            TransactionType::FinalizeBlob => tx::finalize_blob::COMPUTE_UNIT_LIMIT,
-            TransactionType::InitializeBlober => tx::initialize_blober::COMPUTE_UNIT_LIMIT,
-            TransactionType::InsertChunk(_) => tx::insert_chunk::COMPUTE_UNIT_LIMIT,
+            TransactionType::CloseBlober => Close::COMPUTE_UNIT_LIMIT,
+            TransactionType::Compound => Compound::COMPUTE_UNIT_LIMIT,
+            TransactionType::CompoundDeclare => CompoundDeclare::COMPUTE_UNIT_LIMIT,
+            TransactionType::CompoundFinalize => CompoundFinalize::COMPUTE_UNIT_LIMIT,
+            TransactionType::DeclareBlob => DeclareBlob::COMPUTE_UNIT_LIMIT,
+            TransactionType::DiscardBlob => DiscardBlob::COMPUTE_UNIT_LIMIT,
+            TransactionType::FinalizeBlob => FinalizeBlob::COMPUTE_UNIT_LIMIT,
+            TransactionType::InitializeBlober => Initialize::COMPUTE_UNIT_LIMIT,
+            TransactionType::InsertChunk(_) => InsertChunk::COMPUTE_UNIT_LIMIT,
         }
     }
 }

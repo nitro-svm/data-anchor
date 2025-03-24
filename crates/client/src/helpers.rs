@@ -5,14 +5,17 @@ use std::{
 };
 
 use anchor_lang::{solana_program::message::Message, Discriminator};
-use blober::{CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE};
+use blober::{
+    instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
+};
 use jsonrpsee::ws_client::WsClient;
 use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signer::Signer};
 use solana_transaction_status::EncodedTransactionWithStatusMeta;
 use tracing::{info_span, Instrument, Span};
 
 use crate::{
-    tx::{self, MessageArguments},
+    tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
     BloberClient, BloberClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
     SuccessfulTransaction, TransactionOutcome,
@@ -120,19 +123,15 @@ impl BloberClient {
                 )
                 .await?;
 
-            let compound = tx::compound_upload(
-                &MessageArguments::new(
-                    self.program_id,
-                    blober,
-                    &self.payer,
-                    self.rpc_client.clone(),
-                    fee_strategy_compound,
-                    self.helius_fee_estimate,
-                ),
-                blob,
-                timestamp,
-                blob_data.to_vec(),
-            )
+            let compound = Compound::build_message(MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_compound,
+                self.helius_fee_estimate,
+                Compound::new(blob, timestamp, blob_data.to_vec()),
+            ))
             .in_current_span()
             .await
             .expect("infallible with a fixed fee strategy");
@@ -149,19 +148,15 @@ impl BloberClient {
                 )
                 .await?;
 
-            let declare_blob = tx::compound_declare(
-                &MessageArguments::new(
-                    self.program_id,
-                    blober,
-                    &self.payer,
-                    self.rpc_client.clone(),
-                    fee_strategy_compound,
-                    self.helius_fee_estimate,
-                ),
-                blob,
-                timestamp,
-                blob_data.to_vec(),
-            )
+            let declare_blob = CompoundDeclare::build_message(MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_compound,
+                self.helius_fee_estimate,
+                CompoundDeclare::new(blob, timestamp, blob_data.to_vec()),
+            ))
             .in_current_span()
             .await
             .expect("infallible with a fixed fee strategy");
@@ -174,17 +169,15 @@ impl BloberClient {
                 )
                 .await?;
 
-            let finalize_blob = tx::finalize_blob(
-                &MessageArguments::new(
-                    self.program_id,
-                    blober,
-                    &self.payer,
-                    self.rpc_client.clone(),
-                    fee_strategy_finalize,
-                    self.helius_fee_estimate,
-                ),
+            let finalize_blob = FinalizeBlob::build_message(MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_finalize,
+                self.helius_fee_estimate,
                 blob,
-            )
+            ))
             .in_current_span()
             .await
             .expect("infallible with a fixed fee strategy");
@@ -202,19 +195,21 @@ impl BloberClient {
             .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DeclareBlob)
             .await?;
 
-        let declare_blob = tx::declare_blob(
-            &MessageArguments::new(
-                self.program_id,
-                blober,
-                &self.payer,
-                self.rpc_client.clone(),
-                fee_strategy_declare,
-                self.helius_fee_estimate,
+        let declare_blob = DeclareBlob::build_message(MessageArguments::new(
+            self.program_id,
+            blober,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee_strategy_declare,
+            self.helius_fee_estimate,
+            (
+                DeclareBlob {
+                    blob_size: blob_data.len() as u32,
+                    timestamp,
+                },
+                blob,
             ),
-            blob,
-            timestamp,
-            blob_data.len(),
-        )
+        ))
         .in_current_span()
         .await
         .expect("infallible with a fixed fee strategy");
@@ -228,19 +223,21 @@ impl BloberClient {
 
         let insert_chunks =
             futures::future::join_all(chunk_iterator.map(|(chunk_index, chunk_data)| async move {
-                tx::insert_chunk(
-                    &MessageArguments::new(
-                        self.program_id,
-                        blober,
-                        &self.payer,
-                        self.rpc_client.clone(),
-                        fee_strategy_insert,
-                        self.helius_fee_estimate,
+                InsertChunk::build_message(MessageArguments::new(
+                    self.program_id,
+                    blober,
+                    &self.payer,
+                    self.rpc_client.clone(),
+                    fee_strategy_insert,
+                    self.helius_fee_estimate,
+                    (
+                        InsertChunk {
+                            idx: *chunk_index,
+                            data: chunk_data.to_vec(),
+                        },
+                        blob,
                     ),
-                    blob,
-                    *chunk_index,
-                    chunk_data.to_vec(),
-                )
+                ))
                 .in_current_span()
                 .await
                 .expect("infallible with a fixed fee strategy")
@@ -255,24 +252,31 @@ impl BloberClient {
             )
             .await?;
 
-        let args = MessageArguments::new(
-            self.program_id,
-            blober,
-            &self.payer,
-            self.rpc_client.clone(),
-            fee_strategy_finalize,
-            self.helius_fee_estimate,
-        );
-
         let finalize_blob = if let Some((chunk_idx, chunk_data)) = last_chunk {
-            tx::compound_finalize(&args, blob, *chunk_idx, chunk_data.to_vec())
-                .await
-                .expect("infallible with a fixed fee strategy")
+            CompoundFinalize::build_message(MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_finalize,
+                self.helius_fee_estimate,
+                CompoundFinalize::new(*chunk_idx, chunk_data.to_vec(), blob),
+            ))
+            .await
+            .expect("infallible with a fixed fee strategy")
         } else {
-            tx::finalize_blob(&args, blob)
-                .in_current_span()
-                .await
-                .expect("infallible with a fixed fee strategy")
+            FinalizeBlob::build_message(MessageArguments::new(
+                self.program_id,
+                blober,
+                &self.payer,
+                self.rpc_client.clone(),
+                fee_strategy_finalize,
+                self.helius_fee_estimate,
+                blob,
+            ))
+            .in_current_span()
+            .await
+            .expect("infallible with a fixed fee strategy")
         };
 
         Ok(UploadMessages::StaggeredUpload {
