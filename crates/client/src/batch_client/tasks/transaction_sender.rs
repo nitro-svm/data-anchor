@@ -148,7 +148,7 @@ async fn send_transaction(
             .send_transaction_with_config(
                 &transaction,
                 RpcSendTransactionConfig {
-                    max_retries: None,
+                    max_retries: Some(0),
                     skip_preflight: true,
                     preflight_commitment: Some(CommitmentLevel::Processed),
                     ..Default::default()
