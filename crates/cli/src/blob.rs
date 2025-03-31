@@ -2,8 +2,11 @@ use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority, TransactionType};
-use solana_sdk::pubkey::Pubkey;
+use serde::Serialize;
+use solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature};
 use tracing::instrument;
+
+use crate::formatting::CommandOutput;
 
 #[derive(Debug, Parser)]
 pub enum BlobSubCommand {
@@ -21,9 +24,36 @@ pub enum BlobSubCommand {
     },
 }
 
+#[derive(Debug, Serialize)]
+pub struct BlobCommandOutput {
+    slot: Slot,
+    signatures: Vec<Signature>,
+    success: bool,
+}
+
+impl std::fmt::Display for BlobCommandOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Slot: {}, Signatures: [{}], Success: {}",
+            self.slot,
+            self.signatures
+                .iter()
+                .map(|sig| sig.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.success
+        )
+    }
+}
+
 impl BlobSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run(&self, client: Arc<BloberClient>, blober: Pubkey) -> BloberClientResult {
+    pub async fn run(
+        &self,
+        client: Arc<BloberClient>,
+        blober: Pubkey,
+    ) -> BloberClientResult<CommandOutput> {
         match self {
             BlobSubCommand::Upload { data_path } => {
                 let blob_data = tokio::fs::read(data_path).await.unwrap();
@@ -35,17 +65,13 @@ impl BlobSubCommand {
                         None,
                     )
                     .await?;
-                let finalize_tx = results.last().expect("there should be at least one result");
-                match finalize_tx.data {
-                    TransactionType::DiscardBlob => {
-                        eprintln!("Blob upload failed, blob discarded.")
-                    }
-                    TransactionType::FinalizeBlob => println!(
-                        "Blob uploaded successfully at slot {} with signature {}",
-                        finalize_tx.slot, finalize_tx.signature
-                    ),
-                    _ => unreachable!("unexpected transaction type"),
+                let last_tx = results.last().expect("there should be at least one result");
+                Ok(BlobCommandOutput {
+                    slot: last_tx.slot,
+                    signatures: results.iter().map(|tx| tx.signature).collect(),
+                    success: matches!(last_tx.data, TransactionType::FinalizeBlob),
                 }
+                .into())
             }
             BlobSubCommand::Discard { blob } => {
                 let results = client
@@ -56,15 +82,14 @@ impl BlobSubCommand {
                         None,
                     )
                     .await?;
-                let finalize_tx = results.last().expect("there should be at least one result");
-                match finalize_tx.data {
-                    TransactionType::DiscardBlob => {
-                        println!("Blob discarded successfully.")
-                    }
-                    _ => unreachable!("unexpected transaction type"),
+                let last_tx = results.last().expect("there should be at least one result");
+                Ok(BlobCommandOutput {
+                    slot: last_tx.slot,
+                    signatures: results.iter().map(|tx| tx.signature).collect(),
+                    success: matches!(last_tx.data, TransactionType::DiscardBlob),
                 }
+                .into())
             }
         }
-        Ok(())
     }
 }

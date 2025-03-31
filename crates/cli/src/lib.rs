@@ -7,6 +7,7 @@ use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{Parser, Subcommand};
+use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use nitro_da_client::{BloberClient, BloberClientResult};
 use solana_cli_config::Config;
@@ -20,6 +21,7 @@ use tracing::trace;
 mod benchmark;
 mod blob;
 mod blober;
+mod formatting;
 mod indexer;
 
 /// The CLI options for the Blober CLI client.
@@ -32,6 +34,10 @@ struct Cli {
     /// The payer account to use for transactions.
     #[arg(short = 's', long)]
     pub payer: Option<String>,
+
+    /// The output format to use.
+    #[arg(short, long, value_enum, default_value_t = OutputFormat::Text)]
+    pub output: OutputFormat,
 
     /// The program ID of the Blober program.
     #[arg(short, long)]
@@ -73,6 +79,7 @@ pub struct Options {
     indexer_url: Option<String>,
     namespace: String,
     config: Config,
+    output: OutputFormat,
 }
 
 impl Options {
@@ -91,6 +98,7 @@ impl Options {
             indexer_url: args.indexer_url,
             command: args.command,
             program_id: args.program_id,
+            output: args.output,
             payer,
             config,
         }
@@ -116,13 +124,17 @@ impl Options {
 
         let client = Arc::new(client);
 
-        match self.command {
+        let output = match self.command {
             Command::Blober(subcommand) => {
                 subcommand.run(client.clone(), blober, self.namespace).await
             }
             Command::Blob(subcommand) => subcommand.run(client.clone(), blober).await,
             Command::Indexer(subcommand) => subcommand.run(client.clone(), blober).await,
             Command::Benchmark(subcommand) => subcommand.run(client.clone(), blober).await,
-        }
+        }?;
+
+        output.serialize_output(self.output);
+
+        Ok(())
     }
 }

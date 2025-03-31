@@ -12,7 +12,7 @@ use bytesize::ByteSize;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use futures::StreamExt;
-use itertools::iproduct;
+use itertools::{iproduct, Itertools};
 use nitro_da_client::{
     BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority, UploadBlobError,
 };
@@ -20,6 +20,8 @@ use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use tracing::{instrument, trace};
+
+use crate::formatting::CommandOutput;
 
 /// Imperically chosen constant from trial and error.
 const DEFAULT_CONCURRENCY: u64 = 600;
@@ -60,13 +62,40 @@ pub enum BenchmarkSubCommand {
     #[command(visible_alias = "a")]
     Automate {
         /// The path where to generate the data.
+        #[arg(short, long)]
         data_path: PathBuf,
+        /// Whether to store data in a CSV file after each iteration.
+        #[arg(short, long)]
+        running_csv: Option<String>,
     },
+}
+
+#[derive(Debug, Serialize)]
+pub enum BenchmarkCommandOutput {
+    /// The path where the data was generated.
+    DataPath(PathBuf),
+    /// The measurement of the performance.
+    Measurements(Vec<BenchMeasurement>),
+}
+
+impl std::fmt::Display for BenchmarkCommandOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BenchmarkCommandOutput::DataPath(path) => write!(f, "Data path: {}", path.display()),
+            BenchmarkCommandOutput::Measurements(measurements) => {
+                write!(f, "{}", measurements.iter().join("\n"))
+            }
+        }
+    }
 }
 
 impl BenchmarkSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run(&self, client: Arc<BloberClient>, blober: Pubkey) -> BloberClientResult {
+    pub async fn run(
+        &self,
+        client: Arc<BloberClient>,
+        blober: Pubkey,
+    ) -> BloberClientResult<CommandOutput> {
         match self {
             BenchmarkSubCommand::GenerateData {
                 data_path,
@@ -75,6 +104,7 @@ impl BenchmarkSubCommand {
                 random_length,
             } => {
                 generate_data(data_path, *count as usize, *random_length, *size as usize).await?;
+                Ok(BenchmarkCommandOutput::DataPath(data_path.clone()).into())
             }
             BenchmarkSubCommand::Measure {
                 data_path,
@@ -92,9 +122,12 @@ impl BenchmarkSubCommand {
                 )
                 .await?;
 
-                println!("\n{}", write_measurements(vec![measurement], true)?);
+                Ok(BenchmarkCommandOutput::Measurements(vec![measurement.clone()]).into())
             }
-            BenchmarkSubCommand::Automate { data_path } => {
+            BenchmarkSubCommand::Automate {
+                data_path,
+                running_csv,
+            } => {
                 // Generate data files with different sizes and counts.
                 // First iterate over file sizes, then over length randomness, then over counts.
                 let combination_matrix = iproduct!(
@@ -117,13 +150,18 @@ impl BenchmarkSubCommand {
                 // We preallocate the vectors to avoid reallocations.
                 let mut measurements = Vec::with_capacity(3 * 2 * 4 * 5);
 
-                let mut writer = csv::WriterBuilder::new()
-                    .has_headers(false)
-                    .from_writer(std::fs::File::create("measurements.csv")?);
+                let mut writer = running_csv
+                    .as_ref()
+                    .and_then(|filename| std::fs::File::create(filename).ok())
+                    .map(|file| {
+                        csv::WriterBuilder::new()
+                            .has_headers(false)
+                            .from_writer(file)
+                    });
 
                 let _: BloberClientResult = async {
                     for (count, random_length, size) in combination_matrix {
-                        println!(
+                        trace!(
                             "Generating data files with size {size}{} and count {count}...",
                             if random_length {
                                 " (random length)"
@@ -133,7 +171,7 @@ impl BenchmarkSubCommand {
                         );
                         generate_data(data_path, count, random_length, size).await?;
                         for priority in priorities {
-                            println!(
+                            trace!(
                                 "Measuring performance with percentile priority {}...",
                                 priority.percentile()
                             );
@@ -146,11 +184,13 @@ impl BenchmarkSubCommand {
                                 blober,
                             )
                             .await?;
-                            writer.serialize(measurement.clone()).unwrap();
+                            if let Some(ref mut writer) = writer {
+                                writer.serialize(measurement.clone()).unwrap();
+                                writer.flush().unwrap();
+                            }
                             measurements.push(measurement);
-                            writer.flush().unwrap();
                             let sleep_time = 2;
-                            println!("Waiting {sleep_time} seconds...");
+                            trace!("Sleeping for {sleep_time} seconds...");
                             tokio::time::sleep(Duration::from_secs(sleep_time)).await;
                         }
                     }
@@ -159,10 +199,9 @@ impl BenchmarkSubCommand {
                 .await;
                 delete_all_in_dir(data_path).await?;
 
-                println!("\n{}", write_measurements(measurements, true)?);
+                Ok(BenchmarkCommandOutput::Measurements(measurements.clone()).into())
             }
         }
-        Ok(())
     }
 }
 
@@ -191,18 +230,17 @@ async fn generate_data(
         .collect::<Vec<_>>();
 
     // We buffer to avoid opening too many files at once.
-    match futures::stream::iter(files)
+    Ok(futures::stream::iter(files)
         .map(|(path, data)| tokio::fs::write(path, data))
         .buffer_unordered(300)
         .collect::<Vec<_>>()
         .await
         .into_iter()
         .collect::<Result<Vec<_>, _>>()
-    {
-        Ok(_) => println!("Data generated successfully."),
-        Err(e) => eprintln!("Error generating data: {e:?}"),
-    }
-    Ok(())
+        .inspect_err(|e| {
+            eprintln!("Error writing data files: {e}");
+        })
+        .map(|_| ())?)
 }
 
 /// Measures the performance of the blober.
@@ -296,7 +334,7 @@ async fn measure_performance(
 }
 
 /// Writes a list of measurements to a CSV string.
-fn write_measurements(
+pub fn write_measurements(
     measurements: Vec<BenchMeasurement>,
     has_headers: bool,
 ) -> BloberClientResult<String> {
@@ -326,7 +364,7 @@ async fn delete_all_in_dir<P: AsRef<Path>>(dir: P) -> tokio::io::Result<()> {
 
 /// A measurement of the performance of the blober.
 #[derive(Debug, Serialize, Clone)]
-struct BenchMeasurement {
+pub struct BenchMeasurement {
     timestamp: DateTime<Utc>,
     priority: f32,
     elapsed: f64,
@@ -346,6 +384,34 @@ struct BenchMeasurement {
     declare_failures: u64,
     insert_failures: u64,
     finalize_failures: u64,
+}
+
+impl std::fmt::Display for BenchMeasurement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Priority: {} | Elapsed: {:.2} | Total Size: {} | BPS: {} | Total TXs: {} | TPS: {:.2} | \
+             Start Balance: {} | End Balance: {} | Total Cost: {} | Cost per Byte: {} | \
+             Total Files: {} | Cost per Blob: {} | Upload per Blob: {:.2} | \
+             Declare Failures: {} | Insert Failures: {} | Finalize Failures: {}",
+            self.priority,
+            self.elapsed,
+            self.total_size,
+            self.bps,
+            self.total_txs,
+            self.tps,
+            self.start_balance,
+            self.end_balance,
+            self.total_cost,
+            self.cost_per_byte,
+            self.total_files,
+            self.cost_per_blob,
+            self.upload_per_blob,
+            self.declare_failures,
+            self.insert_failures,
+            self.finalize_failures
+        )
+    }
 }
 
 /// Serialize a [`ByteSize`] to a string.

@@ -1,10 +1,13 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use clap::{Args, Parser};
 use nitro_da_client::{BloberClient, BloberClientResult};
+use nitro_da_indexer_api::CompoundProof;
+use serde::Serialize;
 use solana_sdk::pubkey::Pubkey;
-use tokio::io::AsyncWriteExt;
 use tracing::instrument;
+
+use crate::formatting::CommandOutput;
 
 #[derive(Debug, Parser)]
 pub enum IndexerSubCommand {
@@ -20,57 +23,45 @@ pub enum IndexerSubCommand {
 pub struct SlotArgs {
     /// The slot to query.
     pub slot: u64,
+}
 
-    /// The file to store the output into.
-    #[arg(short, long)]
-    pub output: PathBuf,
+#[derive(Debug, Serialize)]
+pub enum IndexerCommandOutput {
+    /// The blobs for the given slot.
+    Blobs(Vec<Vec<u8>>),
+    /// The compound proof for the given slot.
+    Proofs(Box<CompoundProof>),
+}
+
+impl std::fmt::Display for IndexerCommandOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IndexerCommandOutput::Blobs(blobs) => {
+                write!(f, "Blobs: {}", blobs.len())
+            }
+            IndexerCommandOutput::Proofs(proof) => {
+                write!(f, "Proofs: {:?}", proof)
+            }
+        }
+    }
 }
 
 impl IndexerSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run(&self, client: Arc<BloberClient>, blober: Pubkey) -> BloberClientResult {
+    pub async fn run(
+        &self,
+        client: Arc<BloberClient>,
+        blober: Pubkey,
+    ) -> BloberClientResult<CommandOutput> {
         match self {
-            IndexerSubCommand::Blobs(SlotArgs { slot, output }) => {
-                let result = client.get_blobs(*slot, blober).await?;
-                println!("Storing blobs for slot {slot} at {output:?}");
-                let res: Result<(), Box<dyn std::error::Error>> = async move {
-                    let file = tokio::fs::File::create(output).await?;
-                    let mut writer = tokio::io::BufWriter::new(file);
-                    for (i, blob) in result.into_iter().enumerate() {
-                        writer.write_all(format!("{i}\n").as_bytes()).await?;
-                        writer.write_all(blob.as_ref()).await?;
-                    }
-                    writer.flush().await?;
-                    Ok(())
-                }
-                .await;
-                match res {
-                    Ok(_) => {
-                        println!("Blobs for slot {slot} stored at {output:?}");
-                    }
-                    Err(e) => {
-                        eprintln!("Error writing blobs: {e}");
-                    }
-                }
+            IndexerSubCommand::Blobs(SlotArgs { slot }) => {
+                let data = client.get_blobs(*slot, blober).await?;
+                Ok(IndexerCommandOutput::Blobs(data).into())
             }
-            IndexerSubCommand::Proofs(SlotArgs { slot, output }) => {
-                let result = client.get_slot_proof(*slot, blober).await?;
-                println!("Storing proof for slot {slot} at {output:?}");
-                let res: Result<(), Box<dyn std::error::Error>> = async move {
-                    tokio::fs::write(output, serde_json::to_string(&result)?).await?;
-                    Ok(())
-                }
-                .await;
-                match res {
-                    Ok(_) => {
-                        println!("Proof for slot {slot} stored at {output:?}");
-                    }
-                    Err(e) => {
-                        eprintln!("Error writing proof: {e}");
-                    }
-                }
+            IndexerSubCommand::Proofs(SlotArgs { slot }) => {
+                let proof = client.get_slot_proof(*slot, blober).await?;
+                Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
         }
-        Ok(())
     }
 }
