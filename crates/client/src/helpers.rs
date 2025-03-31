@@ -1,24 +1,25 @@
 use std::{
     cmp::max,
+    collections::{HashMap, HashSet},
     sync::atomic::{AtomicU64, Ordering},
     time::{Duration, Instant, SystemTime},
 };
 
-use anchor_lang::{solana_program::message::Message, Discriminator};
 use blober::{
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
 };
+use itertools::Itertools;
 use jsonrpsee::ws_client::WsClient;
-use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signer::Signer};
-use solana_transaction_status::EncodedTransactionWithStatusMeta;
+use nitro_da_indexer_api::{RelevantInstruction, RelevantInstructionWithAccounts};
+use solana_sdk::{message::Message, pubkey::Pubkey, signer::Signer};
 use tracing::{info_span, Instrument, Span};
 
 use crate::{
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
-    BloberClient, BloberClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
-    SuccessfulTransaction, TransactionOutcome,
+    BloberClient, BloberClientResult, Fee, FeeStrategy, Lamports, LedgerDataBlobError,
+    OutcomeError, SuccessfulTransaction, TransactionOutcome,
 };
 
 pub enum UploadMessages {
@@ -344,68 +345,6 @@ impl BloberClient {
     }
 }
 
-/// Finds finalize blob transactions for the supplied [`blober`] Pubkey
-pub(crate) fn find_finalize_blob_transactions_for_blober(
-    blober: Pubkey,
-    program_id: Pubkey,
-) -> impl FnMut(&EncodedTransactionWithStatusMeta) -> Option<(Pubkey, VersionedMessage)> {
-    move |tx| {
-        // Ignore transactions that failed
-        if matches!(tx.meta.as_ref(), Some(meta) if meta.status.is_err()) {
-            return None;
-        }
-
-        let versioned_tx = tx.transaction.decode()?;
-        let account_keys = versioned_tx.message.static_account_keys();
-        let blob_address = versioned_tx
-            .message
-            .instructions()
-            .iter()
-            .filter_map(find_finalize_blob_instruction_for_blober(
-                account_keys,
-                blober,
-                program_id,
-            ))
-            .next();
-
-        blob_address.map(|blob_address| (blob_address, versioned_tx.message))
-    }
-}
-
-/// Filters [`blober::instruction::FinalizeBlob`] instructions for the supplied `blober` Pubkey on the given `program_id`.
-fn find_finalize_blob_instruction_for_blober(
-    account_keys: &[Pubkey],
-    blober: Pubkey,
-    program_id: Pubkey,
-) -> impl FnMut(&solana_sdk::instruction::CompiledInstruction) -> Option<Pubkey> + '_ {
-    move |instruction| {
-        if instruction.program_id(account_keys) != &program_id {
-            return None;
-        }
-
-        let discriminator = blober::instruction::FinalizeBlob::DISCRIMINATOR;
-
-        if instruction.data.get(..discriminator.len()) != Some(discriminator) {
-            return None;
-        }
-
-        if instruction
-            .accounts
-            .get(1)
-            .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize))
-            != Some(&blober)
-        {
-            return None;
-        }
-
-        instruction
-            .accounts
-            .first()
-            .and_then(|lookup_account_index| account_keys.get((*lookup_account_index) as usize))
-            .copied()
-    }
-}
-
 /// Returns a unique timestamp in seconds since the UNIX epoch.
 /// If multiple threads or instances use this function, timestamps are incremented to ensure uniqueness.
 pub(crate) fn get_unique_timestamp() -> u64 {
@@ -454,4 +393,87 @@ pub(crate) fn check_outcomes(
     } else {
         Err(OutcomeError::Unsuccesful(outcomes))
     }
+}
+
+/// Extracts the blob data from the relevant instructions.
+pub(crate) fn get_blob_data_from_instructions(
+    relevant_instructions: &[RelevantInstructionWithAccounts],
+    blober: Pubkey,
+    blob: Pubkey,
+) -> Result<Vec<u8>, LedgerDataBlobError> {
+    let blob_size = relevant_instructions
+        .iter()
+        .filter_map(|instruction| {
+            if instruction.blober != blober || instruction.blob != blob {
+                return None;
+            }
+
+            match &instruction.instruction {
+                RelevantInstruction::DeclareBlob(declare) => Some(declare.blob_size),
+                _ => None,
+            }
+        })
+        .next()
+        .ok_or(LedgerDataBlobError::DeclareNotFound)?;
+
+    let inserts = relevant_instructions
+        .iter()
+        .filter_map(|instruction| {
+            if instruction.blober != blober || instruction.blob != blob {
+                return None;
+            }
+
+            let RelevantInstruction::InsertChunk(insert) = &instruction.instruction else {
+                return None;
+            };
+
+            Some(InsertChunk {
+                idx: insert.idx,
+                data: insert.data.clone(),
+            })
+        })
+        .collect::<Vec<InsertChunk>>();
+
+    let blob_data =
+        inserts
+            .iter()
+            .sorted_by_key(|insert| insert.idx)
+            .fold(Vec::new(), |mut acc, insert| {
+                acc.extend_from_slice(&insert.data);
+                acc
+            });
+
+    if blob_data.len() != blob_size as usize {
+        return Err(LedgerDataBlobError::SizeMismatch);
+    }
+
+    if relevant_instructions.iter().any(|instruction| {
+        instruction.blober == blober
+            && instruction.blob == blob
+            && matches!(
+                instruction.instruction,
+                RelevantInstruction::FinalizeBlob(_)
+            )
+    }) {
+        return Err(LedgerDataBlobError::FinalizeNotFound);
+    }
+
+    Ok(blob_data)
+}
+
+/// Filters out the relevant instructions for finalized blobs into a [`HashMap`].
+pub fn filter_relevant_instructions(
+    instructions: Vec<RelevantInstructionWithAccounts>,
+    finalized_blobs: &HashSet<Pubkey>,
+) -> HashMap<Pubkey, Vec<RelevantInstructionWithAccounts>> {
+    instructions.into_iter().fold(
+        HashMap::<Pubkey, Vec<RelevantInstructionWithAccounts>>::new(),
+        |mut acc, instruction| {
+            if !finalized_blobs.contains(&instruction.blob) {
+                return acc;
+            }
+            acc.entry(instruction.blob).or_default().push(instruction);
+            acc
+        },
+    )
 }

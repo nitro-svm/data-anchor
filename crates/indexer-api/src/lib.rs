@@ -99,6 +99,16 @@ pub fn deserialize_relevant_instructions(
         .collect()
 }
 
+/// Extract relevant instructions from a list of transactions.
+pub fn extract_relevant_instructions(
+    transactions: &[VersionedTransaction],
+) -> Vec<RelevantInstructionWithAccounts> {
+    transactions
+        .iter()
+        .flat_map(|tx| deserialize_relevant_instructions(tx, 0, 1))
+        .collect()
+}
+
 /// Performs the double-lookup required to find an account at a given account index in an instruction.
 /// This is required because the accounts are not stored in the instruction directly, but in a separate
 /// account list. It is computed as `payload.account_keys[instruction.accounts[index]]`.

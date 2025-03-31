@@ -1,4 +1,9 @@
-use std::{str::FromStr, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
 
 use anchor_lang::{Discriminator, Space};
 use blober::{
@@ -10,10 +15,10 @@ use blober::{
 use blober_client_builder::{IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient};
 use bon::Builder;
 use futures::StreamExt;
-use itertools::Itertools;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use nitro_da_indexer_api::{
-    deserialize_relevant_instructions, CompoundProof, IndexerRpcClient, RelevantInstruction,
+    extract_relevant_instructions, get_account_at_index, CompoundProof, IndexerRpcClient,
+    RelevantInstruction, RelevantInstructionWithAccounts,
 };
 use solana_cli_config::Config;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -30,9 +35,12 @@ use tracing::{info_span, Instrument, Span};
 
 use crate::{
     batch_client::{BatchClient, SuccessfulTransaction},
-    constants::DEFAULT_CONCURRENCY,
+    constants::{DEFAULT_CONCURRENCY, DEFAULT_LOOKBACK_SLOTS},
     fees::{Fee, FeeStrategy, Lamports, Priority},
-    helpers::{check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp},
+    helpers::{
+        check_outcomes, filter_relevant_instructions, get_blob_data_from_instructions,
+        get_unique_timestamp,
+    },
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{IndexerError, TransactionType, UploadBlobError},
     BloberClientError, BloberClientResult, LedgerDataBlobError,
@@ -338,7 +346,7 @@ impl BloberClient {
         blober: Pubkey,
         signatures: Vec<Signature>,
     ) -> BloberClientResult<Vec<u8>> {
-        let relevant_instructions = futures::stream::iter(signatures)
+        let relevant_transactions = futures::stream::iter(signatures)
             .map(|signature| async move {
                 self.rpc_client
                     .get_transaction(&signature, UiTransactionEncoding::Base58)
@@ -348,32 +356,28 @@ impl BloberClient {
             .collect::<Vec<_>>()
             .await
             .into_iter()
-            .collect::<Result<Vec<_>, _>>()?
-            .iter()
-            .flat_map(|encoded| {
-                let Some(versioned) = encoded.transaction.transaction.decode() else {
-                    return Vec::new();
-                };
-                deserialize_relevant_instructions(&versioned, 0, 1)
-            })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let relevant_instructions = extract_relevant_instructions(
+            &relevant_transactions
+                .iter()
+                .filter_map(|encoded| match &encoded.transaction.meta {
+                    Some(meta) if meta.status.is_ok() => encoded.transaction.transaction.decode(),
+                    _ => None,
+                })
+                .collect::<Vec<_>>(),
+        );
 
         let declares = relevant_instructions
             .iter()
             .filter_map(|instruction| {
-                if instruction.blober != blober {
-                    return None;
-                }
-
-                let RelevantInstruction::DeclareBlob(declare) = &instruction.instruction else {
-                    return None;
-                };
-
-                Some((instruction.blob, declare.blob_size))
+                (instruction.blober != blober
+                    && matches!(instruction.instruction, RelevantInstruction::DeclareBlob(_)))
+                .then_some(instruction.blob)
             })
-            .collect::<Vec<(Pubkey, u32)>>();
+            .collect::<Vec<Pubkey>>();
 
-        let Some((blob, blob_size)) = declares.first() else {
+        let Some(blob) = declares.first() else {
             return Err(LedgerDataBlobError::DeclareNotFound.into());
         };
 
@@ -381,44 +385,13 @@ impl BloberClient {
             return Err(LedgerDataBlobError::MultipleDeclares.into());
         }
 
-        let inserts = relevant_instructions
-            .iter()
-            .filter_map(|instruction| {
-                if instruction.blober != blober || instruction.blob != *blob {
-                    return None;
-                }
-
-                let RelevantInstruction::InsertChunk(insert) = &instruction.instruction else {
-                    return None;
-                };
-
-                Some(InsertChunk {
-                    idx: insert.idx,
-                    data: insert.data.clone(),
-                })
-            })
-            .collect::<Vec<InsertChunk>>();
-
-        let blob_data = inserts.iter().sorted_by_key(|insert| insert.idx).fold(
-            Vec::new(),
-            |mut acc, insert| {
-                acc.extend_from_slice(&insert.data);
-                acc
-            },
-        );
-
-        if blob_data.len() != *blob_size as usize {
-            return Err(LedgerDataBlobError::SizeMismatch.into());
-        }
-
         if relevant_instructions
             .iter()
             .filter(|instruction| {
-                instruction.blober == blober
-                    && matches!(
-                        instruction.instruction,
-                        RelevantInstruction::FinalizeBlob(_)
-                    )
+                matches!(
+                    instruction.instruction,
+                    RelevantInstruction::FinalizeBlob(_)
+                )
             })
             .count()
             > 1
@@ -426,18 +399,104 @@ impl BloberClient {
             return Err(LedgerDataBlobError::MultipleFinalizes.into());
         }
 
-        if relevant_instructions.iter().any(|instruction| {
-            instruction.blober == blober
-                && instruction.blob == *blob
-                && matches!(
-                    instruction.instruction,
-                    RelevantInstruction::FinalizeBlob(_)
-                )
-        }) {
-            return Err(LedgerDataBlobError::FinalizeNotFound.into());
+        Ok(get_blob_data_from_instructions(
+            &relevant_instructions,
+            blober,
+            *blob,
+        )?)
+    }
+
+    /// Fetches all blobs finalized in a given slot from the ledger.
+    pub async fn get_ledger_blobs(
+        &self,
+        slot: u64,
+        blober: Pubkey,
+        lookback_slots: Option<u64>,
+    ) -> BloberClientResult<Vec<Vec<u8>>> {
+        let block = self.rpc_client.get_block(slot).await?;
+        let relevant_instructions = extract_relevant_instructions(
+            &block
+                .transactions
+                .iter()
+                .filter_map(|tx| match &tx.meta {
+                    Some(meta) if meta.status.is_ok() => tx.transaction.decode(),
+                    _ => None,
+                })
+                .collect::<Vec<_>>(),
+        );
+        let finalized_blobs = relevant_instructions
+            .iter()
+            .filter_map(|instruction| {
+                (instruction.blober == blober
+                    && matches!(
+                        instruction.instruction,
+                        RelevantInstruction::FinalizeBlob(_)
+                    ))
+                .then_some(instruction.blob)
+            })
+            .collect::<HashSet<Pubkey>>();
+
+        let mut relevant_instructions =
+            filter_relevant_instructions(relevant_instructions, &finalized_blobs);
+
+        let mut blobs = HashMap::with_capacity(finalized_blobs.len());
+        for blob in &finalized_blobs {
+            let instructions = relevant_instructions
+                .get(blob)
+                .expect("This should never happen since we at least have the finalize instruction");
+
+            if let Ok(blob_data) = get_blob_data_from_instructions(instructions, blober, *blob) {
+                blobs.insert(blob, blob_data);
+            }
         }
 
-        Ok(blob_data)
+        // If all blobs are found, return them.
+        if blobs.len() == finalized_blobs.len() {
+            return Ok(blobs.values().cloned().collect());
+        }
+
+        let lookback_slots = lookback_slots.unwrap_or(DEFAULT_LOOKBACK_SLOTS);
+
+        let block_slots = self
+            .rpc_client
+            .get_blocks(slot - lookback_slots, Some(slot))
+            .await?;
+
+        for slot in block_slots {
+            let block = self.rpc_client.get_block(slot).await?;
+            let new_relevant_instructions = extract_relevant_instructions(
+                &block
+                    .transactions
+                    .iter()
+                    .filter_map(|tx| match &tx.meta {
+                        Some(meta) if meta.status.is_ok() => tx.transaction.decode(),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            relevant_instructions.extend(filter_relevant_instructions(
+                new_relevant_instructions,
+                &finalized_blobs,
+            ));
+            for blob in &finalized_blobs {
+                if blobs.contains_key(blob) {
+                    continue;
+                }
+                let instructions = relevant_instructions.get(blob).expect(
+                    "This should never happen since we at least have the finalize instruction",
+                );
+
+                if let Ok(blob_data) = get_blob_data_from_instructions(instructions, blober, *blob)
+                {
+                    blobs.insert(blob, blob_data);
+                }
+            }
+            if blobs.len() == finalized_blobs.len() {
+                break;
+            }
+        }
+
+        Ok(blobs.values().cloned().collect())
     }
 
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
@@ -496,13 +555,44 @@ impl BloberClient {
             .await?
             .into();
 
-        Ok(block
+        let finalized = block
             .transactions
             .iter()
-            .filter_map(find_finalize_blob_transactions_for_blober(
-                blober,
-                self.program_id,
-            ))
-            .collect())
+            .filter_map(|tx| match &tx.meta {
+                Some(meta) if meta.status.is_ok() => tx.transaction.decode(),
+                _ => None,
+            })
+            .filter_map(|tx| {
+                let instructions = tx
+                    .message
+                    .instructions()
+                    .iter()
+                    .filter_map(|compiled_instruction| {
+                        Some(RelevantInstructionWithAccounts {
+                            blob: get_account_at_index(&tx, compiled_instruction, 0)?,
+                            blober: get_account_at_index(&tx, compiled_instruction, 1)?,
+                            instruction: RelevantInstruction::try_from_slice(compiled_instruction)?,
+                        })
+                    })
+                    .filter(|instruction| {
+                        instruction.blober == blober
+                            && matches!(
+                                instruction.instruction,
+                                RelevantInstruction::FinalizeBlob(_)
+                            )
+                    })
+                    .collect::<Vec<_>>();
+
+                instructions.is_empty().then_some(
+                    instructions
+                        .iter()
+                        .map(|instruction| (instruction.blob, tx.message.clone()))
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        Ok(finalized)
     }
 }
