@@ -37,6 +37,29 @@ pub enum BloberClientError {
     /// IO error
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    /// Ledger data blob error: {0}
+    #[error("Ledger data blob error: {0}")]
+    LedgerDataBlob(#[from] LedgerDataBlobError),
+}
+
+/// Errors that can occur when fetching blob data from the ledger.
+#[derive(Debug, Error)]
+pub enum LedgerDataBlobError {
+    /// No declare instruction found
+    #[error("No declare blob instruction found")]
+    DeclareNotFound,
+    /// Multiple declare instructions found
+    #[error("Multiple declare instructions found")]
+    MultipleDeclares,
+    /// Declare blob size and inserts built blob size mismatch
+    #[error("Declare blob size and inserts blob size mismatch")]
+    SizeMismatch,
+    /// No finalize instruction found
+    #[error("No finalize instruction found")]
+    FinalizeNotFound,
+    /// Multiple finalize instructions found
+    #[error("Multiple finalize instructions found")]
+    MultipleFinalizes,
 }
 
 /// Result returned when interacting with the Blober client.

@@ -1,9 +1,12 @@
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use nitro_da_proofs::compound::{
     completeness::CompoundCompletenessProof, inclusion::CompoundInclusionProof,
 };
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{
+    instruction::CompiledInstruction, pubkey::Pubkey, transaction::VersionedTransaction,
+};
 
 /// A compound proof that proves whether a blob has been published in a specific slot.
 /// See [`CompoundInclusionProof`] and [`CompoundCompletenessProof`] for more information.
@@ -28,4 +31,82 @@ pub trait IndexerRpc {
     /// database or RPC failure, and None if the slot has not been completed yet.
     #[method(name = "get_proof")]
     async fn get_proof(&self, blober: Pubkey, slot: u64) -> RpcResult<Option<CompoundProof>>;
+}
+
+/// A relevant [`blober`] instruction extracted from a [`VersionedTransaction`].
+pub enum RelevantInstruction {
+    DeclareBlob(blober::instruction::DeclareBlob),
+    InsertChunk(blober::instruction::InsertChunk),
+    FinalizeBlob(blober::instruction::FinalizeBlob),
+}
+
+impl RelevantInstruction {
+    pub fn try_from_slice(compiled_instruction: &CompiledInstruction) -> Option<Self> {
+        use blober::instruction::*;
+        let discriminator = compiled_instruction.data.get(..8)?;
+
+        match discriminator {
+            DeclareBlob::DISCRIMINATOR => {
+                let data = compiled_instruction.data.get(8..).unwrap_or_default();
+                DeclareBlob::try_from_slice(data)
+                    .map(RelevantInstruction::DeclareBlob)
+                    .ok()
+            }
+            InsertChunk::DISCRIMINATOR => {
+                let data = compiled_instruction.data.get(8..).unwrap_or_default();
+                InsertChunk::try_from_slice(data)
+                    .map(RelevantInstruction::InsertChunk)
+                    .ok()
+            }
+            FinalizeBlob::DISCRIMINATOR => {
+                let data = compiled_instruction.data.get(8..).unwrap_or_default();
+                FinalizeBlob::try_from_slice(data)
+                    .map(RelevantInstruction::FinalizeBlob)
+                    .ok()
+            }
+            // If we don't recognize the discriminator, we ignore the instruction - there might be
+            // more instructions packed into the same transaction which might not be relevant to
+            // us.
+            _ => None,
+        }
+    }
+}
+
+/// A deserialized relevant instruction, containing the blob and blober pubkeys and the instruction.
+pub struct RelevantInstructionWithAccounts {
+    pub blob: Pubkey,
+    pub blober: Pubkey,
+    pub instruction: RelevantInstruction,
+}
+
+/// Deserialize relevant instructions from a transaction, given the indices of the blob and blober
+/// accounts in the transaction.
+pub fn deserialize_relevant_instructions(
+    tx: &VersionedTransaction,
+    blob_pubkey_index: usize,
+    blober_pubkey_index: usize,
+) -> Vec<RelevantInstructionWithAccounts> {
+    tx.message
+        .instructions()
+        .iter()
+        .filter_map(|compiled_instruction| {
+            Some(RelevantInstructionWithAccounts {
+                blob: get_account_at_index(tx, compiled_instruction, blob_pubkey_index)?,
+                blober: get_account_at_index(tx, compiled_instruction, blober_pubkey_index)?,
+                instruction: RelevantInstruction::try_from_slice(compiled_instruction)?,
+            })
+        })
+        .collect()
+}
+
+/// Performs the double-lookup required to find an account at a given account index in an instruction.
+/// This is required because the accounts are not stored in the instruction directly, but in a separate
+/// account list. It is computed as `payload.account_keys[instruction.accounts[index]]`.
+pub fn get_account_at_index(
+    tx: &VersionedTransaction,
+    instruction: &CompiledInstruction,
+    index: usize,
+) -> Option<Pubkey> {
+    let actual_index = *instruction.accounts.get(index)? as usize;
+    tx.message.static_account_keys().get(actual_index).copied()
 }

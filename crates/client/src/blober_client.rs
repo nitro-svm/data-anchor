@@ -9,25 +9,33 @@ use blober::{
 };
 use blober_client_builder::{IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient};
 use bon::Builder;
+use futures::StreamExt;
+use itertools::Itertools;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
-use nitro_da_indexer_api::{CompoundProof, IndexerRpcClient};
+use nitro_da_indexer_api::{
+    deserialize_relevant_instructions, CompoundProof, IndexerRpcClient, RelevantInstruction,
+};
 use solana_cli_config::Config;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
-    commitment_config::CommitmentConfig, message::VersionedMessage, pubkey::Pubkey,
-    signature::Keypair, signer::Signer,
+    commitment_config::CommitmentConfig,
+    message::VersionedMessage,
+    pubkey::Pubkey,
+    signature::{Keypair, Signature},
+    signer::Signer,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 use tracing::{info_span, Instrument, Span};
 
 use crate::{
     batch_client::{BatchClient, SuccessfulTransaction},
+    constants::DEFAULT_CONCURRENCY,
     fees::{Fee, FeeStrategy, Lamports, Priority},
     helpers::{check_outcomes, find_finalize_blob_transactions_for_blober, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{IndexerError, TransactionType, UploadBlobError},
-    BloberClientError, BloberClientResult,
+    BloberClientError, BloberClientResult, LedgerDataBlobError,
 };
 
 #[derive(Builder, Clone)]
@@ -323,6 +331,114 @@ impl BloberClient {
             prioritization_fee_rate,
             blob_account_size,
         })
+    }
+
+    /// Returns the raw blob data from the ledger for the given signatures.
+    pub async fn get_ledger_blobs_from_signatures(
+        &self,
+        blober: Pubkey,
+        signatures: Vec<Signature>,
+    ) -> BloberClientResult<Vec<u8>> {
+        let relevant_instructions = futures::stream::iter(signatures)
+            .map(|signature| async move {
+                self.rpc_client
+                    .get_transaction(&signature, UiTransactionEncoding::Base58)
+                    .await
+            })
+            .buffer_unordered(DEFAULT_CONCURRENCY)
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?
+            .iter()
+            .flat_map(|encoded| {
+                let Some(versioned) = encoded.transaction.transaction.decode() else {
+                    return Vec::new();
+                };
+                deserialize_relevant_instructions(&versioned, 0, 1)
+            })
+            .collect::<Vec<_>>();
+
+        let declares = relevant_instructions
+            .iter()
+            .filter_map(|instruction| {
+                if instruction.blober != blober {
+                    return None;
+                }
+
+                let RelevantInstruction::DeclareBlob(declare) = &instruction.instruction else {
+                    return None;
+                };
+
+                Some((instruction.blob, declare.blob_size))
+            })
+            .collect::<Vec<(Pubkey, u32)>>();
+
+        let Some((blob, blob_size)) = declares.first() else {
+            return Err(LedgerDataBlobError::DeclareNotFound.into());
+        };
+
+        if declares.len() > 1 {
+            return Err(LedgerDataBlobError::MultipleDeclares.into());
+        }
+
+        let inserts = relevant_instructions
+            .iter()
+            .filter_map(|instruction| {
+                if instruction.blober != blober || instruction.blob != *blob {
+                    return None;
+                }
+
+                let RelevantInstruction::InsertChunk(insert) = &instruction.instruction else {
+                    return None;
+                };
+
+                Some(InsertChunk {
+                    idx: insert.idx,
+                    data: insert.data.clone(),
+                })
+            })
+            .collect::<Vec<InsertChunk>>();
+
+        let blob_data = inserts.iter().sorted_by_key(|insert| insert.idx).fold(
+            Vec::new(),
+            |mut acc, insert| {
+                acc.extend_from_slice(&insert.data);
+                acc
+            },
+        );
+
+        if blob_data.len() != *blob_size as usize {
+            return Err(LedgerDataBlobError::SizeMismatch.into());
+        }
+
+        if relevant_instructions
+            .iter()
+            .filter(|instruction| {
+                instruction.blober == blober
+                    && matches!(
+                        instruction.instruction,
+                        RelevantInstruction::FinalizeBlob(_)
+                    )
+            })
+            .count()
+            > 1
+        {
+            return Err(LedgerDataBlobError::MultipleFinalizes.into());
+        }
+
+        if relevant_instructions.iter().any(|instruction| {
+            instruction.blober == blober
+                && instruction.blob == *blob
+                && matches!(
+                    instruction.instruction,
+                    RelevantInstruction::FinalizeBlob(_)
+                )
+        }) {
+            return Err(LedgerDataBlobError::FinalizeNotFound.into());
+        }
+
+        Ok(blob_data)
     }
 
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].

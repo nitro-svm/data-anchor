@@ -4150,6 +4150,8 @@ dependencies = [
 name = "nitro-da-indexer-api"
 version = "0.1.0"
 dependencies = [
+ "anchor-lang",
+ "blober",
  "jsonrpsee",
  "nitro-da-proofs",
  "serde",

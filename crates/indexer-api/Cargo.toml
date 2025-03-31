@@ -14,7 +14,9 @@ jsonrpsee = { workspace = true, features = ["client-core"] }
 serde = { workspace = true, features = ["alloc", "derive"] }
 
 # Solana & Agave
+anchor-lang = { workspace = true }
 solana-sdk = { workspace = true }
 
 # Locals
+blober = { workspace = true }
 nitro-da-proofs = { workspace = true }
