@@ -4,6 +4,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use blober::find_blober_address;
 use itertools::Itertools;
 use rand::Rng;
 use solana_client::{
@@ -39,7 +40,7 @@ async fn full_workflow_mock() {
         },
         RpcClientConfig::with_commitment(CommitmentConfig::confirmed()),
     ));
-    full_workflow(client).await;
+    full_workflow(client, false).await;
 }
 
 #[tokio::test]
@@ -52,7 +53,7 @@ async fn full_workflow_unreliable_client() {
         }),
         RpcClientConfig::default(),
     ));
-    full_workflow(bad_client).await;
+    full_workflow(bad_client, false).await;
 }
 
 #[tokio::test]
@@ -62,10 +63,10 @@ async fn full_workflow_localnet() {
         "http://127.0.0.1:8899".to_string(),
         CommitmentConfig::confirmed(),
     ));
-    full_workflow(client).await;
+    full_workflow(client, true).await;
 }
 
-async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
+async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let payer = Arc::new(Keypair::new());
     blober_rpc_client
         .request_airdrop_with_config(
@@ -79,6 +80,27 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
         .await
         .unwrap();
     print!("Airdropping 10 SOL");
+
+    let priority = Priority::default();
+    let fee_strategy = FeeStrategy::BasedOnRecentFees(priority);
+
+    let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
+        .await
+        .unwrap();
+    let blober_client = BloberClient::builder()
+        .payer(payer.clone())
+        .program_id(blober::id())
+        .rpc_client(blober_rpc_client.clone())
+        .batch_client(batch_client)
+        .build();
+
+    let namespace = "test".to_owned();
+    let blober_pubkey = find_blober_address(payer.pubkey(), &namespace);
+    blober_client
+        .initialize_blober(fee_strategy, namespace, Some(Duration::from_secs(5)))
+        .await
+        .unwrap();
+
     let mut balance_before = 0;
     while balance_before == 0 {
         balance_before = blober_rpc_client
@@ -95,23 +117,6 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
         payer.pubkey(),
         balance_before / LAMPORTS_PER_SOL
     );
-
-    let priority = Priority::default();
-    let fee_strategy = FeeStrategy::BasedOnRecentFees(priority);
-
-    // Better to initialize blober program and return its public key here
-    let blober = Keypair::new();
-    let blober_pubkey = blober.pubkey();
-
-    let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
-        .await
-        .unwrap();
-    let blober_client = BloberClient::builder()
-        .payer(payer.clone())
-        .program_id(blober_pubkey)
-        .rpc_client(blober_rpc_client.clone())
-        .batch_client(batch_client)
-        .build();
 
     // Useful for spotting the blob data in the transaction ledger.
     let data: Vec<u8> = [0xDE, 0xAD, 0xBE, 0xEF]
@@ -130,7 +135,13 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
         }
     };
 
-    blober_client
+    let slot_before_upload = blober_client
+        .rpc_client
+        .get_slot_with_commitment(CommitmentConfig::confirmed())
+        .await
+        .unwrap();
+
+    let result = blober_client
         .upload_blob(
             &data,
             fee_strategy,
@@ -152,11 +163,38 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>) {
             balance_after,
             expected_fee.total_fee()
         );
-        assert_eq!(
-            balance_after,
-            balance_before - expected_fee.total_fee().into_inner() as u64
+        assert!(
+            // The fee is not exact, but should be within 1000 lamports.
+            balance_after.abs_diff(balance_before - expected_fee.total_fee().into_inner() as u64)
+                < 1000,
         );
     }
+
+    if !check_ledger {
+        return;
+    }
+
+    let signatures = result.iter().map(|r| r.signature).collect::<Vec<_>>();
+
+    let ledger_data = blober_client
+        .get_ledger_blobs_from_signatures(blober_pubkey, signatures)
+        .await
+        .unwrap();
+
+    assert_eq!(data, ledger_data);
+
+    let finalized_slot = result.last().unwrap().slot;
+
+    let all_ledger_blobs = blober_client
+        .get_ledger_blobs(
+            finalized_slot,
+            blober_pubkey,
+            Some(finalized_slot - slot_before_upload + 1),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(vec![data], all_ledger_blobs);
 }
 
 #[tokio::test]

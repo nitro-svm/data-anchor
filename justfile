@@ -66,6 +66,11 @@ test:
 [group('test')]
 test-all: test-programs test
 
+# Run full workflow tests on a local network - the local network must be running
+[group('test')]
+test-with-local: (deploy 'localnet')
+    cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
+
 # Run pre-push checks
 [group('dev')]
 pre-push: lint-fix test-all

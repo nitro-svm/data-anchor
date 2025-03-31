@@ -447,7 +447,7 @@ pub(crate) fn get_blob_data_from_instructions(
         return Err(LedgerDataBlobError::SizeMismatch);
     }
 
-    if relevant_instructions.iter().any(|instruction| {
+    if !relevant_instructions.iter().any(|instruction| {
         instruction.blober == blober
             && instruction.blob == blob
             && matches!(
@@ -465,15 +465,12 @@ pub(crate) fn get_blob_data_from_instructions(
 pub fn filter_relevant_instructions(
     instructions: Vec<RelevantInstructionWithAccounts>,
     finalized_blobs: &HashSet<Pubkey>,
-) -> HashMap<Pubkey, Vec<RelevantInstructionWithAccounts>> {
-    instructions.into_iter().fold(
-        HashMap::<Pubkey, Vec<RelevantInstructionWithAccounts>>::new(),
-        |mut acc, instruction| {
-            if !finalized_blobs.contains(&instruction.blob) {
-                return acc;
-            }
-            acc.entry(instruction.blob).or_default().push(instruction);
-            acc
-        },
-    )
+    acc: &mut HashMap<Pubkey, Vec<RelevantInstructionWithAccounts>>,
+) {
+    for instruction in instructions {
+        if !finalized_blobs.contains(&instruction.blob) {
+            continue;
+        }
+        acc.entry(instruction.blob).or_default().push(instruction);
+    }
 }

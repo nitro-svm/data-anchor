@@ -21,6 +21,7 @@ use nitro_da_indexer_api::{
     RelevantInstruction, RelevantInstructionWithAccounts,
 };
 use solana_cli_config::Config;
+use solana_client::rpc_config::RpcTransactionConfig;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::config::RpcBlockConfig;
 use solana_sdk::{
@@ -349,7 +350,14 @@ impl BloberClient {
         let relevant_transactions = futures::stream::iter(signatures)
             .map(|signature| async move {
                 self.rpc_client
-                    .get_transaction(&signature, UiTransactionEncoding::Base58)
+                    .get_transaction_with_config(
+                        &signature,
+                        RpcTransactionConfig {
+                            commitment: Some(self.rpc_client.commitment()),
+                            encoding: Some(UiTransactionEncoding::Base58),
+                            ..Default::default()
+                        },
+                    )
                     .await
             })
             .buffer_unordered(DEFAULT_CONCURRENCY)
@@ -362,8 +370,8 @@ impl BloberClient {
             &relevant_transactions
                 .iter()
                 .filter_map(|encoded| match &encoded.transaction.meta {
-                    Some(meta) if meta.status.is_ok() => encoded.transaction.transaction.decode(),
-                    _ => None,
+                    Some(meta) if meta.status.is_err() => None,
+                    _ => encoded.transaction.transaction.decode(),
                 })
                 .collect::<Vec<_>>(),
         );
@@ -371,7 +379,7 @@ impl BloberClient {
         let declares = relevant_instructions
             .iter()
             .filter_map(|instruction| {
-                (instruction.blober != blober
+                (instruction.blober == blober
                     && matches!(instruction.instruction, RelevantInstruction::DeclareBlob(_)))
                 .then_some(instruction.blob)
             })
@@ -413,14 +421,27 @@ impl BloberClient {
         blober: Pubkey,
         lookback_slots: Option<u64>,
     ) -> BloberClientResult<Vec<Vec<u8>>> {
-        let block = self.rpc_client.get_block(slot).await?;
+        let block_config = RpcBlockConfig {
+            commitment: Some(self.rpc_client.commitment()),
+            encoding: Some(UiTransactionEncoding::Base58),
+            ..Default::default()
+        };
+        let block = self
+            .rpc_client
+            .get_block_with_config(slot, block_config)
+            .await?;
+
+        let Some(transactions) = block.transactions else {
+            // If there are no transactions in the block, that means there are no blobs to fetch.
+            return Ok(Vec::new());
+        };
+
         let relevant_instructions = extract_relevant_instructions(
-            &block
-                .transactions
+            &transactions
                 .iter()
                 .filter_map(|tx| match &tx.meta {
-                    Some(meta) if meta.status.is_ok() => tx.transaction.decode(),
-                    _ => None,
+                    Some(meta) if meta.status.is_err() => None,
+                    _ => tx.transaction.decode(),
                 })
                 .collect::<Vec<_>>(),
         );
@@ -436,12 +457,16 @@ impl BloberClient {
             })
             .collect::<HashSet<Pubkey>>();
 
-        let mut relevant_instructions =
-            filter_relevant_instructions(relevant_instructions, &finalized_blobs);
+        let mut relevant_instructions_map = HashMap::new();
+        filter_relevant_instructions(
+            relevant_instructions,
+            &finalized_blobs,
+            &mut relevant_instructions_map,
+        );
 
         let mut blobs = HashMap::with_capacity(finalized_blobs.len());
         for blob in &finalized_blobs {
-            let instructions = relevant_instructions
+            let instructions = relevant_instructions_map
                 .get(blob)
                 .expect("This should never happen since we at least have the finalize instruction");
 
@@ -459,32 +484,44 @@ impl BloberClient {
 
         let block_slots = self
             .rpc_client
-            .get_blocks(slot - lookback_slots, Some(slot))
+            .get_blocks_with_commitment(
+                slot - lookback_slots,
+                Some(slot - 1),
+                self.rpc_client.commitment(),
+            )
             .await?;
 
-        for slot in block_slots {
-            let block = self.rpc_client.get_block(slot).await?;
+        for slot in block_slots.into_iter().rev() {
+            let block = self
+                .rpc_client
+                .get_block_with_config(slot, block_config)
+                .await?;
+            let Some(transactions) = block.transactions else {
+                // If there are no transactions in the block, go to the next block.
+                continue;
+            };
             let new_relevant_instructions = extract_relevant_instructions(
-                &block
-                    .transactions
+                &transactions
                     .iter()
                     .filter_map(|tx| match &tx.meta {
-                        Some(meta) if meta.status.is_ok() => tx.transaction.decode(),
-                        _ => None,
+                        Some(meta) if meta.status.is_err() => None,
+                        _ => tx.transaction.decode(),
                     })
                     .collect::<Vec<_>>(),
             );
-            relevant_instructions.extend(filter_relevant_instructions(
+            filter_relevant_instructions(
                 new_relevant_instructions,
                 &finalized_blobs,
-            ));
+                &mut relevant_instructions_map,
+            );
             for blob in &finalized_blobs {
                 if blobs.contains_key(blob) {
                     continue;
                 }
-                let instructions = relevant_instructions.get(blob).expect(
+                let instructions = relevant_instructions_map.get(blob).expect(
                     "This should never happen since we at least have the finalize instruction",
                 );
+                println!("total {}", instructions.len());
 
                 if let Ok(blob_data) = get_blob_data_from_instructions(instructions, blober, *blob)
                 {
@@ -559,8 +596,8 @@ impl BloberClient {
             .transactions
             .iter()
             .filter_map(|tx| match &tx.meta {
-                Some(meta) if meta.status.is_ok() => tx.transaction.decode(),
-                _ => None,
+                Some(meta) if meta.status.is_err() => None,
+                _ => tx.transaction.decode(),
             })
             .filter_map(|tx| {
                 let instructions = tx

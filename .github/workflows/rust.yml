@@ -152,6 +152,14 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v2
       - run: just test
+      - name: Run full workflow test against local validator
+        run: |
+          solana-test-validator &
+          solana config set --url "http://localhost:8899" --commitment processed
+          cp ./docker/solana/id.json "$HOME/.config/solana/id.json"
+          sleep 5
+          solana airdrop 100
+          just --yes test-with-local
 
   changes:
     runs-on: buildjet-8vcpu-ubuntu-2204
