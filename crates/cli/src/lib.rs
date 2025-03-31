@@ -39,7 +39,7 @@ struct Cli {
 
     /// The URL of the indexer to use.
     #[arg(short, long)]
-    pub indexer_url: String,
+    pub indexer_url: Option<String>,
 
     /// The namespace to use to generate the blober PDA.
     #[arg(short, long)]
@@ -70,7 +70,7 @@ pub struct Options {
     command: Command,
     program_id: Pubkey,
     payer: Arc<Keypair>,
-    indexer_url: String,
+    indexer_url: Option<String>,
     namespace: String,
     config: Config,
 }
@@ -100,15 +100,21 @@ impl Options {
     pub async fn run(self) -> BloberClientResult {
         let blober = find_blober_address(self.payer.pubkey(), &self.namespace);
 
-        let client = Arc::new(
-            BloberClient::builder()
-                .payer(self.payer.clone())
-                .program_id(self.program_id)
-                .indexer_from_url(&self.indexer_url)
+        let builder = BloberClient::builder()
+            .payer(self.payer.clone())
+            .program_id(self.program_id);
+
+        let client = if let Some(indexer_url) = self.indexer_url {
+            builder
+                .indexer_from_url(&indexer_url)
                 .await?
                 .build_with_config(self.config)
-                .await?,
-        );
+                .await?
+        } else {
+            builder.build_with_config(self.config).await?
+        };
+
+        let client = Arc::new(client);
 
         match self.command {
             Command::Blober(subcommand) => {

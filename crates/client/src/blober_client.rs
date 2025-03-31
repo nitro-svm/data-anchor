@@ -99,7 +99,6 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
     where
         State::Payer: IsSet,
         State::ProgramId: IsSet,
-        State::IndexerClient: IsSet,
         State::RpcClient: IsUnset,
         State::BatchClient: IsUnset,
     {
