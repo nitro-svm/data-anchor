@@ -296,9 +296,9 @@ impl RpcSender for UnreliableSender {
         params: serde_json::Value,
     ) -> Result<serde_json::Value, Error> {
         let failure_rate = match &request {
-            // Always let airdrops and balance checks through, since those
+            // Always let airdrops, balance checks and slot queries through, since those
             // are used in the test setup itself.
-            RpcRequest::RequestAirdrop | RpcRequest::GetBalance => 0.0,
+            RpcRequest::RequestAirdrop | RpcRequest::GetBalance | RpcRequest::GetSlot => 0.0,
             // This needs special treatment since we want to simulate some of the transactions failing,
             // not the entire request.
             RpcRequest::GetSignatureStatuses => {
