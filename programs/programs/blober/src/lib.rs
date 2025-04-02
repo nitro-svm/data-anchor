@@ -57,6 +57,7 @@ pub fn compute_blob_digest<A: AsRef<[u8]>>(chunks: &[(u16, A)]) -> [u8; 32] {
 
 /// Retrieves the PDA address of a blob account to store chunks and digest the data.
 pub fn find_blob_address(
+    program_id: Pubkey,
     payer: Pubkey,
     blober: Pubkey,
     timestamp: u64,
@@ -70,14 +71,14 @@ pub fn find_blob_address(
             timestamp.to_le_bytes().as_ref(),
             (blob_size as u32).to_le_bytes().as_ref(),
         ],
-        &id(),
+        &program_id,
     )
     .0
 }
 
 /// Retrieves the PDA address of a blober account to store digests and finalize blobs.
-pub fn find_blober_address(payer: Pubkey, namespace: &str) -> Pubkey {
-    Pubkey::find_program_address(&[SEED, payer.as_ref(), namespace.as_bytes()], &id()).0
+pub fn find_blober_address(program_id: Pubkey, payer: Pubkey, namespace: &str) -> Pubkey {
+    Pubkey::find_program_address(&[SEED, payer.as_ref(), namespace.as_bytes()], &program_id).0
 }
 
 /// Computes the hashed state of a blob account.

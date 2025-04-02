@@ -88,7 +88,7 @@ async fn upload_blob(
 
     println!("num chunks: {} * {}", chunks.len(), chunks[0].1.len());
 
-    let blob = find_blob_address(payer.pubkey(), blober, timestamp, data.len());
+    let blob = find_blob_address(program_id, payer.pubkey(), blober, timestamp, data.len());
     // Create blob
     {
         let transaction = Transaction::new_signed_with_payer(
@@ -151,7 +151,7 @@ async fn upload_blob(
 #[tokio::test]
 async fn test_100k_blob() {
     solana_logger::setup();
-    let program_id = solana_sdk::pubkey::Pubkey::new_from_array(id().to_bytes());
+    let program_id = id();
     let system_program = solana_program::system_program::id();
 
     println!("program_id: {:?}", program_id);
@@ -159,7 +159,7 @@ async fn test_100k_blob() {
     let program_test = ProgramTest::new("blob", program_id, processor!(test_entry));
     let (mut banks_client, payer, _) = program_test.start().await;
 
-    let blober = find_blober_address(payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -226,8 +226,8 @@ async fn idle_blob_fails() {
     let chunks = data.chunks(CHUNK_SIZE as usize).collect::<Vec<_>>();
     println!("num chunks: {} * {}", chunks.len(), chunks[0].len());
 
-    let blober = find_blober_address(payer.pubkey(), "test");
-    let blob = find_blob_address(payer.pubkey(), blober, 0, data_len);
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
+    let blob = find_blob_address(program_id, payer.pubkey(), blober, 0, data_len);
 
     // Create blober account.
     {
@@ -340,7 +340,7 @@ async fn hash_single_account() {
     let program_test = ProgramTest::new("blober", program_id, processor!(test_entry));
     let random_data: Vec<_> = (0u8..255).cycle().take(10 * 1024).collect();
     let (mut banks_client, payer, _) = program_test.start().await;
-    let blober = find_blober_address(payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -431,7 +431,7 @@ async fn hash_two_accounts() {
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
-    let blober = find_blober_address(payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -567,7 +567,7 @@ async fn hash_three_accounts() {
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
-    let blober = find_blober_address(payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -742,7 +742,7 @@ async fn hash_single_account_in_two_slots() {
     let source_data: Vec<_> = (0u8..255).cycle().take(10 * 1024).collect();
     let mut context = program_test.start_with_context().await;
 
-    let blober = find_blober_address(context.payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, context.payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -873,7 +873,7 @@ async fn hash_blober_itself() {
     let program_test = ProgramTest::new("blober", program_id, processor!(test_entry));
     let (mut banks_client, payer, _) = program_test.start().await;
 
-    let blober = find_blober_address(payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
 
     // Create blober account.
     {

@@ -148,7 +148,7 @@ impl BloberClient {
         namespace: String,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
-        let blober = find_blober_address(self.payer.pubkey(), &namespace);
+        let blober = find_blober_address(self.program_id, self.payer.pubkey(), &namespace);
 
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(
@@ -230,7 +230,13 @@ impl BloberClient {
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let timestamp = get_unique_timestamp();
 
-        let blob = find_blob_address(self.payer.pubkey(), blober, timestamp, blob_data.len());
+        let blob = find_blob_address(
+            self.program_id,
+            self.payer.pubkey(),
+            blober,
+            timestamp,
+            blob_data.len(),
+        );
 
         let upload_messages = self
             .generate_messages(blob, timestamp, blob_data, fee_strategy, blober)

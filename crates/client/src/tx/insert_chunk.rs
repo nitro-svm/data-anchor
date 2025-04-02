@@ -40,7 +40,7 @@ impl MessageBuilder for InsertChunk {
         let timestamp: u64 = u.arbitrary()?;
         let idx: u16 = u.arbitrary()?;
         let data: Vec<u8> = u.arbitrary()?;
-        let blob = blober::find_blob_address(payer, blober, timestamp, data.len());
+        let blob = blober::find_blob_address(blober::id(), payer, blober, timestamp, data.len());
 
         Ok((InsertChunk { data, idx }, blob))
     }

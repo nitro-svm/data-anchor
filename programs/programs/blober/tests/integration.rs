@@ -34,7 +34,7 @@ async fn test_validator_transaction() {
     // some deadlock with the JsonRPC server shutdown. This is a test, so leak it to keep tests moving.
     std::mem::forget(test_validator);
 
-    let blober = find_blober_address(payer.pubkey(), "test");
+    let blober = find_blober_address(program_id, payer.pubkey(), "test");
 
     // Create blober account.
     {
@@ -82,7 +82,7 @@ async fn test_validator_transaction() {
         .unwrap()
         .as_secs();
 
-    let blob = find_blob_address(payer.pubkey(), blober, timestamp, data.len());
+    let blob = find_blob_address(program_id, payer.pubkey(), blober, timestamp, data.len());
 
     // Create blob
     {

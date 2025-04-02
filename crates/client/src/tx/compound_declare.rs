@@ -76,7 +76,8 @@ impl MessageBuilder for CompoundDeclare {
     ) -> arbitrary::Result<Self::Input> {
         let timestamp: u64 = u.arbitrary()?;
         let blob_data: [u8; blober::COMPOUND_DECLARE_TX_SIZE as usize] = u.arbitrary()?;
-        let blob = blober::find_blob_address(payer, blober, timestamp, blob_data.len());
+        let blob =
+            blober::find_blob_address(blober::id(), payer, blober, timestamp, blob_data.len());
 
         Ok(CompoundDeclare {
             declare: DeclareBlob {

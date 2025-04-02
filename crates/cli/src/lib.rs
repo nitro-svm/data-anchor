@@ -106,7 +106,7 @@ impl Options {
 
     /// Run the parsed CLI command.
     pub async fn run(self) -> BloberClientResult {
-        let blober = find_blober_address(self.payer.pubkey(), &self.namespace);
+        let blober = find_blober_address(self.program_id, self.payer.pubkey(), &self.namespace);
 
         let builder = BloberClient::builder()
             .payer(self.payer.clone())

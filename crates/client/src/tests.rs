@@ -95,7 +95,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .build();
 
     let namespace = "test".to_owned();
-    let blober_pubkey = find_blober_address(payer.pubkey(), &namespace);
+    let blober_pubkey = find_blober_address(blober::id(), payer.pubkey(), &namespace);
     blober_client
         .initialize_blober(fee_strategy, namespace, Some(Duration::from_secs(5)))
         .await

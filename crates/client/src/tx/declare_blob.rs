@@ -40,7 +40,7 @@ impl MessageBuilder for DeclareBlob {
     ) -> arbitrary::Result<Self::Input> {
         let timestamp: u64 = u.arbitrary()?;
         let blob_size: usize = u.arbitrary()?;
-        let blob = blober::find_blob_address(payer, blober, timestamp, blob_size);
+        let blob = blober::find_blob_address(blober::id(), payer, blober, timestamp, blob_size);
 
         Ok((
             DeclareBlob {

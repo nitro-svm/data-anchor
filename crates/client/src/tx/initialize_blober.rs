@@ -40,7 +40,7 @@ impl MessageBuilder for Initialize {
         _blober: Pubkey,
     ) -> arbitrary::Result<Self::Input> {
         let namespace: String = u.arbitrary()?;
-        let blober = blober::find_blober_address(payer, &namespace);
+        let blober = blober::find_blober_address(blober::id(), payer, &namespace);
 
         Ok((namespace, blober))
     }

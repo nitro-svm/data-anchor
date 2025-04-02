@@ -145,7 +145,7 @@ pub trait MessageBuilder {
                         .await
                         .unwrap()
                 } else {
-                    blober::find_blober_address(payer.pubkey(), &namespace)
+                    blober::find_blober_address(blober::id(), payer.pubkey(), &namespace)
                 };
 
                 let input = Self::generate_arbitrary_input(u, payer.pubkey(), blober).unwrap();
@@ -220,7 +220,7 @@ mod utils {
         payer: &Keypair,
         namespace: &str,
     ) -> Result<Pubkey, Box<dyn std::error::Error>> {
-        let blober = find_blober_address(payer.pubkey(), namespace);
+        let blober = find_blober_address(blober::id(), payer.pubkey(), namespace);
 
         let accounts = blober::accounts::Initialize {
             blober,
@@ -260,7 +260,7 @@ mod utils {
         payer: &Keypair,
         namespace: &str,
     ) -> Result<Pubkey, Box<dyn std::error::Error>> {
-        let blober = find_blober_address(payer.pubkey(), namespace);
+        let blober = find_blober_address(blober::id(), payer.pubkey(), namespace);
 
         let accounts = blober::accounts::Close {
             blober,

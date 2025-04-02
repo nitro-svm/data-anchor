@@ -84,7 +84,7 @@ impl MessageBuilder for Compound {
     ) -> arbitrary::Result<Self::Input> {
         let timestamp: u64 = u.arbitrary()?;
         let data: [u8; blober::COMPOUND_TX_SIZE as usize] = u.arbitrary()?;
-        let blob = blober::find_blob_address(payer, blober, timestamp, data.len());
+        let blob = blober::find_blob_address(blober::id(), payer, blober, timestamp, data.len());
 
         Ok(Compound::new(blob, timestamp, data.to_vec()))
     }
