@@ -40,12 +40,10 @@ jobs:
           tar -czvf ../../../nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nitro-da-cli
 
       - name: Upload to AWS S3
-        uses: jakejarvis/s3-sync-action@master
+        uses: shallwefootball/s3-upload-action@master
         with:
-          args: --acl public-read
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          SOURCE_DIR: "."
-          DEST_DIR: "nitro-da-cli/${{ github.ref_name }}"
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          aws_bucket: ${{ secrets.AWS_S3_BUCKET }}
+          source_dir: "."
+          destination_dir: "nitro-da-cli/${{ github.ref_name }}"
