@@ -40,7 +40,7 @@ jobs:
           tar -czvf ../../../nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nitro-da-cli
 
       - name: Upload to AWS S3
-        uses: shallwefootball/s3-upload-action@master
+        uses: shallwefootball/upload-s3-upload@master
         with:
           aws_key_id: ${{ secrets.AWS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
