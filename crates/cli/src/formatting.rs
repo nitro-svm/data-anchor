@@ -139,7 +139,7 @@ impl CommandOutput {
                     success,
                 } => serde_json::to_string(&json!({
                     "slot": slot,
-                    "signatures": signatures,
+                    "signatures": signatures.iter().map(|sig| sig.to_string()).collect::<Vec<_>>(),
                     "success": success,
                 })),
                 BlobCommandOutput::Fetching(vec) => {
@@ -182,7 +182,7 @@ impl CommandOutput {
                     success,
                 } => serde_json::to_string_pretty(&json!({
                     "slot": slot,
-                    "signatures": signatures,
+                    "signatures": signatures.iter().map(|sig| sig.to_string()).collect::<Vec<_>>(),
                     "success": success,
                 })),
                 BlobCommandOutput::Fetching(vec) => {
