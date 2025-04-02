@@ -3,7 +3,7 @@
 set -eou
 
 BIN_NAME="nitro-da-cli"
-VERSION="${VERSION:-v1.2.0}"
+VERSION="${VERSION:-v0.1.0}"
 INSTALL_DIR="$HOME/.cargo/bin"
 AWS_S3_BUCKET="nitro-da-cli-releases"
 AWS_REGION="eu-north-1"

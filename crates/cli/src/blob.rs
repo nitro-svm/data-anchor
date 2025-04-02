@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
+use itertools::Itertools;
 use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority, TransactionType};
 use serde::Serialize;
 use solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature};
@@ -22,28 +23,59 @@ pub enum BlobSubCommand {
         /// The Pubkey of the blob to discard.
         blob: Pubkey,
     },
+    /// Fetch blob data from the ledger.
+    #[command(visible_alias = "f")]
+    Fetch {
+        /// The signatures of the transactions from which the blob data will be fetched.
+        signatures: Vec<Signature>,
+    },
+    /// Get all blobs finalized in the given slot.
+    #[command(visible_alias = "g")]
+    Get {
+        /// The slot to get blobs from.
+        slot: Slot,
+        /// The number of slots to look back to find all pieces of the finalized blobs.
+        #[arg(short, long)]
+        lookback_slots: Option<u64>,
+    },
 }
 
 #[derive(Debug, Serialize)]
-pub struct BlobCommandOutput {
-    slot: Slot,
-    signatures: Vec<Signature>,
-    success: bool,
+pub enum BlobCommandOutput {
+    Posting {
+        slot: Slot,
+        signatures: Vec<Signature>,
+        success: bool,
+    },
+    Fetching(Vec<Vec<u8>>),
 }
 
 impl std::fmt::Display for BlobCommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Slot: {}, Signatures: [{}], Success: {}",
-            self.slot,
-            self.signatures
-                .iter()
-                .map(|sig| sig.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
-            self.success
-        )
+        match self {
+            BlobCommandOutput::Fetching(blobs) => {
+                write!(
+                    f,
+                    "Fetched blobs: [{}]",
+                    blobs.iter().map(hex::encode).collect_vec().join(", ")
+                )
+            }
+            BlobCommandOutput::Posting {
+                slot,
+                signatures,
+                success,
+            } => {
+                write!(
+                    f,
+                    "Slot: {slot}, Signatures: [{}], Success: {success}",
+                    signatures
+                        .iter()
+                        .map(|sig| sig.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                )
+            }
+        }
     }
 }
 
@@ -66,7 +98,7 @@ impl BlobSubCommand {
                     )
                     .await?;
                 let last_tx = results.last().expect("there should be at least one result");
-                Ok(BlobCommandOutput {
+                Ok(BlobCommandOutput::Posting {
                     slot: last_tx.slot,
                     signatures: results.iter().map(|tx| tx.signature).collect(),
                     success: matches!(last_tx.data, TransactionType::FinalizeBlob),
@@ -83,12 +115,27 @@ impl BlobSubCommand {
                     )
                     .await?;
                 let last_tx = results.last().expect("there should be at least one result");
-                Ok(BlobCommandOutput {
+                Ok(BlobCommandOutput::Posting {
                     slot: last_tx.slot,
                     signatures: results.iter().map(|tx| tx.signature).collect(),
                     success: matches!(last_tx.data, TransactionType::DiscardBlob),
                 }
                 .into())
+            }
+            BlobSubCommand::Fetch { signatures } => {
+                let blob = client
+                    .get_ledger_blobs_from_signatures(blober, signatures.to_owned())
+                    .await?;
+                Ok(BlobCommandOutput::Fetching(vec![blob]).into())
+            }
+            BlobSubCommand::Get {
+                slot,
+                lookback_slots,
+            } => {
+                let blobs = client
+                    .get_ledger_blobs(*slot, blober, *lookback_slots)
+                    .await?;
+                Ok(BlobCommandOutput::Fetching(blobs).into())
             }
         }
     }

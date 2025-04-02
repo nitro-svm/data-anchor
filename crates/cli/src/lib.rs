@@ -31,6 +31,14 @@ struct Cli {
     #[command(subcommand)]
     pub command: Command,
 
+    /// The program ID of the Blober program.
+    #[arg(short, long)]
+    pub program_id: Pubkey,
+
+    /// The namespace to use to generate the blober PDA.
+    #[arg(short, long)]
+    pub namespace: String,
+
     /// The payer account to use for transactions.
     #[arg(short = 's', long)]
     pub payer: Option<String>,
@@ -39,17 +47,9 @@ struct Cli {
     #[arg(short, long, value_enum, default_value_t = OutputFormat::Text)]
     pub output: OutputFormat,
 
-    /// The program ID of the Blober program.
-    #[arg(short, long)]
-    pub program_id: Pubkey,
-
     /// The URL of the indexer to use.
     #[arg(short, long)]
     pub indexer_url: Option<String>,
-
-    /// The namespace to use to generate the blober PDA.
-    #[arg(short, long)]
-    pub namespace: String,
 
     /// The path to the Solana [`Config`] file.
     #[arg(short, long, default_value_t = solana_cli_config::CONFIG_FILE.as_ref().unwrap().clone())]
@@ -133,7 +133,7 @@ impl Options {
             Command::Benchmark(subcommand) => subcommand.run(client.clone(), blober).await,
         }?;
 
-        output.serialize_output(self.output);
+        println!("{}", output.serialize_output(self.output));
 
         Ok(())
     }

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use clap::{Args, Parser};
+use itertools::Itertools;
 use nitro_da_client::{BloberClient, BloberClientResult};
 use nitro_da_indexer_api::CompoundProof;
 use serde::Serialize;
@@ -37,10 +38,14 @@ impl std::fmt::Display for IndexerCommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             IndexerCommandOutput::Blobs(blobs) => {
-                write!(f, "Blobs: {}", blobs.len())
+                write!(
+                    f,
+                    "Blobs: [{}]",
+                    blobs.iter().map(hex::encode).collect_vec().join(", ")
+                )
             }
             IndexerCommandOutput::Proofs(proof) => {
-                write!(f, "Proofs: {:?}", proof)
+                write!(f, "Proofs: {proof:?}")
             }
         }
     }

@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde_json::json;
 
 use crate::{
     benchmark::{write_measurements, BenchmarkCommandOutput},
@@ -71,11 +72,34 @@ impl CommandOutput {
                 writer.serialize(output)?;
                 Ok(String::from_utf8(writer.into_inner()?)?)
             }
-            CommandOutput::Blob(output) => {
-                let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
-                writer.serialize(output)?;
-                Ok(String::from_utf8(writer.into_inner()?)?)
-            }
+            CommandOutput::Blob(output) => match output {
+                BlobCommandOutput::Posting {
+                    slot,
+                    signatures,
+                    success,
+                } => {
+                    let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
+                    writer.write_record(["slot", "signatures", "success"])?;
+                    writer.write_record(&[
+                        format!("{slot}"),
+                        signatures
+                            .iter()
+                            .map(|sig| sig.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                        format!("{success}"),
+                    ])?;
+                    Ok(String::from_utf8(writer.into_inner()?)?)
+                }
+                BlobCommandOutput::Fetching(vec) => {
+                    let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
+                    writer.write_record(["data"])?;
+                    for blob in vec {
+                        writer.write_record(&[hex::encode(blob)])?;
+                    }
+                    Ok(String::from_utf8(writer.into_inner()?)?)
+                }
+            },
             CommandOutput::Indexer(output) => match output {
                 IndexerCommandOutput::Blobs(vec) => {
                     let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
@@ -105,26 +129,100 @@ impl CommandOutput {
         }
     }
 
+    fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_res = match self {
+            CommandOutput::Blober(output) => serde_json::to_string(output),
+            CommandOutput::Blob(output) => match output {
+                BlobCommandOutput::Posting {
+                    slot,
+                    signatures,
+                    success,
+                } => serde_json::to_string(&json!({
+                    "slot": slot,
+                    "signatures": signatures,
+                    "success": success,
+                })),
+                BlobCommandOutput::Fetching(vec) => {
+                    let mut output = Vec::with_capacity(vec.len());
+                    for blob in vec {
+                        output.push(json!({
+                            "data": hex::encode(blob),
+                        }));
+                    }
+                    serde_json::to_string(&output)
+                }
+            },
+            CommandOutput::Indexer(output) => match output {
+                IndexerCommandOutput::Blobs(vec) => {
+                    let mut output = Vec::with_capacity(vec.len());
+                    for blob in vec {
+                        output.push(json!({
+                            "data": hex::encode(blob),
+                        }));
+                    }
+                    serde_json::to_string(&output)
+                }
+                IndexerCommandOutput::Proofs(compound_proof) => {
+                    serde_json::to_string(compound_proof)
+                }
+            },
+            CommandOutput::Benchmark(output) => serde_json::to_string(output),
+        };
+
+        Ok(json_res?)
+    }
+
+    fn to_json_pretty(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_res = match self {
+            CommandOutput::Blober(output) => serde_json::to_string_pretty(output),
+            CommandOutput::Blob(output) => match output {
+                BlobCommandOutput::Posting {
+                    slot,
+                    signatures,
+                    success,
+                } => serde_json::to_string_pretty(&json!({
+                    "slot": slot,
+                    "signatures": signatures,
+                    "success": success,
+                })),
+                BlobCommandOutput::Fetching(vec) => {
+                    let mut output = Vec::with_capacity(vec.len());
+                    for blob in vec {
+                        output.push(json!({
+                            "data": hex::encode(blob),
+                        }));
+                    }
+                    serde_json::to_string_pretty(&output)
+                }
+            },
+            CommandOutput::Indexer(output) => match output {
+                IndexerCommandOutput::Blobs(vec) => {
+                    let mut output = Vec::with_capacity(vec.len());
+                    for blob in vec {
+                        output.push(json!({
+                            "data": hex::encode(blob),
+                        }));
+                    }
+                    serde_json::to_string_pretty(&output)
+                }
+                IndexerCommandOutput::Proofs(compound_proof) => {
+                    serde_json::to_string_pretty(compound_proof)
+                }
+            },
+            CommandOutput::Benchmark(output) => serde_json::to_string_pretty(output),
+        };
+
+        Ok(json_res?)
+    }
+
     /// Convert the command output to a string.
     pub fn serialize_output(&self, format: OutputFormat) -> String {
         let fallback = self.to_string();
 
         let output = match format {
             OutputFormat::Text => Ok(fallback.clone()),
-            OutputFormat::Json => match self {
-                CommandOutput::Blober(output) => serde_json::to_string(output),
-                CommandOutput::Blob(output) => serde_json::to_string(output),
-                CommandOutput::Indexer(output) => serde_json::to_string(output),
-                CommandOutput::Benchmark(output) => serde_json::to_string(output),
-            }
-            .map_err(|_| ()),
-            OutputFormat::JsonPretty => match self {
-                CommandOutput::Blober(output) => serde_json::to_string_pretty(output),
-                CommandOutput::Blob(output) => serde_json::to_string_pretty(output),
-                CommandOutput::Indexer(output) => serde_json::to_string_pretty(output),
-                CommandOutput::Benchmark(output) => serde_json::to_string_pretty(output),
-            }
-            .map_err(|_| ()),
+            OutputFormat::Json => self.to_json().map_err(|_| ()),
+            OutputFormat::JsonPretty => self.to_json_pretty().map_err(|_| ()),
             OutputFormat::Csv => self.to_csv().map_err(|_| ()),
         };
 
