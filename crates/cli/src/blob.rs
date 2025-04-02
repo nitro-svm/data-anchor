@@ -5,6 +5,7 @@ use itertools::Itertools;
 use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority, TransactionType};
 use serde::Serialize;
 use solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature};
+use tokio::io::AsyncReadExt;
 use tracing::instrument;
 
 use crate::formatting::CommandOutput;
@@ -15,7 +16,12 @@ pub enum BlobSubCommand {
     #[command(visible_alias = "u")]
     Upload {
         /// The path to the data to upload.
-        data_path: PathBuf,
+        #[arg(short, long)]
+        data_path: Option<PathBuf>,
+
+        /// The raw hex encoded data to upload.
+        #[arg(long, conflicts_with = "data_path")]
+        data: Option<String>,
     },
     /// Discard a blob.
     #[command(visible_alias = "d")]
@@ -87,8 +93,22 @@ impl BlobSubCommand {
         blober: Pubkey,
     ) -> BloberClientResult<CommandOutput> {
         match self {
-            BlobSubCommand::Upload { data_path } => {
-                let blob_data = tokio::fs::read(data_path).await.unwrap();
+            BlobSubCommand::Upload { data_path, data } => {
+                let blob_data = if let Some(data_path) = data_path {
+                    tokio::fs::read(data_path)
+                        .await
+                        .unwrap_or_else(|_| panic!("failed to read file at {data_path:?}"))
+                } else if let Some(data) = data {
+                    hex::decode(data).unwrap_or_else(|_| panic!("failed to decode hex data"))
+                } else {
+                    let mut input = tokio::io::stdin();
+                    let mut data = String::new();
+                    input
+                        .read_to_string(&mut data)
+                        .await
+                        .unwrap_or_else(|_| panic!("failed to read from stdin"));
+                    data.into_bytes()
+                };
                 let results = client
                     .upload_blob(
                         &blob_data,
