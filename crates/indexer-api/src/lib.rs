@@ -1,13 +1,17 @@
 use std::collections::HashSet;
 
 use anchor_lang::{AnchorDeserialize, Discriminator};
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
+use jsonrpsee::{
+    core::{RpcResult, SubscriptionResult},
+    proc_macros::rpc,
+};
 use nitro_da_proofs::compound::{
     completeness::CompoundCompletenessProof, inclusion::CompoundInclusionProof,
 };
 use serde::{Deserialize, Serialize};
 use solana_sdk::{
-    instruction::CompiledInstruction, pubkey::Pubkey, transaction::VersionedTransaction,
+    clock::Slot, instruction::CompiledInstruction, pubkey::Pubkey,
+    transaction::VersionedTransaction,
 };
 
 /// A compound proof that proves whether a blob has been published in a specific slot.
@@ -41,6 +45,12 @@ pub trait IndexerRpc {
     /// Remove a list of blober PDA addresses from the list of tracked blobers.
     #[method(name = "remove_blobers")]
     async fn remove_blobers(&self, blobers: HashSet<Pubkey>) -> RpcResult<()>;
+
+    /// Listen to blob finalization events from specified blobers. This will return a stream of
+    /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is
+    /// shut down.
+    #[subscription(name = "subscribe_blob_finalization" => "listen_subscribe_blob_finalization", unsubscribe = "unsubscribe_blob_finalization", item = (Pubkey, Slot))]
+    async fn subscribe_blob_finalization(&self, blobers: HashSet<Pubkey>) -> SubscriptionResult;
 }
 
 /// A relevant [`blober`] instruction extracted from a [`VersionedTransaction`].
