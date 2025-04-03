@@ -12,7 +12,7 @@ use crate::formatting::CommandOutput;
 
 #[derive(Debug, Parser)]
 pub enum BlobSubCommand {
-    /// Upload a blob of data.
+    /// Upload a blob of data. If no arguments are provided, the data will be read from stdin.
     #[command(visible_alias = "u")]
     Upload {
         /// The path to the data to upload.
