@@ -1,13 +1,12 @@
 #!/usr/bin/env sh
 
-set -eou
+set -eu
 
 BIN_NAME="nitro-da-cli"
-VERSION="${VERSION:-v0.1.0}"
+VERSION="${VERSION:-v0.1.0-rc2}"
 INSTALL_DIR="$HOME/.cargo/bin"
-AWS_S3_BUCKET="nitro-da-cli-releases"
-AWS_REGION="eu-north-1"
-BUCKET_URL="https://${AWS_S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${BIN_NAME}/${VERSION}"
+BASE_URL="https://nitro-da-cli.termina.technology"
+BINARY_URL="${BASE_URL}/${BIN_NAME}/${VERSION}"
 
 detect_platform() {
   uname_out="$(uname -s)"
@@ -32,7 +31,7 @@ detect_platform() {
   esac
 
   TARGET="${arch}-${platform}"
-  DOWNLOAD_URL="${BUCKET_URL}/${BIN_NAME}-${VERSION}-${TARGET}.tar.gz"
+  DOWNLOAD_URL="${BINARY_URL}/${BIN_NAME}-${VERSION}-${TARGET}.tar.gz"
 }
 
 download_binary() {
