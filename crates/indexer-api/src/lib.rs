@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use nitro_da_proofs::compound::{
@@ -31,6 +33,14 @@ pub trait IndexerRpc {
     /// database or RPC failure, and None if the slot has not been completed yet.
     #[method(name = "get_proof")]
     async fn get_proof(&self, blober: Pubkey, slot: u64) -> RpcResult<Option<CompoundProof>>;
+
+    /// Add a list of blober PDA addresses to the list of tracked blobers.
+    #[method(name = "add_blobers")]
+    async fn add_blobers(&self, blobers: HashSet<Pubkey>) -> RpcResult<()>;
+
+    /// Remove a list of blober PDA addresses from the list of tracked blobers.
+    #[method(name = "remove_blobers")]
+    async fn remove_blobers(&self, blobers: HashSet<Pubkey>) -> RpcResult<()>;
 }
 
 /// A relevant [`blober`] instruction extracted from a [`VersionedTransaction`].
