@@ -6,7 +6,7 @@ use ::blober::find_blober_address;
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
-use clap::{Parser, Subcommand};
+use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use nitro_da_client::{BloberClient, BloberClientResult};
@@ -32,28 +32,49 @@ struct Cli {
     pub command: Command,
 
     /// The program ID of the Blober program.
-    #[arg(short, long)]
-    pub program_id: Pubkey,
+    #[arg(short, long, global = true, env = "BLOBER_PROGRAM_ID")]
+    pub program_id: Option<Pubkey>,
 
     /// The namespace to use to generate the blober PDA.
-    #[arg(short, long)]
-    pub namespace: String,
+    #[arg(short, long, global = true, env = "BLOBER_NAMESPACE")]
+    pub namespace: Option<String>,
 
     /// The payer account to use for transactions.
-    #[arg(short = 's', long)]
+    #[arg(short = 's', long, global = true, env = "BLOBER_PAYER")]
     pub payer: Option<String>,
 
     /// The output format to use.
-    #[arg(short, long, value_enum, default_value_t = OutputFormat::Text)]
+    #[arg(
+        short,
+        long,
+        global = true,
+        env = "BLOBER_OUTPUT",
+        value_enum,
+        default_value_t = OutputFormat::Text
+    )]
     pub output: OutputFormat,
 
     /// The URL of the indexer to use.
-    #[arg(short, long)]
+    #[arg(short, long, global = true, env = "BLOBER_INDEXER_URL")]
     pub indexer_url: Option<String>,
 
     /// The path to the Solana [`Config`] file.
-    #[arg(short, long, default_value_t = solana_cli_config::CONFIG_FILE.as_ref().unwrap().clone())]
+    #[arg(
+        short,
+        long,
+        global = true,
+        env = "BLOBER_SOLANA_CONFIG_FILE",
+        default_value_t = solana_cli_config::CONFIG_FILE.as_ref().unwrap().clone()
+    )]
     pub config_file: String,
+}
+
+impl Cli {
+    fn exit_with_missing_arg(msg: &str) -> ! {
+        Self::command()
+            .error(ErrorKind::MissingRequiredArgument, msg)
+            .exit()
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -93,11 +114,23 @@ impl Options {
         let payer = Arc::new(Keypair::read_from_file(payer_path).unwrap());
         trace!("Parsed options: {args:?} {config:?} {payer:?}");
 
+        let Some(namespace) = args.namespace else {
+            Cli::exit_with_missing_arg(
+                "Namespace is not set. Please provide a namespace using the --namespace flag or set the BLOBER_NAMESPACE environment variable."
+            );
+        };
+
+        let Some(program_id) = args.program_id else {
+            Cli::exit_with_missing_arg(
+                "Program ID is not set. Please provide a program ID using the --program-id flag or set the BLOBER_PROGRAM_ID environment variable."
+            );
+        };
+
         Self {
-            namespace: args.namespace,
+            namespace,
             indexer_url: args.indexer_url,
             command: args.command,
-            program_id: args.program_id,
+            program_id,
             output: args.output,
             payer,
             config,
