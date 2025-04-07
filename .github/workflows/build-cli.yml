@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release-and-upload:
-    name: Build, Upload, and Generate URLs
+    name: Build, Upload and Generate URLs
     strategy:
       matrix:
         include:
@@ -40,16 +40,6 @@ jobs:
           cd target/${{ matrix.target }}/release
           tar -czvf ../../../nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nitro-da-cli
 
-      - name: Prepare install-cli.sh for new release (Ubuntu)
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: |
-          find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/${{ github.ref_name }}/" {} +
-
-      - name: Prepare install-cli.sh for new release (MacOS)
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          find ./scripts -type f -name 'install-cli.sh' -exec sed -i '' "s/<VERSION>/${{ github.ref_name }}/" {} +
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
@@ -60,4 +50,26 @@ jobs:
       - name: Upload to AWS S3
         run: |
           aws s3 cp "nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" "s3://${{ secrets.AWS_S3_BUCKET }}/nitro-da-cli/${{ github.ref_name }}/" --acl public-read
+
+  update-install-script:
+    name: Update and Upload install script
+    runs-on: ubuntu-latest
+    needs: release-and-upload
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare install-cli.sh for new release
+        run: |
+          find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/${{ github.ref_name }}/" {} +
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::313512309396:role/GitHubAction-UploadToS3
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload to AWS S3
+        run: |
           aws s3 cp "./scripts/install-cli.sh" "s3://${{ secrets.AWS_S3_BUCKET }}/install.sh" --acl public-read
