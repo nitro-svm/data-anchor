@@ -59,5 +59,5 @@ jobs:
 
       - name: Upload to AWS S3
         run: |
-          aws s3 cp . "s3://${{ secrets.AWS_S3_BUCKET }}/nitro-da-cli/${{ github.ref_name }}" --include "*.tar.gz" --acl public-read
+          aws s3 cp "nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" "s3://${{ secrets.AWS_S3_BUCKET }}/nitro-da-cli/${{ github.ref_name }}/" --acl public-read
           aws s3 cp "./scripts/install-cli.sh" "s3://${{ secrets.AWS_S3_BUCKET }}/install.sh" --acl public-read
