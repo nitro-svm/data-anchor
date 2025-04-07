@@ -3,7 +3,7 @@
 set -eu
 
 BIN_NAME="nitro-da-cli"
-VERSION="${VERSION:-v0.1.0-rc2}"
+VERSION="${VERSION:-<VERSION>}"
 INSTALL_DIR="$HOME/.cargo/bin"
 BASE_URL="https://nitro-da-cli.termina.technology"
 BINARY_URL="${BASE_URL}/${BIN_NAME}/${VERSION}"

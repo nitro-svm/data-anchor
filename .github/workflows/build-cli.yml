@@ -6,6 +6,7 @@ on:
       - "v*.*.*"
 
 permissions:
+  id-token: write
   contents: write
 
 jobs:
@@ -39,11 +40,24 @@ jobs:
           cd target/${{ matrix.target }}/release
           tar -czvf ../../../nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nitro-da-cli
 
-      - name: Upload to AWS S3
-        uses: shallwefootball/upload-s3-action@master
+      - name: Prepare install-cli.sh for new release
+        if: ${{ matrix.os }} == ubuntu-latest
+        run: |
+          find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/${{ github.ref_name }}/" {} +
+
+      - name: Prepare install-cli.sh for new release
+        if: ${{ matrix.os }} != ubuntu-latest
+        run: |
+          find ./scripts -type f -name 'install-cli.sh' -exec sed -i '' "s/<VERSION>/${{ github.ref_name }}/" {} +
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
-          aws_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          aws_bucket: ${{ secrets.AWS_S3_BUCKET }}
-          source_dir: "."
-          destination_dir: "nitro-da-cli/${{ github.ref_name }}"
+          role-to-assume: arn:aws:iam::313512309396:role/GitHubAction-UploadToS3
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload to AWS S3
+        run: |
+          aws s3 cp . "s3://${{ secrets.AWS_S3_BUCKET }}/nitro-da-cli/${{ github.ref_name }}" --include "*.tar.gz" --acl public-read
+          aws s3 cp "./scripts/install-cli.sh" "s3://${{ secrets.AWS_S3_BUCKET }}/install.sh" --acl public-read
