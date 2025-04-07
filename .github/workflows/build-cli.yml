@@ -40,13 +40,13 @@ jobs:
           cd target/${{ matrix.target }}/release
           tar -czvf ../../../nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nitro-da-cli
 
-      - name: Prepare install-cli.sh for new release
-        if: ${{ matrix.os }} == ubuntu-latest
+      - name: Prepare install-cli.sh for new release (Ubuntu)
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         run: |
           find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/${{ github.ref_name }}/" {} +
 
-      - name: Prepare install-cli.sh for new release
-        if: ${{ matrix.os }} != ubuntu-latest
+      - name: Prepare install-cli.sh for new release (MacOS)
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           find ./scripts -type f -name 'install-cli.sh' -exec sed -i '' "s/<VERSION>/${{ github.ref_name }}/" {} +
 
