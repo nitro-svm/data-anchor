@@ -4111,7 +4111,7 @@ dependencies = [
 
 [[package]]
 name = "nitro-da-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "blober",
  "bytesize",
@@ -4135,7 +4135,7 @@ dependencies = [
 
 [[package]]
 name = "nitro-da-client"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anchor-lang",
  "arbitrary",
@@ -4168,7 +4168,7 @@ dependencies = [
 
 [[package]]
 name = "nitro-da-indexer"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "agave-geyser-plugin-interface",
  "anchor-lang",
@@ -4199,7 +4199,7 @@ dependencies = [
 
 [[package]]
 name = "nitro-da-indexer-api"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anchor-lang",
  "blober",
@@ -4211,7 +4211,7 @@ dependencies = [
 
 [[package]]
 name = "nitro-da-proofs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anchor-lang",
  "arbitrary",
