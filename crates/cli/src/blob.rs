@@ -121,7 +121,7 @@ impl BlobSubCommand {
                 Ok(BlobCommandOutput::Posting {
                     slot: last_tx.slot,
                     signatures: results.iter().map(|tx| tx.signature).collect(),
-                    success: matches!(last_tx.data, TransactionType::FinalizeBlob),
+                    success: !matches!(last_tx.data, TransactionType::DiscardBlob),
                 }
                 .into())
             }
