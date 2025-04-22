@@ -6,7 +6,7 @@ use ::blober::find_blober_address;
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
-use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use nitro_da_client::{BloberClient, BloberClientResult};
@@ -116,13 +116,13 @@ impl Options {
 
         let Some(namespace) = args.namespace else {
             Cli::exit_with_missing_arg(
-                "Namespace is not set. Please provide a namespace using the --namespace flag or set the BLOBER_NAMESPACE environment variable."
+                "Namespace is not set. Please provide a namespace using the --namespace flag or set the BLOBER_NAMESPACE environment variable.",
             );
         };
 
         let Some(program_id) = args.program_id else {
             Cli::exit_with_missing_arg(
-                "Program ID is not set. Please provide a program ID using the --program-id flag or set the BLOBER_PROGRAM_ID environment variable."
+                "Program ID is not set. Please provide a program ID using the --program-id flag or set the BLOBER_PROGRAM_ID environment variable.",
             );
         };
 

@@ -1,3 +1,6 @@
+#![allow(unexpected_cfgs)]
+// Allow unexpected_cfgs because anchor macros add cfgs which are not in the original code
+
 pub mod constants;
 pub mod error;
 pub mod instructions;

@@ -2,7 +2,7 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::{
-    benchmark::{write_measurements, BenchmarkCommandOutput},
+    benchmark::{BenchmarkCommandOutput, write_measurements},
     blob::BlobCommandOutput,
     blober::BloberCommandOutput,
     indexer::IndexerCommandOutput,

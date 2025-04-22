@@ -45,7 +45,9 @@ impl Debug for SlotHashProof {
 /// Failures that can occur when verifying a [`SlotHashProof`].
 #[derive(Debug, Clone, Error)]
 pub enum SlotHashError {
-    #[error("Slot hash for slot {slot} does not match the expected value, expected {expected}, found {found:?}")]
+    #[error(
+        "Slot hash for slot {slot} does not match the expected value, expected {expected}, found {found:?}"
+    )]
     SlotHashMismatch {
         slot: Slot,
         expected: solana_sdk::hash::Hash,
@@ -115,8 +117,8 @@ mod tests {
     use super::*;
     use crate::{
         accounts_delta_hash::{
-            testing::{ArbAccount, ArbKeypair},
             AccountMerkleTree,
+            testing::{ArbAccount, ArbKeypair},
         },
         testing::arbitrary_hash,
     };

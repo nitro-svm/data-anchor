@@ -79,7 +79,9 @@ pub enum CompoundInclusionProofError {
     MissingBlobs,
     #[error("The inclusion proof is not for the blober account")]
     IncludedAccountNotBlober,
-    #[error("The proof is for a different blockhash than the one provided, expected {expected:?}, found {found:?}")]
+    #[error(
+        "The proof is for a different blockhash than the one provided, expected {expected:?}, found {found:?}"
+    )]
     BlockHashMismatch {
         expected: solana_sdk::hash::Hash,
         found: solana_sdk::hash::Hash,
@@ -221,9 +223,8 @@ mod tests {
     use anchor_lang::{AnchorSerialize, Discriminator};
     use arbtest::arbtest;
     use blober::{
-        hash_blob, initial_hash,
+        BLOB_DATA_END, BLOB_DATA_START, CHUNK_SIZE, hash_blob, initial_hash,
         state::{blob::Blob, blober::Blober},
-        BLOB_DATA_END, BLOB_DATA_START, CHUNK_SIZE,
     };
     use blober_account_state::BlobAccount;
     use solana_sdk::{
@@ -234,8 +235,8 @@ mod tests {
     use super::*;
     use crate::{
         accounts_delta_hash::{
-            testing::{ArbAccount, ArbKeypair},
             AccountMerkleTree,
+            testing::{ArbAccount, ArbKeypair},
         },
         bank_hash::BankHashProof,
         testing::arbitrary_hash,

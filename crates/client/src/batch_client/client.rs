@@ -5,9 +5,9 @@ use solana_client::{client_error::ClientError as Error, nonblocking::rpc_client:
 use solana_sdk::{message::Message, signer::keypair::Keypair, transaction::Transaction};
 use tokio::{
     sync::mpsc,
-    time::{sleep, timeout_at, Duration, Instant},
+    time::{Duration, Instant, sleep, timeout_at},
 };
-use tracing::{info, warn, Span};
+use tracing::{Span, info, warn};
 
 use super::{
     channels::Channels,
@@ -93,7 +93,7 @@ impl BatchClient {
     ) -> Vec<TransactionOutcome<T>> {
         let (data, messages): (Vec<_>, Vec<_>) = messages.into_iter().unzip();
         let response_rx = self.queue_messages(messages);
-        wait_for_responses(data, response_rx, timeout.map(Into::into), log_progress_bar).await
+        wait_for_responses(data, response_rx, timeout, log_progress_bar).await
     }
 
     fn queue_messages(&self, messages: Vec<Message>) -> mpsc::UnboundedReceiver<StatusMessage> {

@@ -6,8 +6,8 @@ use solana_sdk::{clock::Slot, commitment_config::ParseCommitmentLevelError};
 use thiserror::Error;
 
 use crate::{
-    tx::{Compound, CompoundDeclare, CompoundFinalize, MessageBuilder},
     TransactionOutcome,
+    tx::{Compound, CompoundDeclare, CompoundFinalize, MessageBuilder},
 };
 
 /// Errors that can occur when interacting with the Blober client.

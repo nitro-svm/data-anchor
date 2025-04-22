@@ -131,7 +131,7 @@ mod tests {
     use solana_sdk::account::Account;
 
     use crate::accounts_delta_hash::testing::{
-        choose_or_generate, generate_accounts, TestAccounts, UnwrapOrArbitrary,
+        TestAccounts, UnwrapOrArbitrary, choose_or_generate, generate_accounts,
     };
 
     #[test]

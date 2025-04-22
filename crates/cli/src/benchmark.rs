@@ -2,8 +2,8 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -12,7 +12,7 @@ use bytesize::ByteSize;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use futures::StreamExt;
-use itertools::{iproduct, Itertools};
+use itertools::{Itertools, iproduct};
 use nitro_da_client::{
     BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority, UploadBlobError,
 };

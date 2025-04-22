@@ -32,7 +32,9 @@ pub struct CompoundCompletenessProof {
 pub enum CompoundCompletenessProofError {
     #[error("The exclusion proof is not for the blober account")]
     ExcludedAccountNotBlober,
-    #[error("The proof is for a different blockhash than the one provided, expected {expected:?}, found {found:?}")]
+    #[error(
+        "The proof is for a different blockhash than the one provided, expected {expected:?}, found {found:?}"
+    )]
     BlockHashMismatch {
         expected: solana_sdk::hash::Hash,
         found: solana_sdk::hash::Hash,
@@ -93,9 +95,9 @@ mod tests {
     use super::*;
     use crate::{
         accounts_delta_hash::{
-            exclusion::{left::ExclusionLeftProof, ExclusionProof},
-            testing::{choose_or_generate, ArbAccount, ArbKeypair, UnwrapOrArbitrary},
             AccountMerkleTree,
+            exclusion::{ExclusionProof, left::ExclusionLeftProof},
+            testing::{ArbAccount, ArbKeypair, UnwrapOrArbitrary, choose_or_generate},
         },
         testing::arbitrary_hash,
     };

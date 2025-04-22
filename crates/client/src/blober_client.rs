@@ -7,18 +7,17 @@ use std::{
 
 use anchor_lang::{Discriminator, Space};
 use blober::{
-    find_blob_address, find_blober_address,
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
-    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
 };
 use blober_client_builder::{IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient};
 use bon::Builder;
 use futures::StreamExt;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use nitro_da_indexer_api::{
-    extract_relevant_instructions, get_account_at_index, CompoundProof, IndexerRpcClient,
-    RelevantInstruction, RelevantInstructionWithAccounts,
+    CompoundProof, IndexerRpcClient, RelevantInstruction, RelevantInstructionWithAccounts,
+    extract_relevant_instructions, get_account_at_index,
 };
 use solana_cli_config::Config;
 use solana_client::rpc_config::RpcTransactionConfig;
@@ -32,9 +31,10 @@ use solana_sdk::{
     signer::Signer,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
-use tracing::{info_span, Instrument, Span};
+use tracing::{Instrument, Span, info_span};
 
 use crate::{
+    BloberClientError, BloberClientResult, LedgerDataBlobError,
     batch_client::{BatchClient, SuccessfulTransaction},
     constants::{DEFAULT_CONCURRENCY, DEFAULT_LOOKBACK_SLOTS},
     fees::{Fee, FeeStrategy, Lamports, Priority},
@@ -44,7 +44,6 @@ use crate::{
     },
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{IndexerError, TransactionType, UploadBlobError},
-    BloberClientError, BloberClientResult, LedgerDataBlobError,
 };
 
 #[derive(Builder, Clone)]

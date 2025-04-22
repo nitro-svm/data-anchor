@@ -1,4 +1,4 @@
-use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
+use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
 use blober::instruction::FinalizeBlob;
 use solana_sdk::instruction::Instruction;
 
