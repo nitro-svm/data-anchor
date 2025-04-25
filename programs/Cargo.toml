@@ -8,8 +8,8 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
-publish = false
-repository = "https://github.com/nitro-svm/nitro-da"
+publish = true
+repository = "https://github.com/nitro-svm/nitro-data-module"
 
 [workspace.dependencies]
 # External dependencies from crates.io
