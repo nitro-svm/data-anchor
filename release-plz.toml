@@ -1,2 +1,6 @@
 [workspace]
+publish = true
+
+[[package]]
+name = "nitro-da-indexer"
 publish = false
