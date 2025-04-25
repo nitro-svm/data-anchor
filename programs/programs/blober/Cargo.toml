@@ -1,5 +1,5 @@
 [package]
-name = "blober"
+name = "nitro-da-blober"
 description = "The Nitro DA Blober program used to store hashes of blob data."
 version = { workspace = true }
 edition = { workspace = true }
@@ -10,7 +10,7 @@ publish = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "blober"
+name = "nitro_da_blober"
 
 [features]
 default = []

@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-use blober::instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk};
+use nitro_da_blober::instruction::{
+    Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
+};
 use solana_rpc_client_api::client_error::Error;
 use solana_sdk::{clock::Slot, commitment_config::ParseCommitmentLevelError};
 use thiserror::Error;

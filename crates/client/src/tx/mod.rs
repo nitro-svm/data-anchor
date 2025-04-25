@@ -129,7 +129,7 @@ pub trait MessageBuilder {
         use solana_sdk::transaction::Transaction;
         use utils::{close_blober, initialize_blober, new_tokio, setup_environment};
 
-        let program_id = blober::id();
+        let program_id = nitro_da_blober::id();
 
         let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
 
@@ -145,7 +145,11 @@ pub trait MessageBuilder {
                         .await
                         .unwrap()
                 } else {
-                    blober::find_blober_address(blober::id(), payer.pubkey(), &namespace)
+                    nitro_da_blober::find_blober_address(
+                        nitro_da_blober::id(),
+                        payer.pubkey(),
+                        &namespace,
+                    )
                 };
 
                 let input = Self::generate_arbitrary_input(u, payer.pubkey(), blober).unwrap();
@@ -196,7 +200,7 @@ mod utils {
     use std::{future::Future, sync::Arc};
 
     use anchor_lang::{InstructionData, ToAccountMetas};
-    use blober::find_blober_address;
+    use nitro_da_blober::find_blober_address;
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::{
         commitment_config::CommitmentConfig, instruction::Instruction, pubkey::Pubkey,
@@ -220,15 +224,15 @@ mod utils {
         payer: &Keypair,
         namespace: &str,
     ) -> Result<Pubkey, Box<dyn std::error::Error>> {
-        let blober = find_blober_address(blober::id(), payer.pubkey(), namespace);
+        let blober = find_blober_address(nitro_da_blober::id(), payer.pubkey(), namespace);
 
-        let accounts = blober::accounts::Initialize {
+        let accounts = nitro_da_blober::accounts::Initialize {
             blober,
             payer: payer.pubkey(),
             system_program: system_program::id(),
         };
 
-        let data = blober::instruction::Initialize {
+        let data = nitro_da_blober::instruction::Initialize {
             namespace: namespace.to_string(),
             trusted: payer.pubkey(),
         };
@@ -260,14 +264,14 @@ mod utils {
         payer: &Keypair,
         namespace: &str,
     ) -> Result<Pubkey, Box<dyn std::error::Error>> {
-        let blober = find_blober_address(blober::id(), payer.pubkey(), namespace);
+        let blober = find_blober_address(nitro_da_blober::id(), payer.pubkey(), namespace);
 
-        let accounts = blober::accounts::Close {
+        let accounts = nitro_da_blober::accounts::Close {
             blober,
             payer: payer.pubkey(),
         };
 
-        let data = blober::instruction::Close {};
+        let data = nitro_da_blober::instruction::Close {};
 
         let instruction = Instruction {
             program_id,
@@ -292,7 +296,7 @@ mod utils {
     /// Setup the environment for integration tests.
     pub async fn setup_environment(program_id: Pubkey) -> (Arc<RpcClient>, Arc<Keypair>) {
         let (test_validator, payer) = TestValidatorGenesis::default()
-            .add_program("../../programs/target/deploy/blober", program_id)
+            .add_program("../../programs/target/deploy/nitro_da_blober", program_id)
             .start_async()
             .await;
 

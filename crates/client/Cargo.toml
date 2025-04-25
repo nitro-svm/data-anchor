@@ -33,11 +33,8 @@ solana-rpc-client-api = { workspace = true }
 solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
 
-# Helius
-helius = { workspace = true }
-
 # Locals
-blober = { workspace = true }
+nitro-da-blober = { workspace = true }
 nitro-da-indexer-api = { workspace = true }
 
 [dev-dependencies]

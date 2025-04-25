@@ -5,12 +5,12 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
-use blober::{
+use itertools::Itertools;
+use jsonrpsee::ws_client::WsClient;
+use nitro_da_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
 };
-use itertools::Itertools;
-use jsonrpsee::ws_client::WsClient;
 use nitro_da_indexer_api::{RelevantInstruction, RelevantInstructionWithAccounts};
 use solana_sdk::{message::Message, pubkey::Pubkey, signer::Signer};
 use tracing::{Instrument, Span, info_span};

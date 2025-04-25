@@ -1,10 +1,5 @@
 use clap::ValueEnum;
-use helius::types::{
-    GetPriorityFeeEstimateOptions, GetPriorityFeeEstimateRequest, GetPriorityFeeEstimateResponse,
-    PriorityLevel,
-};
 use itertools::Itertools;
-use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -29,24 +24,6 @@ pub enum Priority {
     High,
     /// 95th percentile
     VeryHigh,
-}
-
-impl From<Priority> for PriorityLevel {
-    fn from(value: Priority) -> Self {
-        match value {
-            Priority::Min => Self::Min,
-            Priority::Low => Self::Low,
-            Priority::Medium => Self::Medium,
-            Priority::High => Self::High,
-            Priority::VeryHigh => Self::VeryHigh,
-        }
-    }
-}
-
-impl From<&Priority> for PriorityLevel {
-    fn from(value: &Priority) -> Self {
-        (*value).into()
-    }
 }
 
 impl Priority {
@@ -79,14 +56,10 @@ impl Priority {
         &self,
         client: &RpcClient,
         mutable_accounts: &[Pubkey],
-        use_helius: bool,
+        _use_helius: bool,
     ) -> BloberClientResult<MicroLamports> {
-        if use_helius {
-            self.get_helius_priority_fee(client, mutable_accounts).await
-        } else {
-            self.calculate_compute_unit_price(client, mutable_accounts)
-                .await
-        }
+        self.calculate_compute_unit_price(client, mutable_accounts)
+            .await
     }
 
     /// Calculates a recommended compute unit price for a transaction based on recent prioritization fees.
@@ -111,37 +84,6 @@ impl Priority {
             .sorted()
             .collect::<Vec<_>>();
         Ok(self.calculate_percentile(&sorted_fees))
-    }
-
-    /// Calculates a recommended priority fee for a transaction based on recent prioritization fees, using the Helius API
-    /// Based on https://docs.helius.dev/solana-apis/priority-fee-api
-    pub async fn get_helius_priority_fee(
-        &self,
-        client: &RpcClient,
-        mutable_accounts: &[Pubkey],
-    ) -> BloberClientResult<MicroLamports> {
-        let client = HttpClient::builder().build(client.url()).unwrap();
-        let estimate: GetPriorityFeeEstimateResponse = client
-            .request(
-                "getPriorityFeeEstimate",
-                rpc_params![GetPriorityFeeEstimateRequest {
-                    transaction: None,
-                    account_keys: Some(mutable_accounts.iter().map(|p| p.to_string()).collect()),
-                    options: Some(GetPriorityFeeEstimateOptions {
-                        priority_level: Some(self.into()),
-                        ..Default::default()
-                    })
-                }],
-            )
-            .await
-            .unwrap();
-
-        Ok(MicroLamports(
-            estimate
-                .priority_fee_estimate
-                .expect("The request we call should result in presence of this value")
-                .ceil() as u64,
-        ))
     }
 }
 

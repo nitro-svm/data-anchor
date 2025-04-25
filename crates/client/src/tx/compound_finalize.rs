@@ -1,4 +1,4 @@
-use blober::instruction::{FinalizeBlob, InsertChunk};
+use nitro_da_blober::instruction::{FinalizeBlob, InsertChunk};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -64,7 +64,13 @@ impl MessageBuilder for CompoundFinalize {
         let chunk_idx: u16 = u.arbitrary()?;
         let chunk_data: Vec<u8> = u.arbitrary()?;
         let blob_size: usize = u.arbitrary()?;
-        let blob = blober::find_blob_address(blober::id(), payer, blober, timestamp, blob_size);
+        let blob = nitro_da_blober::find_blob_address(
+            nitro_da_blober::id(),
+            payer,
+            blober,
+            timestamp,
+            blob_size,
+        );
 
         Ok(CompoundFinalize {
             insert: InsertChunk {

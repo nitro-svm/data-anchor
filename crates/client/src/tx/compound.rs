@@ -1,4 +1,4 @@
-use blober::instruction::{DeclareBlob, FinalizeBlob, InsertChunk};
+use nitro_da_blober::instruction::{DeclareBlob, FinalizeBlob, InsertChunk};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -83,8 +83,14 @@ impl MessageBuilder for Compound {
         blober: Pubkey,
     ) -> arbitrary::Result<Self::Input> {
         let timestamp: u64 = u.arbitrary()?;
-        let data: [u8; blober::COMPOUND_TX_SIZE as usize] = u.arbitrary()?;
-        let blob = blober::find_blob_address(blober::id(), payer, blober, timestamp, data.len());
+        let data: [u8; nitro_da_blober::COMPOUND_TX_SIZE as usize] = u.arbitrary()?;
+        let blob = nitro_da_blober::find_blob_address(
+            nitro_da_blober::id(),
+            payer,
+            blober,
+            timestamp,
+            data.len(),
+        );
 
         Ok(Compound::new(blob, timestamp, data.to_vec()))
     }

@@ -1,5 +1,5 @@
 use anchor_lang::{InstructionData, ToAccountMetas};
-use blober::instruction::Close;
+use nitro_da_blober::instruction::Close;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -13,7 +13,7 @@ impl MessageBuilder for Close {
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
-        let accounts = blober::accounts::Close {
+        let accounts = nitro_da_blober::accounts::Close {
             blober: args.blober,
             payer: args.payer,
         };
@@ -39,7 +39,7 @@ impl MessageBuilder for Close {
 
 #[cfg(test)]
 mod tests {
-    use blober::instruction::Close;
+    use nitro_da_blober::instruction::Close;
 
     use crate::tx::MessageBuilder;
 

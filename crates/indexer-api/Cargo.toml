@@ -18,5 +18,5 @@ anchor-lang = { workspace = true }
 solana-sdk = { workspace = true }
 
 # Locals
-blober = { workspace = true }
+nitro-da-blober = { workspace = true }
 nitro-da-proofs = { workspace = true }

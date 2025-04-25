@@ -2,13 +2,13 @@
 
 use std::sync::Arc;
 
-use ::blober::find_blober_address;
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
+use nitro_da_blober::find_blober_address;
 use nitro_da_client::{BloberClient, BloberClientResult};
 use solana_cli_config::Config;
 use solana_sdk::{

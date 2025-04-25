@@ -29,6 +29,6 @@ solana-cli-config = { workspace = true }
 solana-sdk = { workspace = true }
 
 # Locals
-blober = { workspace = true }
+nitro-da-blober = { workspace = true }
 nitro-da-client = { workspace = true }
 nitro-da-indexer-api = { workspace = true }

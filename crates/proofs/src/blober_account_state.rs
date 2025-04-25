@@ -6,7 +6,7 @@
 use std::{fmt::Debug, sync::Arc};
 
 use anchor_lang::{AnchorDeserialize, Discriminator};
-use blober::{hash_blob, merge_hashes, state::blober::Blober};
+use nitro_da_blober::{hash_blob, merge_hashes, state::blober::Blober};
 use serde::{Deserialize, Serialize};
 use solana_sdk::{clock::Slot, pubkey::Pubkey};
 use thiserror::Error;

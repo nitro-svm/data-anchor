@@ -55,14 +55,14 @@ pub trait IndexerRpc {
 
 /// A relevant [`blober`] instruction extracted from a [`VersionedTransaction`].
 pub enum RelevantInstruction {
-    DeclareBlob(blober::instruction::DeclareBlob),
-    InsertChunk(blober::instruction::InsertChunk),
-    FinalizeBlob(blober::instruction::FinalizeBlob),
+    DeclareBlob(nitro_da_blober::instruction::DeclareBlob),
+    InsertChunk(nitro_da_blober::instruction::InsertChunk),
+    FinalizeBlob(nitro_da_blober::instruction::FinalizeBlob),
 }
 
 impl RelevantInstruction {
     pub fn try_from_slice(compiled_instruction: &CompiledInstruction) -> Option<Self> {
-        use blober::instruction::*;
+        use nitro_da_blober::instruction::*;
         let discriminator = compiled_instruction.data.get(..8)?;
 
         match discriminator {

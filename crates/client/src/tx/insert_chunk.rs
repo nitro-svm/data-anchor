@@ -1,5 +1,5 @@
 use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
-use blober::instruction::InsertChunk;
+use nitro_da_blober::instruction::InsertChunk;
 use solana_sdk::instruction::Instruction;
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -13,7 +13,7 @@ impl MessageBuilder for InsertChunk {
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
-        let accounts = blober::accounts::InsertChunk {
+        let accounts = nitro_da_blober::accounts::InsertChunk {
             blob: args.input.1,
             blober: args.blober,
             payer: args.payer,
@@ -40,7 +40,13 @@ impl MessageBuilder for InsertChunk {
         let timestamp: u64 = u.arbitrary()?;
         let idx: u16 = u.arbitrary()?;
         let data: Vec<u8> = u.arbitrary()?;
-        let blob = blober::find_blob_address(blober::id(), payer, blober, timestamp, data.len());
+        let blob = nitro_da_blober::find_blob_address(
+            nitro_da_blober::id(),
+            payer,
+            blober,
+            timestamp,
+            data.len(),
+        );
 
         Ok((InsertChunk { data, idx }, blob))
     }
@@ -48,7 +54,7 @@ impl MessageBuilder for InsertChunk {
 
 #[cfg(test)]
 mod tests {
-    use blober::instruction::InsertChunk;
+    use nitro_da_blober::instruction::InsertChunk;
 
     use crate::tx::MessageBuilder;
 

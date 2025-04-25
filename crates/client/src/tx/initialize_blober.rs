@@ -1,5 +1,5 @@
 use anchor_lang::{InstructionData, ToAccountMetas};
-use blober::instruction::Initialize;
+use nitro_da_blober::instruction::Initialize;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -15,7 +15,7 @@ impl MessageBuilder for Initialize {
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
-        let accounts = blober::accounts::Initialize {
+        let accounts = nitro_da_blober::accounts::Initialize {
             blober: args.input.1,
             payer: args.payer,
             system_program: system_program::id(),
@@ -40,7 +40,7 @@ impl MessageBuilder for Initialize {
         _blober: Pubkey,
     ) -> arbitrary::Result<Self::Input> {
         let namespace: String = u.arbitrary()?;
-        let blober = blober::find_blober_address(blober::id(), payer, &namespace);
+        let blober = nitro_da_blober::find_blober_address(nitro_da_blober::id(), payer, &namespace);
 
         Ok((namespace, blober))
     }
@@ -48,7 +48,7 @@ impl MessageBuilder for Initialize {
 
 #[cfg(test)]
 mod tests {
-    use blober::instruction::Initialize;
+    use nitro_da_blober::instruction::Initialize;
 
     use crate::tx::MessageBuilder;
 

@@ -6,15 +6,15 @@ use std::{
 };
 
 use anchor_lang::{Discriminator, Space};
-use blober::{
-    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
-    instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
-    state::blober::Blober,
-};
 use blober_client_builder::{IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient};
 use bon::Builder;
 use futures::StreamExt;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
+use nitro_da_blober::{
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
+    instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
+    state::blober::Blober,
+};
 use nitro_da_indexer_api::{
     CompoundProof, IndexerRpcClient, RelevantInstruction, RelevantInstructionWithAccounts,
     extract_relevant_instructions, get_account_at_index,
