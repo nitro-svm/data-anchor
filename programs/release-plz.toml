@@ -1,4 +1,6 @@
 [workspace]
 publish = true
 pr_branch_prefix = "release-plz-programs-"
+pr_name = "chore({{ package }}): release v{{ version }}"
+git_tag_name = "{{ package }}-v{{ version }}"
 git_release_name = "{{ package }}-v{{ version }}"
