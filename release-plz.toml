@@ -1,5 +1,6 @@
 [workspace]
 publish = true
+pr_branch_prefix = "release-plz-"
 
 [[package]]
 name = "nitro-da-indexer"
