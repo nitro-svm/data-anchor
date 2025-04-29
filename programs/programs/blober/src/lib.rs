@@ -1,3 +1,4 @@
+#![doc = include_str!("../../../README.md")]
 #![allow(unexpected_cfgs)]
 // Allow unexpected_cfgs because anchor macros add cfgs which are not in the original code
 

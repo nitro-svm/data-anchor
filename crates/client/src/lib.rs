@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 mod batch_client;
 mod blober_client;
 mod constants;

@@ -54,8 +54,8 @@ env:
   RUSTFLAGS: -D warnings
   # This is faster for CI: https://github.com/dtolnay/rust-toolchain/issues/26.
   CARGO_INCREMENTAL: "0"
-  SOLANA_CLI: v2.1.8
-  ANCHOR_CLI: db6da5c67d896e0a94c158f69e9b235e364b3064
+  SOLANA_CLI: v2.1.0
+  ANCHOR_CLI: 0.31.1
 
 # Automatically cancels a job if a new commit if pushed to the same PR, branch, or tag.
 # Source: <https://stackoverflow.com/a/72408109/5148606>
@@ -68,7 +68,7 @@ concurrency:
 jobs:
   lint:
     name: lint
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-2404-x64-8x
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
@@ -101,7 +101,7 @@ jobs:
 
   nextest:
     name: nextest
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-2404-x64-8x
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
@@ -162,7 +162,7 @@ jobs:
           just --yes test-with-local
 
   changes:
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-2404-x64-8x
     # Required permissions
     permissions:
       pull-requests: read
@@ -183,7 +183,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.programs == 'true' }}
     name: nextest-programs
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: warp-ubuntu-2404-x64-8x
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
