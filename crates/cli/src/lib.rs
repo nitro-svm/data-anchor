@@ -8,14 +8,9 @@ use blober::BloberSubCommand;
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
-use nitro_da_blober::find_blober_address;
 use nitro_da_client::{BloberClient, BloberClientResult};
 use solana_cli_config::Config;
-use solana_sdk::{
-    pubkey::Pubkey,
-    signature::Keypair,
-    signer::{EncodableKey, Signer},
-};
+use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
 use tracing::trace;
 
 mod benchmark;
@@ -139,8 +134,6 @@ impl Options {
 
     /// Run the parsed CLI command.
     pub async fn run(self) -> BloberClientResult {
-        let blober = find_blober_address(self.program_id, self.payer.pubkey(), &self.namespace);
-
         let builder = BloberClient::builder()
             .payer(self.payer.clone())
             .program_id(self.program_id);
@@ -158,12 +151,10 @@ impl Options {
         let client = Arc::new(client);
 
         let output = match self.command {
-            Command::Blober(subcommand) => {
-                subcommand.run(client.clone(), blober, self.namespace).await
-            }
-            Command::Blob(subcommand) => subcommand.run(client.clone(), blober).await,
-            Command::Indexer(subcommand) => subcommand.run(client.clone(), blober).await,
-            Command::Benchmark(subcommand) => subcommand.run(client.clone(), blober).await,
+            Command::Blober(subcommand) => subcommand.run(client.clone(), &self.namespace).await,
+            Command::Blob(subcommand) => subcommand.run(client.clone(), &self.namespace).await,
+            Command::Indexer(subcommand) => subcommand.run(client.clone(), &self.namespace).await,
+            Command::Benchmark(subcommand) => subcommand.run(client.clone(), &self.namespace).await,
         }?;
 
         println!("{}", output.serialize_output(self.output));

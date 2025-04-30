@@ -144,10 +144,10 @@ impl BloberClient {
     pub async fn initialize_blober(
         &self,
         fee_strategy: FeeStrategy,
-        namespace: String,
+        namespace: &str,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
-        let blober = find_blober_address(self.program_id, self.payer.pubkey(), &namespace);
+        let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(
@@ -165,7 +165,7 @@ impl BloberClient {
             self.rpc_client.clone(),
             fee_strategy,
             self.helius_fee_estimate,
-            (namespace, blober),
+            (namespace.to_owned(), blober),
         ))
         .await
         .expect("infallible with a fixed fee strategy");
@@ -184,9 +184,11 @@ impl BloberClient {
     pub async fn close_blober(
         &self,
         fee_strategy: FeeStrategy,
-        blober: Pubkey,
+        namespace: &str,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
+
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(fee_strategy, &[blober], TransactionType::CloseBlober)
             .in_current_span()
@@ -224,9 +226,10 @@ impl BloberClient {
         &self,
         blob_data: &[u8],
         fee_strategy: FeeStrategy,
-        blober: Pubkey,
+        namespace: &str,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
         let timestamp = get_unique_timestamp();
 
         let blob = find_blob_address(
@@ -247,7 +250,8 @@ impl BloberClient {
             .await;
 
         if let Err(BloberClientError::UploadBlob(UploadBlobError::DeclareBlob(_))) = res {
-            self.discard_blob(fee_strategy, blob, blober, timeout).await
+            self.discard_blob(fee_strategy, blob, namespace, timeout)
+                .await
         } else {
             res
         }
@@ -259,9 +263,11 @@ impl BloberClient {
         &self,
         fee_strategy: FeeStrategy,
         blob: Pubkey,
-        blober: Pubkey,
+        namespace: &str,
         timeout: Option<Duration>,
     ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+        let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
+
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DiscardBlob)
             .in_current_span()
@@ -349,9 +355,13 @@ impl BloberClient {
     /// Returns the raw blob data from the ledger for the given signatures.
     pub async fn get_ledger_blobs_from_signatures(
         &self,
-        blober: Pubkey,
+        namespace: &str,
+        payer_pubkey: Option<Pubkey>,
         signatures: Vec<Signature>,
     ) -> BloberClientResult<Vec<u8>> {
+        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
+        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+
         let relevant_transactions = futures::stream::iter(signatures)
             .map(|signature| async move {
                 self.rpc_client
@@ -423,9 +433,13 @@ impl BloberClient {
     pub async fn get_ledger_blobs(
         &self,
         slot: u64,
-        blober: Pubkey,
+        namespace: &str,
+        payer_pubkey: Option<Pubkey>,
         lookback_slots: Option<u64>,
     ) -> BloberClientResult<Vec<Vec<u8>>> {
+        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
+        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+
         let block_config = RpcBlockConfig {
             commitment: Some(self.rpc_client.commitment()),
             encoding: Some(UiTransactionEncoding::Base58),
@@ -542,7 +556,15 @@ impl BloberClient {
     }
 
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
-    pub async fn get_blobs(&self, slot: u64, blober: Pubkey) -> BloberClientResult<Vec<Vec<u8>>> {
+    pub async fn get_blobs(
+        &self,
+        slot: u64,
+        namespace: &str,
+        payer_pubkey: Option<Pubkey>,
+    ) -> BloberClientResult<Vec<Vec<u8>>> {
+        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
+        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+
         loop {
             let blobs = self
                 .indexer()
@@ -560,8 +582,12 @@ impl BloberClient {
     pub async fn get_slot_proof(
         &self,
         slot: u64,
-        blober: Pubkey,
+        namespace: &str,
+        payer_pubkey: Option<Pubkey>,
     ) -> BloberClientResult<CompoundProof> {
+        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
+        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+
         loop {
             let proof = self
                 .indexer()
@@ -582,8 +608,12 @@ impl BloberClient {
     pub async fn get_blob_messages(
         &self,
         slot: u64,
-        blober: Pubkey,
+        namespace: &str,
+        payer_pubkey: Option<Pubkey>,
     ) -> BloberClientResult<Vec<(Pubkey, VersionedMessage)>> {
+        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
+        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+
         let block: EncodedConfirmedBlock = self
             .rpc_client
             .get_block_with_config(

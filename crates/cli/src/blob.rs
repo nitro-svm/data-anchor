@@ -90,7 +90,7 @@ impl BlobSubCommand {
     pub async fn run(
         &self,
         client: Arc<BloberClient>,
-        blober: Pubkey,
+        namespace: &str,
     ) -> BloberClientResult<CommandOutput> {
         match self {
             BlobSubCommand::Upload { data_path, data } => {
@@ -113,7 +113,7 @@ impl BlobSubCommand {
                     .upload_blob(
                         &blob_data,
                         FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
-                        blober,
+                        namespace,
                         None,
                     )
                     .await?;
@@ -130,7 +130,7 @@ impl BlobSubCommand {
                     .discard_blob(
                         FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
                         *blob,
-                        blober,
+                        namespace,
                         None,
                     )
                     .await?;
@@ -144,7 +144,7 @@ impl BlobSubCommand {
             }
             BlobSubCommand::Fetch { signatures } => {
                 let blob = client
-                    .get_ledger_blobs_from_signatures(blober, signatures.to_owned())
+                    .get_ledger_blobs_from_signatures(namespace, None, signatures.to_owned())
                     .await?;
                 Ok(BlobCommandOutput::Fetching(vec![blob]).into())
             }
@@ -153,7 +153,7 @@ impl BlobSubCommand {
                 lookback_slots,
             } => {
                 let blobs = client
-                    .get_ledger_blobs(*slot, blober, *lookback_slots)
+                    .get_ledger_blobs(*slot, namespace, None, *lookback_slots)
                     .await?;
                 Ok(BlobCommandOutput::Fetching(blobs).into())
             }

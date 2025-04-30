@@ -5,7 +5,6 @@ use itertools::Itertools;
 use nitro_da_client::{BloberClient, BloberClientResult};
 use nitro_da_indexer_api::CompoundProof;
 use serde::Serialize;
-use solana_sdk::pubkey::Pubkey;
 use tracing::instrument;
 
 use crate::formatting::CommandOutput;
@@ -56,15 +55,15 @@ impl IndexerSubCommand {
     pub async fn run(
         &self,
         client: Arc<BloberClient>,
-        blober: Pubkey,
+        namespace: &str,
     ) -> BloberClientResult<CommandOutput> {
         match self {
             IndexerSubCommand::Blobs(SlotArgs { slot }) => {
-                let data = client.get_blobs(*slot, blober).await?;
+                let data = client.get_blobs(*slot, namespace, None).await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::Proofs(SlotArgs { slot }) => {
-                let proof = client.get_slot_proof(*slot, blober).await?;
+                let proof = client.get_slot_proof(*slot, namespace, None).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
         }

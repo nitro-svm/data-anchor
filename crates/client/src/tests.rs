@@ -97,7 +97,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let namespace = "test".to_owned();
     let blober_pubkey = find_blober_address(nitro_da_blober::id(), payer.pubkey(), &namespace);
     blober_client
-        .initialize_blober(fee_strategy, namespace, Some(Duration::from_secs(5)))
+        .initialize_blober(fee_strategy, &namespace, Some(Duration::from_secs(5)))
         .await
         .unwrap();
 
@@ -145,7 +145,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .upload_blob(
             &data,
             fee_strategy,
-            blober_pubkey,
+            &namespace,
             Some(Duration::from_secs(20)),
         )
         .await
@@ -177,7 +177,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let signatures = result.iter().map(|r| r.signature).collect::<Vec<_>>();
 
     let ledger_data = blober_client
-        .get_ledger_blobs_from_signatures(blober_pubkey, signatures)
+        .get_ledger_blobs_from_signatures(&namespace, None, signatures)
         .await
         .unwrap();
 
@@ -188,7 +188,8 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let all_ledger_blobs = blober_client
         .get_ledger_blobs(
             finalized_slot,
-            blober_pubkey,
+            &namespace,
+            None,
             Some(finalized_slot - slot_before_upload + 1),
         )
         .await
@@ -227,7 +228,7 @@ async fn failing_upload_returns_error() {
         .upload_blob(
             &data,
             FeeStrategy::default(),
-            Pubkey::new_unique(),
+            "test",
             Some(Duration::from_secs(5)),
         )
         .await

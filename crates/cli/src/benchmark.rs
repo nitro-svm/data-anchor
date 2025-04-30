@@ -18,7 +18,7 @@ use nitro_da_client::{
 };
 use rand::{Rng, RngCore};
 use serde::Serialize;
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use solana_sdk::signer::Signer;
 use tracing::{instrument, trace};
 
 use crate::formatting::CommandOutput;
@@ -94,7 +94,7 @@ impl BenchmarkSubCommand {
     pub async fn run(
         &self,
         client: Arc<BloberClient>,
-        blober: Pubkey,
+        namespace: &str,
     ) -> BloberClientResult<CommandOutput> {
         match self {
             BenchmarkSubCommand::GenerateData {
@@ -118,7 +118,7 @@ impl BenchmarkSubCommand {
                     *concurrency,
                     *priority,
                     client,
-                    blober,
+                    namespace,
                 )
                 .await?;
 
@@ -181,7 +181,7 @@ impl BenchmarkSubCommand {
                                 DEFAULT_CONCURRENCY,
                                 priority,
                                 client.clone(),
-                                blober,
+                                namespace,
                             )
                             .await?;
                             if let Some(ref mut writer) = writer {
@@ -250,7 +250,7 @@ async fn measure_performance(
     concurrency: u64,
     priority: Priority,
     client: Arc<BloberClient>,
-    blober: Pubkey,
+    namespace: &str,
 ) -> BloberClientResult<BenchMeasurement> {
     let reads = data_path
         .read_dir()?
@@ -297,7 +297,7 @@ async fn measure_performance(
                             .upload_blob(
                                 &blob_data,
                                 FeeStrategy::BasedOnRecentFees(priority),
-                                blober,
+                                namespace,
                                 Some(Duration::from_secs(timeout)),
                             )
                             .await

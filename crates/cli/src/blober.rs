@@ -3,7 +3,6 @@ use std::sync::Arc;
 use clap::Parser;
 use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
 use serde::Serialize;
-use solana_sdk::pubkey::Pubkey;
 use tracing::{info, instrument};
 
 use crate::formatting::CommandOutput;
@@ -20,7 +19,7 @@ pub enum BloberSubCommand {
 
 #[derive(Debug, Serialize)]
 pub struct BloberCommandOutput {
-    address: Pubkey,
+    namespace: String,
     action: BloberSubCommand,
 }
 
@@ -29,7 +28,7 @@ impl std::fmt::Display for BloberCommandOutput {
         write!(
             f,
             "Blober account {} has been successfully {}",
-            self.address,
+            self.namespace,
             match self.action {
                 BloberSubCommand::Initialize => "initialized",
                 BloberSubCommand::Close => "closed",
@@ -43,12 +42,11 @@ impl BloberSubCommand {
     pub async fn run(
         &self,
         client: Arc<BloberClient>,
-        blober: Pubkey,
-        namespace: String,
+        namespace: &str,
     ) -> BloberClientResult<CommandOutput> {
         match self {
             BloberSubCommand::Initialize => {
-                info!("Initializing blober account with address: {blober}");
+                info!("Initializing blober account with namespace: {namespace}");
                 client
                     .initialize_blober(
                         FeeStrategy::BasedOnRecentFees(Priority::Medium),
@@ -61,14 +59,14 @@ impl BloberSubCommand {
                 client
                     .close_blober(
                         FeeStrategy::BasedOnRecentFees(Priority::Medium),
-                        blober,
+                        namespace,
                         None,
                     )
                     .await?;
             }
         }
         Ok(BloberCommandOutput {
-            address: blober,
+            namespace: namespace.to_owned(),
             action: *self,
         }
         .into())
