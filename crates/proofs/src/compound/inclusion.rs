@@ -163,7 +163,15 @@ impl CompoundInclusionProof {
             .zip_eq(blob_accounts)
             .enumerate()
         {
-            let (blob_account_digest, blob_account_blob_size) = blob_account.1.split_at(HASH_BYTES);
+            let (blob_account_digest, blob_account_blob_size) =
+                if blob_account.1.len() >= HASH_BYTES {
+                    blob_account.1.split_at(HASH_BYTES)
+                } else {
+                    return Err(CompoundInclusionProofError::InvalidBlobAccountData {
+                        index,
+                        bytes: blob_account.1.clone(),
+                    });
+                };
             let blob_account_digest: [u8; 32] = blob_account_digest.try_into().map_err(|_| {
                 CompoundInclusionProofError::InvalidBlobAccountData {
                     index,
@@ -272,6 +280,7 @@ mod tests {
 
             let mut blob_account: (ArbKeypair, ArbAccount) = u.arbitrary()?;
 
+            // 10% chance that there's invalid data, 90% chance that it's the original
             blob_account.1.data = if u.ratio(1, 10)? {
                 unmodified = false;
                 u.arbitrary::<[u8; BLOB_DATA_END]>()?.to_vec()
@@ -502,8 +511,8 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
 
+            dbg!(&compound_inclusion_proof);
             if unmodified {
-                dbg!(&compound_inclusion_proof);
                 compound_inclusion_proof
                     .verify(
                         blober,

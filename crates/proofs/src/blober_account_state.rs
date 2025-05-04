@@ -216,19 +216,16 @@ mod tests {
     fn multiple_accounts() {
         arbtest(|u| {
             let slot = u.arbitrary()?;
-            let blob_accounts: Vec<(ArbKeypair, Vec<u8>)> = u.arbitrary()?;
-            let mut blob_accounts: Vec<_> = blob_accounts
-                .into_iter()
-                .map(|(keypair, bytes)| BlobAccount(keypair.pubkey(), bytes))
-                .collect();
-
             // At least two accounts are needed for this test to make sense.
-            while blob_accounts.len() < 2 {
-                blob_accounts.push(BlobAccount(
-                    u.arbitrary::<ArbKeypair>()?.pubkey(),
-                    u.arbitrary()?,
-                ));
-            }
+            let count = u.int_in_range(2..=1000)?;
+            let blob_accounts: Vec<_> = (0..count)
+                .map(|_| {
+                    let keypair = u.arbitrary::<ArbKeypair>()?;
+                    let bytes = u.arbitrary::<Vec<u8>>()?;
+                    Ok(BlobAccount(keypair.pubkey(), bytes))
+                })
+                .collect::<Result<_, _>>()?;
+
             let proof = BloberAccountStateProof::new(slot, blob_accounts.clone());
 
             let hash = blob_accounts
@@ -265,19 +262,16 @@ mod tests {
     fn multiple_accounts_wrong_data() {
         arbtest(|u| {
             let slot = u.arbitrary()?;
-            let blob_accounts: Vec<(ArbKeypair, Vec<u8>)> = u.arbitrary()?;
-            let mut blob_accounts: Vec<_> = blob_accounts
-                .into_iter()
-                .map(|(keypair, bytes)| BlobAccount(keypair.pubkey(), bytes))
-                .collect();
-
             // At least two accounts are needed for this test to make sense.
-            while blob_accounts.len() < 2 {
-                blob_accounts.push(BlobAccount(
-                    u.arbitrary::<ArbKeypair>()?.pubkey(),
-                    u.arbitrary()?,
-                ));
-            }
+            let count = u.int_in_range(2..=1000)?;
+            let mut blob_accounts: Vec<_> = (0..count)
+                .map(|_| {
+                    let keypair = u.arbitrary::<ArbKeypair>()?;
+                    let bytes = u.arbitrary::<Vec<u8>>()?;
+                    Ok(BlobAccount(keypair.pubkey(), bytes))
+                })
+                .collect::<Result<_, _>>()?;
+
             let proof = BloberAccountStateProof::new(slot, blob_accounts.clone());
 
             let wrong_data = u.arbitrary::<Vec<u8>>()?;
