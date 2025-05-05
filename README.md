@@ -2,7 +2,7 @@
 
 This folder contains a few different crates that together form the DA adapter for Solana.
 
-1. [`programs`](./programs/README.md) contains the Solana program that needs to be deployed on-chain.
+1. [`programs`](programs/programs/blober/README.md) contains the Solana program that needs to be deployed on-chain.
    - The `blober` program is used to split up blobs into chunks, and "stores" the chunks by passing them as arguments to the program. The data is never actually persisted on-chain, instead using the much cheaper ledger storage. As chunks come in one by one they will be hashed as a (incremental/sequential) merkle tree, yielding a final `digest` at the end which _is_ persisted in the `blob` PDA account.
    - When a blob's chunks are all fully submitted, the `blober` program hashes the `digest` itself and this new hash is persisted in the `blober` account. This might seem superfluous at first, but the purpose is to have a well-known address that can be proven whether it is present or not in the list of updated accounts that Solana calculates for each block.
 2. [`client`](./crates/client/README.md) contains a client that can be used to interact with the `blober` program. It also contains a client for the `Indexer` RPC. The `BloberClient` then wraps all the complexity of creating a `blober` account, splitting a blob into chunks, uploading the chunks, hashing the `digest`, and closing the PDAs to reclaim rent. It also makes educated guesses about setting good prioritization fees (without overspending) to ensure transactions are included by validators.
