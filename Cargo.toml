@@ -83,7 +83,7 @@ nitro-da-client = "0.1.4"
 nitro-da-indexer = { path = "crates/indexer" }
 nitro-da-indexer-api = "0.1.4"
 nitro-da-proofs = "0.1.4"
-nitro-da-blober = { version = "0.1.5", features = ["no-entrypoint"] }
+nitro-da-blober = { version = "0.1.6", features = ["no-entrypoint"] }
 
 [patch.crates-io]
 nitro-da-cli = { path = "crates/cli" }

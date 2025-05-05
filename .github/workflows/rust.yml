@@ -76,6 +76,7 @@ jobs:
         uses: arduino/setup-protoc@v2
         with:
           version: "23.2"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Rust
         run: rustup show && rustup install nightly && rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu # Nightly is needed for our configuration of cargo fmt
       - name: cargo install zepter
@@ -110,6 +111,7 @@ jobs:
         uses: arduino/setup-protoc@v2
         with:
           version: "23.2"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       # `cargo-nextest` is much faster than standard `cargo test`
       - uses: taiki-e/install-action@nextest
       - name: Install Rust
@@ -192,6 +194,7 @@ jobs:
         uses: arduino/setup-protoc@v2
         with:
           version: "23.2"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       # `cargo-nextest` is much faster than standard `cargo test`
       - uses: taiki-e/install-action@nextest
       - name: Install Rust

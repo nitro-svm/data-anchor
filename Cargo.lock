@@ -4066,7 +4066,7 @@ dependencies = [
 
 [[package]]
 name = "nitro-da-blober"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "anchor-lang",
  "hex",
