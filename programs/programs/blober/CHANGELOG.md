@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/nitro-svm/nitro-data-module/compare/nitro-da-blober-v0.1.5...nitro-da-blober-v0.1.6) - 2025-05-05
+
+### Fixed
+
+- Move README for releases  ([#129](https://github.com/nitro-svm/nitro-data-module/pull/129))
+
 ## [0.1.5](https://github.com/nitro-svm/nitro-data-module/compare/nitro-da-blober-v0.1.4...nitro-da-blober-v0.1.5) - 2025-04-29
 
 ### Other
