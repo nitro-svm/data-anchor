@@ -46,15 +46,21 @@ impl ExclusionInnerProof {
             return Err(ExclusionInnerProofError::ExcludedNotBetweenLeftAndRight);
         }
 
-        for level in self.left.levels.iter().zip(self.right.levels.iter()) {
-            // The distance in the paths between the leaves must be either 1 or the fanout - 1.
-            // 1 in the case of being in the same subtree, and the fanout - 1 in the case of
-            // the excluded node being right in the middle of the tree.
-            let diff = level.0.index.abs_diff(level.1.index);
-            if diff > 1 && diff != MERKLE_FANOUT - 1 {
-                // The paths in the two proofs diverged, meaning this inclusion proof is
-                // not for adjacent leaves.
-                return Err(ExclusionInnerProofError::NotForAdjacentLeaves);
+        // We use an integer instead of an absolute value to avoid the edge case when
+        // left is 0 and right is `MERKLE_FANOUT - 1`, which would result in a positive value.
+        const SUBTREE: isize = -((MERKLE_FANOUT - 1) as isize);
+        let mut prev_diff = SUBTREE;
+        for (left_level, right_level) in self.left.levels.iter().zip(self.right.levels.iter()) {
+            let curr_diff = right_level.index as isize - left_level.index as isize;
+            match (prev_diff, curr_diff) {
+                // There are only 3 valid transitions.
+                // - subtree -> subtree: two nodes are adjacent but belong to different subtrees, and their parents are adjacent but belong to different subtrees
+                // - subtree -> sibling (1): two nodes are adjacent but belong to different subtrees, and their parents are adjacent siblings
+                // - sibling (1) -> same (0): once the nodes are adjacent siblings, then they must have the same parent
+                // - same (0) -> same (0): once the paths have converged on the same node, there's no way for them to differ anymore
+                (SUBTREE, SUBTREE) | (SUBTREE, 1) | (1, 0) | (0, 0) => prev_diff = curr_diff,
+                // The paths in the two proofs diverged, meaning this inclusion proof is not for adjacent leaves.
+                _ => return Err(ExclusionInnerProofError::NotForAdjacentLeaves),
             }
         }
 
