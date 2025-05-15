@@ -13,4 +13,3 @@ CREATE TABLE blobs (
 
 CREATE INDEX blobs_blober_hash_idx ON blobs USING HASH (blober_address);
 CREATE INDEX blobs_create_time_btree_idx ON blobs (created_at);
-CREATE INDEX blobs_update_time_btree_idx ON blobs (updated_at);

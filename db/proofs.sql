@@ -1,5 +1,5 @@
 CREATE TABLE proofs (
-    blob_address BYTEA NOT NULL,
+    blober_address BYTEA NOT NULL,
     slot BIGINT NOT NULL,
     proof JSONB NOT NULL,
 
