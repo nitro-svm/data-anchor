@@ -48,6 +48,7 @@ risc0-zkvm = { version = "1.2.0", default-features = false }
 schemars = "0.8.21"
 serde_json = { version = "1.0.134", default-features = false }
 serde = { version = "1.0.216", default-features = false }
+sqlx = "0.8.3"
 tempfile = "3.14.0"
 thiserror = "2.0.9"
 tokio = { version = "1.42.0", features = ["full"] }
