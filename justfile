@@ -71,6 +71,11 @@ test-all: test-programs test
 test-with-local: (deploy 'localnet')
     cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
 
+# Run indexer database test
+[group('test')]
+test-db:
+    cargo nextest run --workspace -j1 -E 'test(postgres)' -- --ignored
+
 # Run pre-push checks
 [group('dev')]
 pre-push: lint-fix test-all
