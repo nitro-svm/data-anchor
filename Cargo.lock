@@ -1576,6 +1576,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1137cd7e7fc0fb5d3c5a8678be38ec56e819125d8d7907411fe24ccb943faca8"
+dependencies = [
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4245,11 +4258,15 @@ version = "0.1.5"
 dependencies = [
  "agave-geyser-plugin-interface",
  "anchor-lang",
+ "anyhow",
  "async-channel 2.3.1",
  "async-trait",
  "bincode",
  "bon",
  "bytesize",
+ "chrono",
+ "clap 4.5.37",
+ "crossbeam",
  "futures 0.3.31",
  "itertools 0.14.0",
  "jsonrpsee",
@@ -4258,6 +4275,7 @@ dependencies = [
  "nitro-da-blober",
  "nitro-da-indexer-api",
  "nitro-da-proofs",
+ "remoc",
  "serde",
  "serde_json",
  "solana-sdk",
@@ -5434,6 +5452,38 @@ name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
+
+[[package]]
+name = "remoc"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5374e929d4ef3b89d787b6f760ed932ebbcb714eb87c29d365f0bf9e70175875"
+dependencies = [
+ "async-trait",
+ "byteorder",
+ "bytes",
+ "futures 0.3.31",
+ "rand 0.9.1",
+ "remoc_macro",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util 0.7.15",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "remoc_macro"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a62e864361f315f51c3a26826533291f59fd628fc12c07dce0d6884a20fc9dad"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
 
 [[package]]
 name = "reqwest"
@@ -10193,6 +10243,16 @@ name = "utf8parse"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
+
+[[package]]
+name = "uuid"
+version = "1.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
+dependencies = [
+ "getrandom 0.3.2",
+ "serde",
+]
 
 [[package]]
 name = "valuable"

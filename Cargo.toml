@@ -44,6 +44,7 @@ native_db = "0.8.1"
 native_model = "0.4.20"
 # Has to be 0.7 for Solana SDK compatibility
 rand = "0.7"
+remoc = "0.15.3"
 risc0-zkvm = { version = "1.2.0", default-features = false }
 schemars = "0.8.21"
 serde_json = { version = "1.0.134", default-features = false }
