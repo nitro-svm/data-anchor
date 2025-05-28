@@ -5,7 +5,7 @@ mod tree;
 
 pub use builder::AccountMerkleTreeBuilder;
 pub use hash_tree::hash_tree;
-pub use solana_accounts_db::{MERKLE_FANOUT, hash_account};
+pub use solana_accounts_db::{hash_account, MERKLE_FANOUT};
 use solana_sdk::{account::Account, pubkey::Pubkey};
 pub use tree::{AccountMerkleTree, AccountsDeltaHashProof};
 
@@ -35,14 +35,14 @@ mod tests {
     use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey};
 
     use crate::accounts_delta_hash::{
-        AccountsDeltaHashProof, Leaf,
         account_merkle_tree::AccountMerkleTree,
         exclusion::{
-            ExclusionProof, inner::ExclusionInnerProof, left::ExclusionLeftProof,
-            right::ExclusionRightProof,
+            inner::ExclusionInnerProof, left::ExclusionLeftProof, right::ExclusionRightProof,
+            ExclusionProof,
         },
         inclusion::InclusionProof,
-        testing::{ArbAccount, ArbKeypair, TestAccounts, generate_accounts},
+        testing::{generate_accounts, ArbAccount, ArbKeypair, TestAccounts},
+        AccountsDeltaHashProof, Leaf,
     };
 
     fn assert_only_important_leaves_and_their_neighbours_are_kept_as_full(

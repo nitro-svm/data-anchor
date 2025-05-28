@@ -28,7 +28,7 @@ use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 
 use crate::{
-    BatchClient, BloberClient, FeeStrategy, Priority, batch_client, helpers::get_unique_timestamp,
+    batch_client, helpers::get_unique_timestamp, BatchClient, BloberClient, FeeStrategy, Priority,
 };
 
 #[tokio::test]

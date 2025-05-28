@@ -117,8 +117,8 @@ mod tests {
     use super::*;
     use crate::{
         accounts_delta_hash::{
-            AccountMerkleTree,
             testing::{ArbAccount, ArbKeypair},
+            AccountMerkleTree,
         },
         testing::arbitrary_hash,
     };

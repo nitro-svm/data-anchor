@@ -7,7 +7,7 @@ use std::{
 use solana_sdk::{account::Account, pubkey::Pubkey};
 
 use crate::accounts_delta_hash::account_merkle_tree::{
-    Leaf, solana_accounts_db::hash_account, tree::AccountMerkleTree,
+    solana_accounts_db::hash_account, tree::AccountMerkleTree, Leaf,
 };
 
 /// Builder for constructing an [`AccountMerkleTree`].

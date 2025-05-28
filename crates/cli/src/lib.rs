@@ -5,7 +5,7 @@ use std::sync::Arc;
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
-use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
+use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use nitro_da_client::{BloberClient, BloberClientResult};

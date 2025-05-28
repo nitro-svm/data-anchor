@@ -10,11 +10,11 @@ use solana_sdk::{account::Account, pubkey::Pubkey};
 
 use crate::accounts_delta_hash::{
     account_merkle_tree::{
-        Leaf, builder::AccountMerkleTreeBuilder, hash_tree, solana_accounts_db::MERKLE_FANOUT,
+        builder::AccountMerkleTreeBuilder, hash_tree, solana_accounts_db::MERKLE_FANOUT, Leaf,
     },
     exclusion::{
-        ExclusionProof, empty::ExclusionEmptyProof, inner::ExclusionInnerProof,
-        left::ExclusionLeftProof, right::ExclusionRightProof,
+        empty::ExclusionEmptyProof, inner::ExclusionInnerProof, left::ExclusionLeftProof,
+        right::ExclusionRightProof, ExclusionProof,
     },
     inclusion::{InclusionProof, InclusionProofLevel},
 };

@@ -35,7 +35,7 @@ mod tests {
     use arbtest::arbtest;
 
     use super::*;
-    use crate::accounts_delta_hash::testing::{TestAccounts, generate_accounts};
+    use crate::accounts_delta_hash::testing::{generate_accounts, TestAccounts};
 
     #[test]
     fn exclusion_empty_construction() {

@@ -11,13 +11,14 @@ use bon::Builder;
 use futures::StreamExt;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use nitro_da_blober::{
-    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
+    find_blob_address, find_blober_address,
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
 };
 use nitro_da_indexer_api::{
-    CompoundProof, IndexerRpcClient, RelevantInstruction, RelevantInstructionWithAccounts,
-    extract_relevant_instructions, get_account_at_index,
+    extract_relevant_instructions, get_account_at_index, CompoundProof, IndexerRpcClient,
+    RelevantInstruction, RelevantInstructionWithAccounts,
 };
 use solana_cli_config::Config;
 use solana_client::rpc_config::RpcTransactionConfig;
@@ -31,10 +32,9 @@ use solana_sdk::{
     signer::Signer,
 };
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
-use tracing::{Instrument, Span, info_span};
+use tracing::{info_span, Instrument, Span};
 
 use crate::{
-    BloberClientError, BloberClientResult, LedgerDataBlobError,
     batch_client::{BatchClient, SuccessfulTransaction},
     constants::{DEFAULT_CONCURRENCY, DEFAULT_LOOKBACK_SLOTS},
     fees::{Fee, FeeStrategy, Lamports, Priority},
@@ -44,6 +44,7 @@ use crate::{
     },
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{IndexerError, TransactionType, UploadBlobError},
+    BloberClientError, BloberClientResult, LedgerDataBlobError,
 };
 
 #[derive(Builder, Clone)]

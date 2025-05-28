@@ -71,14 +71,14 @@ test-all: test-programs test
 test-with-local: (deploy 'localnet')
     cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
 
-[group('test')]
 [confirm('This will run the indexer tests and requires a local database to be running. Are you sure you want to continue [y/n]?')]
+[group('test')]
 test-indexer:
     cargo nextest run --workspace -j1 -E 'test(indexer)' -- --ignored
 
 # Run indexer database test
-[group('test')]
 [confirm('This will run the database tests and requires a local database to be running. Are you sure you want to continue [y/n]?')]
+[group('test')]
 test-db:
     cargo nextest run --workspace -j1 -E 'test(postgres)' -- --ignored
 

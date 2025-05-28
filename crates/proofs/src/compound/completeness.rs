@@ -95,9 +95,9 @@ mod tests {
     use super::*;
     use crate::{
         accounts_delta_hash::{
+            exclusion::{left::ExclusionLeftProof, ExclusionProof},
+            testing::{choose_or_generate, ArbAccount, ArbKeypair, UnwrapOrArbitrary},
             AccountMerkleTree,
-            exclusion::{ExclusionProof, left::ExclusionLeftProof},
-            testing::{ArbAccount, ArbKeypair, UnwrapOrArbitrary, choose_or_generate},
         },
         testing::arbitrary_hash,
     };

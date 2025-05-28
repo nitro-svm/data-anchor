@@ -1,4 +1,4 @@
-use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
+use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
 use nitro_da_blober::instruction::InsertChunk;
 use solana_sdk::instruction::Instruction;
 

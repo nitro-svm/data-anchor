@@ -5,9 +5,9 @@ use solana_client::{client_error::ClientError as Error, nonblocking::rpc_client:
 use solana_sdk::{message::Message, signer::keypair::Keypair, transaction::Transaction};
 use tokio::{
     sync::mpsc,
-    time::{Duration, Instant, sleep, timeout_at},
+    time::{sleep, timeout_at, Duration, Instant},
 };
-use tracing::{Span, info, warn};
+use tracing::{info, warn, Span};
 
 use super::{
     channels::Channels,

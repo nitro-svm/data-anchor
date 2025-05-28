@@ -2,7 +2,7 @@
 
 use std::{cmp::min, fmt::Debug};
 
-use nitro_da_blober::{CHUNK_SIZE, compute_blob_digest};
+use nitro_da_blober::{compute_blob_digest, CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
 use solana_sdk::hash::HASH_BYTES;
 use thiserror::Error;

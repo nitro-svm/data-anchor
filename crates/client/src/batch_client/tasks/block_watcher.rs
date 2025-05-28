@@ -5,7 +5,7 @@ use solana_sdk::clock::DEFAULT_MS_PER_SLOT;
 use tokio::{
     sync::watch,
     task::JoinHandle,
-    time::{Duration, sleep},
+    time::{sleep, Duration},
 };
 use tracing::warn;
 
