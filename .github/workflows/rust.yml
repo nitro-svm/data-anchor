@@ -153,6 +153,9 @@ jobs:
         run: avm install "$ANCHOR_CLI"
       - name: Install just
         uses: extractions/setup-just@v2
+      - name: Start database
+        working-directory: .github/workflows/db
+        run: docker compose -f no-tls-db.yml up -d --wait
       - run: just test
       - name: Run full workflow test against local validator
         run: |

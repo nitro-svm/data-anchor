@@ -26,6 +26,15 @@ pub enum CompoundProof {
     Completeness(CompoundCompletenessProof),
 }
 
+/// A data structure representing a blober's information, including the blober's pubkey, the
+/// payer's pubkey, and the network of the blober.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BloberData {
+    pub blober: Pubkey,
+    pub payer: Pubkey,
+    pub network_id: u64,
+}
+
 /// The Indexer RPC interface.
 #[rpc(server, client)]
 pub trait IndexerRpc {
@@ -42,7 +51,7 @@ pub trait IndexerRpc {
 
     /// Add a list of blober PDA addresses to the list of tracked blobers.
     #[method(name = "add_blobers")]
-    async fn add_blobers(&self, blobers: HashSet<Pubkey>) -> RpcResult<()>;
+    async fn add_blobers(&self, blobers: HashSet<BloberData>) -> RpcResult<()>;
 
     /// Remove a list of blober PDA addresses from the list of tracked blobers.
     #[method(name = "remove_blobers")]
