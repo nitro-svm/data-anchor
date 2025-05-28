@@ -10,7 +10,7 @@ members = [
 exclude = ["programs"]
 
 [workspace.package]
-edition = "2024"
+edition = "2021"
 version = "0.1.6"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
@@ -39,9 +39,6 @@ hex = { version = "0.4.3", default-features = false }
 itertools = "0.14.0"
 jsonrpsee = { version = "0.24.7", features = ["macros", "server-core"] }
 mutants = "0.0.3"
-native_db = "0.8.1"
-# Has to be 0.4.20 for native_db compatibility
-native_model = "0.4.20"
 # Has to be 0.7 for Solana SDK compatibility
 rand = "0.7"
 remoc = "0.15.3"
@@ -59,25 +56,22 @@ tracing = { version = "0.1.41", default-features = false }
 walkdir = "2.5.0"
 
 # Solana & Agave
-agave-geyser-plugin-interface = "=2.1.0"
-solana-accounts-db = "=2.1.0"
-solana-bpf-loader-program = "=2.1.0"
-solana-cli = "=2.1.0"
-solana-cli-config = "=2.1.0"
-solana-client = "=2.1.0"
-solana-compute-budget = "=2.1.0"
-solana-program = "=2.1.0"
-solana-program-runtime = "=2.1.0"
-solana-rpc-client = "=2.1.0"
-solana-rpc-client-api = "=2.1.0"
-solana-sdk = "=2.1.0"
-solana-test-validator = "=2.1.0"
-solana-transaction-status = "=2.1.0"
+agave-geyser-plugin-interface = "=2.2.1"
+solana-accounts-db = "=2.2.1"
+solana-bpf-loader-program = "=2.2.1"
+solana-cli = "=2.2.1"
+solana-cli-config = "=2.2.1"
+solana-client = "=2.2.1"
+solana-compute-budget = "=2.2.1"
+solana-program = "=2.2.1"
+solana-program-runtime = "=2.2.1"
+solana-rpc-client = "=2.2.1"
+solana-rpc-client-api = "=2.2.1"
+solana-sdk = "=2.2.1"
+solana-test-validator = "=2.2.1"
+solana-transaction-status = "=2.2.1"
 solana_rbpf = "=0.8.4"
 anchor-lang = "=0.31.1"
-
-# Nitro
-svm-engine-keys = "0.1.0-alpha"
 
 # Locals
 nitro-da-cli = "0.1.4"
