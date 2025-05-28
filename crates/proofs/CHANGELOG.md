@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/nitro-svm/nitro-data-module/compare/nitro-da-proofs-v0.1.5...nitro-da-proofs-v0.1.6) - 2025-05-27
+
+### Fixed
+
+- Update inner exclusion proof comparison ([#133](https://github.com/nitro-svm/nitro-data-module/pull/133))
+
 ## [0.1.5](https://github.com/nitro-svm/nitro-data-module/compare/nitro-da-proofs-v0.1.4...nitro-da-proofs-v0.1.5) - 2025-04-30
 
 ### Other
