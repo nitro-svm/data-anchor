@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 
 use anchor_lang::{AnchorDeserialize, Discriminator};
+use chrono::{DateTime, Utc};
 use jsonrpsee::{
     core::{RpcResult, SubscriptionResult},
     proc_macros::rpc,
@@ -35,6 +36,37 @@ pub struct BloberData {
     pub network_id: u64,
 }
 
+/// A time range with optional start and end times, used for filtering time.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct TimeRange {
+    /// The start time of the range, inclusive.
+    pub start: Option<DateTime<Utc>>,
+    /// The end time of the range, inclusive.
+    pub end: Option<DateTime<Utc>>,
+}
+
+/// Request parameters for retrieving blobs by a specific blober's pubkey and a time range.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BlobsByBlober {
+    /// The blober's pubkey.
+    pub blober: Pubkey,
+    /// The time range for which to retrieve blobs.
+    #[serde(flatten)]
+    pub time_range: TimeRange,
+}
+
+/// Request parameters for retrieving blobs by a specific payer's pubkey, network ID, and a time range.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BlobsByPayer {
+    /// The payer's pubkey.
+    pub payer: Pubkey,
+    /// The network name of the blobs.
+    pub network_name: String,
+    /// The time range for which to retrieve blobs.
+    #[serde(flatten)]
+    pub time_range: TimeRange,
+}
+
 /// The Indexer RPC interface.
 #[rpc(server, client)]
 pub trait IndexerRpc {
@@ -44,10 +76,25 @@ pub trait IndexerRpc {
     #[method(name = "get_blobs")]
     async fn get_blobs(&self, blober: Pubkey, slot: u64) -> RpcResult<Option<Vec<Vec<u8>>>>;
 
+    /// Retrieve a list of blobs for a given blober pubkey and time range. Returns an error if there
+    /// was a database or RPC failure, and an empty list if no blobs were found.
+    #[method(name = "get_blobs_by_blober")]
+    async fn get_blobs_by_blober(&self, blober: BlobsByBlober) -> RpcResult<Vec<Vec<u8>>>;
+
+    /// Retrieve a list of blobs for a given payer pubkey, network ID, and time range. Returns an
+    /// error if there was a database or RPC failure, and an empty list if no blobs were found.
+    #[method(name = "get_blobs_by_payer")]
+    async fn get_blobs_by_payer(&self, payer: BlobsByPayer) -> RpcResult<Vec<Vec<u8>>>;
+
     /// Retrieve a proof for a given slot and blober pubkey. Returns an error if there was a
     /// database or RPC failure, and None if the slot has not been completed yet.
     #[method(name = "get_proof")]
     async fn get_proof(&self, blober: Pubkey, slot: u64) -> RpcResult<Option<CompoundProof>>;
+
+    /// Retrieve a compound proof that covers a particular blob. Returns an error if there was a
+    /// database or RPC failure, and None if the blob does not exist.
+    #[method(name = "get_proof_for_blob")]
+    async fn get_proof_for_blob(&self, blob_address: Pubkey) -> RpcResult<Option<CompoundProof>>;
 
     /// Add a list of blober PDA addresses to the list of tracked blobers.
     #[method(name = "add_blobers")]

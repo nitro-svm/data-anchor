@@ -4358,6 +4358,7 @@ name = "nitro-da-indexer-api"
 version = "0.1.6"
 dependencies = [
  "anchor-lang",
+ "chrono",
  "jsonrpsee",
  "nitro-da-blober",
  "nitro-da-proofs",
