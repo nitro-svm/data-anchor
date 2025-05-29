@@ -73,6 +73,9 @@ solana-transaction-status = "=2.2.1"
 solana_rbpf = "=0.8.4"
 anchor-lang = "=0.31.1"
 
+yellowstone-grpc-client = "=6.0.0"
+yellowstone-grpc-proto = "=6.0.0"
+
 # Locals
 nitro-da-cli = "0.1.4"
 nitro-da-client = "0.1.4"

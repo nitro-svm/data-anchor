@@ -133,19 +133,38 @@ clean-programs:
 clean: clean-programs
     cargo clean
 
-# Run the indexer locally using the solana-test-validator (linux)
+# Run the geyser plugin locally using the solana-test-validator (linux)
 [group('indexer')]
 [linux]
 [working-directory('crates/indexer/scripts')]
-run-indexer: build
-    ./run-linux.sh
+run-geyser: build
+    ./linux/run-geyser.sh
 
-# Run the indexer locally using the solana-test-validator (macos)
+# Run the geyser plugin locally using the solana-test-validator (macos)
 [group('indexer')]
 [macos]
 [working-directory('crates/indexer/scripts')]
-run-indexer: build
-    ./run-mac.sh
+run-geyser: build
+    ./mac/run-geyser.sh
+
+# Run the indexer locally using the yellowstone gRPC plugin (macos)
+[group('indexer')]
+[macos]
+[working-directory('crates/indexer/scripts')]
+run-yellowstone:
+    ./mac/run-yellowstone.sh
+
+# Run the indexer locally using the yellowstone gRPC plugin (linux)
+[group('indexer')]
+[linux]
+[working-directory('crates/indexer/scripts')]
+run-yellowstone:
+    ./linux/run-yellowstone.sh
+
+# Run the indexer binary
+[group('indexer')]
+run-indexer:
+    cargo run --bin nitro-da-indexer -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696' -g none
 
 # Build the docker image for the indexer
 [group('docker')]
