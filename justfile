@@ -50,7 +50,7 @@ lint-fix: lint-programs-fix fmt-justfile-fix
 [group('test')]
 [working-directory('programs')]
 test-programs: build-programs
-    cargo nextest run --workspace --status-level skip
+    cargo nextest run --workspace
 
 # Run compute budget tests for transaction fees
 [group('test')]
@@ -60,7 +60,7 @@ test-compute-unit-limit:
 # Run tests for the crates in the workspace
 [group('test')]
 test:
-    cargo nextest run --workspace --status-level skip
+    cargo nextest run --workspace
 
 # Run tests for the entire project
 [group('test')]

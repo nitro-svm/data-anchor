@@ -17,8 +17,8 @@ use nitro_da_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
 };
 use nitro_da_indexer_api::{
-    extract_relevant_instructions, get_account_at_index, CompoundProof, IndexerRpcClient,
-    RelevantInstruction, RelevantInstructionWithAccounts,
+    extract_relevant_instructions, get_account_at_index, BlobsByBlober, BlobsByPayer,
+    CompoundProof, IndexerRpcClient, RelevantInstruction, RelevantInstructionWithAccounts,
 };
 use solana_cli_config::Config;
 use solana_client::rpc_config::RpcTransactionConfig;
@@ -579,6 +579,32 @@ impl BloberClient {
         }
     }
 
+    /// Fetches blobs for a given [`BlobsByBlober`] from the [`IndexerRpcClient`].
+    pub async fn get_blobs_by_blober(
+        &self,
+        blober_blobs: BlobsByBlober,
+    ) -> BloberClientResult<Vec<Vec<u8>>> {
+        let blober = blober_blobs.blober;
+
+        self.indexer()
+            .get_blobs_by_blober(blober_blobs)
+            .await
+            .map_err(|e| IndexerError::BlobsForBlober(blober.to_string(), e.to_string()).into())
+    }
+
+    /// Fetches blobs for a given [`BlobsByPayer`] from the [`IndexerRpcClient`].
+    pub async fn get_blobs_by_payer(
+        &self,
+        payer_blobs: BlobsByPayer,
+    ) -> BloberClientResult<Vec<Vec<u8>>> {
+        let payer = payer_blobs.payer;
+
+        self.indexer()
+            .get_blobs_by_payer(payer_blobs)
+            .await
+            .map_err(|e| IndexerError::BlobsForPayer(payer.to_string(), e.to_string()).into())
+    }
+
     /// Fetches compound proof for a given slot from the [`IndexerRpcClient`].
     pub async fn get_slot_proof(
         &self,
@@ -600,6 +626,14 @@ impl BloberClient {
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
+    }
+
+    /// Fetches compound proof for a given blob PDA [`Pubkey`] from the [`IndexerRpcClient`].
+    pub async fn get_blob_proof(&self, blob: Pubkey) -> BloberClientResult<Option<CompoundProof>> {
+        self.indexer()
+            .get_proof_for_blob(blob)
+            .await
+            .map_err(|e| IndexerError::ProofForBlob(blob.to_string(), e.to_string()).into())
     }
 
     /// Fetches blob messages for a given slot

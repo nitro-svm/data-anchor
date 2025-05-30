@@ -114,12 +114,21 @@ pub enum UploadBlobError {
 
 #[derive(Error, Debug)]
 pub enum IndexerError {
-    /// Failed to read proof for slot {0} via indexer client: {1}
+    /// Failed to read blobs for slot {0} via indexer client: {1}
     #[error("Failed to read blobs for slot {0} via indexer client: {1}")]
     Blobs(Slot, String),
     /// Failed to read proof for slot {0} via indexer client: {1}
     #[error("Failed to read proof for slot {0} via indexer client: {1}")]
     Proof(Slot, String),
+    /// Failed to read blobs for blober {0} via indexer client: {1}
+    #[error("Failed to read blobs for blober {0} via indexer client: {1}")]
+    BlobsForBlober(String, String),
+    /// Failed to read blobs for payer {0} via indexer client: {1}
+    #[error("Failed to read proof for payer {0} via indexer client: {1}")]
+    BlobsForPayer(String, String),
+    /// Failed to read proof for blob {0} via indexer client: {1}
+    #[error("Failed to read proof for blob {0} via indexer client: {1}")]
+    ProofForBlob(String, String),
 }
 
 #[derive(Error, Debug)]
