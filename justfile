@@ -82,6 +82,26 @@ test-indexer:
 test-db:
     cargo nextest run --workspace -j1 -E 'test(postgres)' -- --ignored
 
+# Add sqlx migration
+[group('db')]
+sqlx-add name:
+    cargo sqlx migrate add -r {{ name }}
+
+# Run sqlx migrations
+[group('db')]
+sqlx-migrate:
+    cargo sqlx migrate run
+
+# Rollback the last sqlx migration
+[group('db')]
+sqlx-rollback:
+    cargo sqlx migrate revert
+
+# Run sqlx offline preparation
+[group('db')]
+sqlx-prepare:
+    cargo sqlx prepare --workspace -- --all-targets
+
 # Run pre-push checks
 [group('dev')]
 pre-push: lint-fix test-all
@@ -161,6 +181,11 @@ run-yellowstone:
 run-yellowstone:
     ./linux/run-yellowstone.sh
 
+# Run the yellowstone consumer binary
+[group('indexer')]
+run-yellowstone-consumer:
+    cargo run --bin yellowstone-consumer
+
 # Run the indexer binary
 [group('indexer')]
 run-indexer:
@@ -177,3 +202,15 @@ docker-build:
 [linux]
 docker-run:
     docker compose -f ./docker/docker-compose.yml up --force-recreate
+
+# Run the db locally using docker in detached mode
+[group('docker')]
+[working-directory('.github/workflows/db')]
+docker-run-db:
+    docker compose -f ./no-tls-db.yml up -d --wait --force-recreate
+
+# Stop the docker db
+[group('docker')]
+[working-directory('.github/workflows/db')]
+docker-stop-db:
+    docker compose -f ./no-tls-db.yml down

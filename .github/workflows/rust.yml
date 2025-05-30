@@ -72,31 +72,33 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
         with:
           version: "23.2"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Rust
-        run: rustup show && rustup install nightly && rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu # Nightly is needed for our configuration of cargo fmt
+        run: |
+          rustup show
+          rustup install nightly
+          # Nightly is needed for our configuration of cargo fmt
+          rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
+
       - name: cargo install zepter
         uses: taiki-e/install-action@v2
         with:
           tool: zepter@1
-      - name: Add SSH private keys for private repos
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SVM_ENGINE_PRIVATE_KEY }}
-      - name: Configure git to use SSH
-        run: git config --global url.ssh://git@github.com/.insteadOf https://github.com/
+
       - name: Install just
         uses: extractions/setup-just@v2
-      # Install system dependencies
+
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y build-essential cmake pkg-config libudev-dev
+
       - name: Run lint and formatting checks
         run: just lint
 
@@ -106,34 +108,29 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
-      - uses: rui314/setup-mold@v1
+
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
         with:
           version: "23.2"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      # `cargo-nextest` is much faster than standard `cargo test`
+
       - uses: taiki-e/install-action@nextest
+
       - name: Install Rust
         run: rustup show
-      - name: Add SSH private keys for private repos
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SVM_ENGINE_PRIVATE_KEY }}
-      - name: Configure git to use SSH
-        run: git config --global url.ssh://git@github.com/.insteadOf https://github.com/
+
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
           cache-provider: "buildjet"
-      # Install system dependencies
+
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y build-essential cmake pkg-config libudev-dev
-      # add swap space to accommodate memory spikes
+
       - name: Set up swap space
         run: |
           sudo swapon --show
@@ -143,20 +140,26 @@ jobs:
           sudo swapon /swapfile
           sudo swapon --show
           free -h
+
       - name: Install Solana tools
-        run: sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
-      - name: Add Solana to path
-        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
       - name: Install Anchor management tools
         run: cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+
       - name: Install Anchor
         run: avm install "$ANCHOR_CLI"
+
       - name: Install just
         uses: extractions/setup-just@v2
+
       - name: Start database
-        working-directory: .github/workflows/db
-        run: docker compose -f no-tls-db.yml up -d --wait
+        run: just docker-run-db
+
       - run: just test
+
       - name: Run full workflow test against local validator
         run: |
           solana-test-validator &
@@ -192,22 +195,24 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
-      - uses: rui314/setup-mold@v1
+
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
         with:
           version: "23.2"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      # `cargo-nextest` is much faster than standard `cargo test`
+
       - uses: taiki-e/install-action@nextest
+
       - name: Install Rust
         run: rustup show
+
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
           cache-provider: "buildjet"
-      # add swap space to accommodate memory spikes
+
       - name: Set up swap space
         run: |
           sudo swapon --show
@@ -217,16 +222,21 @@ jobs:
           sudo swapon /swapfile
           sudo swapon --show
           free -h
+
       - name: Install Solana tools
-        run: sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
-      - name: Add Solana to path
-        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
       - name: Install Anchor management tools
         run: cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+
       - name: Install Anchor
         run: avm install "$ANCHOR_CLI"
+
       - name: Install just
         uses: extractions/setup-just@v2
+
       - name: Run program tests
         env:
           # Run property testing with arbitrary for 10s
