@@ -11,7 +11,7 @@ exclude = ["programs"]
 
 [workspace.package]
 edition = "2021"
-version = "0.1.6"
+version = "0.1.7"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
