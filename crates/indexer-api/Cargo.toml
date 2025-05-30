@@ -10,7 +10,7 @@ publish = { workspace = true }
 
 [dependencies]
 # External dependencies from crates.io
-chrono = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
 jsonrpsee = { workspace = true, features = ["client-core"] }
 serde = { workspace = true, features = ["alloc", "derive"] }
 
