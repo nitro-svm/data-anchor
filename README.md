@@ -1,4 +1,4 @@
-# Solana DA
+# ⚓ Data Anchor
 
 This folder contains a few different crates that together form the DA adapter for Solana.
 

@@ -1,5 +1,5 @@
 use anchor_lang::{InstructionData, ToAccountMetas};
-use nitro_da_blober::instruction::DeclareBlob;
+use data_anchor_blober::instruction::DeclareBlob;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -13,7 +13,7 @@ impl MessageBuilder for DeclareBlob {
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
-        let accounts = nitro_da_blober::accounts::DeclareBlob {
+        let accounts = data_anchor_blober::accounts::DeclareBlob {
             blob: args.input.1,
             blober: args.blober,
             payer: args.payer,
@@ -40,8 +40,8 @@ impl MessageBuilder for DeclareBlob {
     ) -> arbitrary::Result<Self::Input> {
         let timestamp: u64 = u.arbitrary()?;
         let blob_size: usize = u.arbitrary()?;
-        let blob = nitro_da_blober::find_blob_address(
-            nitro_da_blober::id(),
+        let blob = data_anchor_blober::find_blob_address(
+            data_anchor_blober::id(),
             payer,
             blober,
             timestamp,
@@ -60,7 +60,7 @@ impl MessageBuilder for DeclareBlob {
 
 #[cfg(test)]
 mod tests {
-    use nitro_da_blober::instruction::DeclareBlob;
+    use data_anchor_blober::instruction::DeclareBlob;
 
     use crate::tx::MessageBuilder;
 

@@ -1,6 +1,6 @@
 [package]
-name = "nitro-da-indexer-api"
-description = "The shared API for the Solana Indexer."
+name = "data-anchor-api"
+description = "The shared API for the Data Anchor indexer."
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -20,5 +20,5 @@ solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
 
 # Locals
-nitro-da-blober = { workspace = true }
-nitro-da-proofs = { workspace = true }
+data-anchor-blober = { workspace = true }
+data-anchor-proofs = { workspace = true }

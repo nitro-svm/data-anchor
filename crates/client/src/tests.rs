@@ -4,8 +4,8 @@ use std::{
 };
 
 use async_trait::async_trait;
+use data_anchor_blober::find_blober_address;
 use itertools::Itertools;
-use nitro_da_blober::find_blober_address;
 use rand::Rng;
 use solana_client::{
     client_error::{ClientError as Error, ClientErrorKind as ErrorKind},
@@ -89,13 +89,13 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .unwrap();
     let blober_client = BloberClient::builder()
         .payer(payer.clone())
-        .program_id(nitro_da_blober::id())
+        .program_id(data_anchor_blober::id())
         .rpc_client(blober_rpc_client.clone())
         .batch_client(batch_client)
         .build();
 
     let namespace = "test".to_owned();
-    let blober_pubkey = find_blober_address(nitro_da_blober::id(), payer.pubkey(), &namespace);
+    let blober_pubkey = find_blober_address(data_anchor_blober::id(), payer.pubkey(), &namespace);
     blober_client
         .initialize_blober(fee_strategy, &namespace, Some(Duration::from_secs(5)))
         .await

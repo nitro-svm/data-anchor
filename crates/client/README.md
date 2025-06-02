@@ -1,14 +1,14 @@
-# Nitro DA Client
+# Data Anchor Client
 
-This crate is a Rust client which handles interactions with the [Nitro Blober](https://crates.io/nitro-da-blober) on-chain program
-and with the Nitro DA indexer service in an optimized way.
+This crate is a Rust client which handles interactions with the [Nitro Blober](https://crates.io/data-anchor-blober) on-chain program
+and with the Data Anchor indexer service in an optimized way.
 
 ## Usage
 
 All you need to do to get started with the client is add it to your project dependencies:
 
 ```bash
-cargo add nitro-da-client
+cargo add data-anchor-client
 ```
 
 ### Connecting
@@ -77,4 +77,4 @@ And getting the indexer proofs (these prove that the indexer is sending you vali
 let proof = blober_client.get_slot_proof(slot, blober).await?;
 ```
 
-For more details, check out the [docs](https://docs.rs/nitro-da-client).
+For more details, check out the [docs](https://docs.rs/data-anchor-client).

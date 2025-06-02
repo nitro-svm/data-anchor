@@ -6,13 +6,13 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-nitro-da-blober = "2RWsr92iL39YCLiZu7dZ5hron4oexEMbgWDg35v5U5tH"
+data-anchor-blober = "2RWsr92iL39YCLiZu7dZ5hron4oexEMbgWDg35v5U5tH"
 
 [programs.localnet]
-nitro-da-blober = "CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP"
+data-anchor-blober = "CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP"
 
 [programs.mainnet]
-nitro-da-blober = "8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc"
+data-anchor-blober = "8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use nitro_da_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
+use data_anchor_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
 use serde::Serialize;
 use tracing::{info, instrument};
 

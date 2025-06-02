@@ -1,6 +1,6 @@
 [package]
-name = "nitro-da-blober"
-description = "The Nitro DA Blober program used to store hashes of blob data."
+name = "data-anchor-blober"
+description = "The Data Anchor Blober program used to store hashes of blob data."
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -10,7 +10,7 @@ publish = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "nitro_da_blober"
+name = "data_anchor_blober"
 
 [features]
 default = []

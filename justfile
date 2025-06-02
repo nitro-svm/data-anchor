@@ -104,7 +104,7 @@ sqlx-prepare:
 
 # Run pre-push checks
 [group('dev')]
-pre-push: lint-fix test-all
+pre-push: lint-fix test-all sqlx-prepare
 
 # Build the programs
 [group('build')]
@@ -134,13 +134,13 @@ deploy network:
 
 [group('program-utils')]
 init-blober program_id namespace:
-    cargo run -p nitro-da-cli -- -p {{ program_id }} -i ws://localhost:9696 -n {{ namespace }} br i
+    cargo run -p data-anchor -- -p {{ program_id }} -i ws://localhost:9696 -n {{ namespace }} br i
 
 [confirm('This will run benchmarks against a deployed program and will take a while. Are you sure you want to continue [y/n]?')]
 [group('program-utils')]
 run-benchmark program_id indexer_url:
     @echo "Running benchmark for program ID: {{ program_id }} and indexer URL: {{ indexer_url }} with default config"
-    cargo run --release -p nitro-da-cli -- -p {{ program_id }} -i {{ indexer_url }} -n bench m a ./target/data
+    cargo run --release -p data-anchor -- -p {{ program_id }} -i {{ indexer_url }} -n bench m a ./target/data
 
 # Clean the programs directory
 [group('clean')]
@@ -189,7 +189,7 @@ run-yellowstone-consumer:
 # Run the indexer binary
 [group('indexer')]
 run-indexer:
-    cargo run --bin nitro-da-indexer -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696' -g none
+    cargo run --bin data-anchor-indexer -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696' -g none
 
 # Build the docker image for the indexer
 [group('docker')]

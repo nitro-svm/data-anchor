@@ -1,5 +1,5 @@
 [package]
-name = "nitro-da-proofs"
+name = "data-anchor-proofs"
 description = "Proofs regarding the presence or absence of a blob uploaded using the Blober program."
 version = { workspace = true }
 edition = { workspace = true }
@@ -23,7 +23,7 @@ anchor-lang = { workspace = true }
 solana-sdk = { workspace = true }
 
 # Locals
-nitro-da-blober = { workspace = true }
+data-anchor-blober = { workspace = true }
 
 [dev-dependencies]
 # External dependencies from crates.io

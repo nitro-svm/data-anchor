@@ -223,6 +223,11 @@ jobs:
           sudo swapon --show
           free -h
 
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential cmake pkg-config libudev-dev
+
       - name: Install Solana tools
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"

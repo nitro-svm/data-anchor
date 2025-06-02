@@ -1,3 +1,3 @@
-# Nitro DA Indexer API
+# Dat Anchor API
 
-This crate defines the API interfaces used when interacting with the Nitro DA indexer service.
+This crate defines the API interfaces used when interacting with the Data Anchor indexer service.

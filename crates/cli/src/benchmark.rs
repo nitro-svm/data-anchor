@@ -11,11 +11,11 @@ use std::{
 use bytesize::ByteSize;
 use chrono::{DateTime, Utc};
 use clap::Parser;
-use futures::StreamExt;
-use itertools::{iproduct, Itertools};
-use nitro_da_client::{
+use data_anchor_client::{
     BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority, UploadBlobError,
 };
+use futures::StreamExt;
+use itertools::{iproduct, Itertools};
 use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_sdk::signer::Signer;
@@ -134,8 +134,8 @@ impl BenchmarkSubCommand {
                     [100, 1_000, 3_000],
                     [false, true],
                     [
-                        nitro_da_blober::COMPOUND_TX_SIZE as usize,
-                        nitro_da_blober::COMPOUND_DECLARE_TX_SIZE as usize,
+                        data_anchor_blober::COMPOUND_TX_SIZE as usize,
+                        data_anchor_blober::COMPOUND_DECLARE_TX_SIZE as usize,
                         1_000,
                         10_000
                     ],
@@ -268,9 +268,9 @@ async fn measure_performance(
     let total_txs = data
         .iter()
         .map(|d| match d.len() {
-            len if len <= nitro_da_blober::COMPOUND_TX_SIZE as usize => 1,
-            len if len <= nitro_da_blober::COMPOUND_DECLARE_TX_SIZE as usize => 2,
-            len => len.div_ceil(nitro_da_blober::CHUNK_SIZE as usize) + 1,
+            len if len <= data_anchor_blober::COMPOUND_TX_SIZE as usize => 1,
+            len if len <= data_anchor_blober::COMPOUND_DECLARE_TX_SIZE as usize => 2,
+            len => len.div_ceil(data_anchor_blober::CHUNK_SIZE as usize) + 1,
         })
         .sum::<usize>();
     trace!("Read {total_files} files with a total size of {total_size}");

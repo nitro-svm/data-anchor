@@ -1,5 +1,5 @@
 use anchor_lang::{prelude::Pubkey, InstructionData, ToAccountMetas};
-use nitro_da_blober::instruction::DiscardBlob;
+use data_anchor_blober::instruction::DiscardBlob;
 use solana_sdk::instruction::Instruction;
 
 use crate::tx::{MessageArguments, MessageBuilder};
@@ -13,7 +13,7 @@ impl MessageBuilder for DiscardBlob {
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
-        let accounts = nitro_da_blober::accounts::DiscardBlob {
+        let accounts = data_anchor_blober::accounts::DiscardBlob {
             blob: args.input,
             blober: args.blober,
             payer: args.payer,
@@ -36,8 +36,8 @@ impl MessageBuilder for DiscardBlob {
     ) -> arbitrary::Result<Self::Input> {
         let timestamp: u64 = u.arbitrary()?;
         let blob_size: usize = u.arbitrary()?;
-        let blob = nitro_da_blober::find_blob_address(
-            nitro_da_blober::id(),
+        let blob = data_anchor_blober::find_blob_address(
+            data_anchor_blober::id(),
             payer,
             blober,
             timestamp,
@@ -50,7 +50,7 @@ impl MessageBuilder for DiscardBlob {
 
 #[cfg(test)]
 mod tests {
-    use nitro_da_blober::instruction::DiscardBlob;
+    use data_anchor_blober::instruction::DiscardBlob;
 
     use crate::tx::MessageBuilder;
 

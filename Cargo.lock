@@ -1863,6 +1863,142 @@ dependencies = [
 ]
 
 [[package]]
+name = "data-anchor"
+version = "0.1.7"
+dependencies = [
+ "bytesize",
+ "chrono",
+ "clap 4.5.39",
+ "csv",
+ "data-anchor-api",
+ "data-anchor-blober",
+ "data-anchor-client",
+ "futures 0.3.31",
+ "hex",
+ "itertools 0.14.0",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "solana-cli-config",
+ "solana-sdk",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "data-anchor-api"
+version = "0.1.7"
+dependencies = [
+ "anchor-lang",
+ "chrono",
+ "data-anchor-blober",
+ "data-anchor-proofs",
+ "jsonrpsee",
+ "serde",
+ "solana-sdk",
+ "solana-transaction-status",
+]
+
+[[package]]
+name = "data-anchor-blober"
+version = "0.1.6"
+dependencies = [
+ "anchor-lang",
+ "hex",
+]
+
+[[package]]
+name = "data-anchor-client"
+version = "0.1.7"
+dependencies = [
+ "anchor-lang",
+ "arbitrary",
+ "arbtest",
+ "async-trait",
+ "bon",
+ "clap 4.5.39",
+ "data-anchor-api",
+ "data-anchor-blober",
+ "futures 0.3.31",
+ "itertools 0.14.0",
+ "jsonrpsee",
+ "rand 0.7.3",
+ "schemars",
+ "serde",
+ "serde_json",
+ "solana-cli-config",
+ "solana-client",
+ "solana-rpc-client",
+ "solana-rpc-client-api",
+ "solana-sdk",
+ "solana-test-validator",
+ "solana-transaction-status",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "data-anchor-indexer"
+version = "0.1.7"
+dependencies = [
+ "agave-geyser-plugin-interface",
+ "anchor-lang",
+ "anyhow",
+ "async-channel 2.3.1",
+ "async-trait",
+ "bincode",
+ "bon",
+ "bytesize",
+ "chrono",
+ "clap 4.5.39",
+ "crossbeam",
+ "data-anchor-api",
+ "data-anchor-blober",
+ "data-anchor-proofs",
+ "futures 0.3.31",
+ "itertools 0.14.0",
+ "jsonrpsee",
+ "remoc",
+ "serde",
+ "serde_json",
+ "solana-sdk",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util 0.7.15",
+ "tracing",
+ "tracing-subscriber",
+ "yellowstone-grpc-client",
+ "yellowstone-grpc-proto",
+]
+
+[[package]]
+name = "data-anchor-proofs"
+version = "0.1.7"
+dependencies = [
+ "anchor-lang",
+ "arbitrary",
+ "arbtest",
+ "bincode",
+ "blake3",
+ "data-anchor-blober",
+ "hex",
+ "itertools 0.14.0",
+ "mutants",
+ "risc0-zkvm",
+ "serde",
+ "serde_json",
+ "solana-accounts-db",
+ "solana-sdk",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4251,142 +4387,6 @@ dependencies = [
  "cfg-if 0.1.10",
  "libc",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "nitro-da-blober"
-version = "0.1.6"
-dependencies = [
- "anchor-lang",
- "hex",
-]
-
-[[package]]
-name = "nitro-da-cli"
-version = "0.1.7"
-dependencies = [
- "bytesize",
- "chrono",
- "clap 4.5.39",
- "csv",
- "futures 0.3.31",
- "hex",
- "itertools 0.14.0",
- "nitro-da-blober",
- "nitro-da-client",
- "nitro-da-indexer-api",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "solana-cli-config",
- "solana-sdk",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "nitro-da-client"
-version = "0.1.7"
-dependencies = [
- "anchor-lang",
- "arbitrary",
- "arbtest",
- "async-trait",
- "bon",
- "clap 4.5.39",
- "futures 0.3.31",
- "itertools 0.14.0",
- "jsonrpsee",
- "nitro-da-blober",
- "nitro-da-indexer-api",
- "rand 0.7.3",
- "schemars",
- "serde",
- "serde_json",
- "solana-cli-config",
- "solana-client",
- "solana-rpc-client",
- "solana-rpc-client-api",
- "solana-sdk",
- "solana-test-validator",
- "solana-transaction-status",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "nitro-da-indexer"
-version = "0.1.7"
-dependencies = [
- "agave-geyser-plugin-interface",
- "anchor-lang",
- "anyhow",
- "async-channel 2.3.1",
- "async-trait",
- "bincode",
- "bon",
- "bytesize",
- "chrono",
- "clap 4.5.39",
- "crossbeam",
- "futures 0.3.31",
- "itertools 0.14.0",
- "jsonrpsee",
- "nitro-da-blober",
- "nitro-da-indexer-api",
- "nitro-da-proofs",
- "remoc",
- "serde",
- "serde_json",
- "solana-sdk",
- "sqlx",
- "tempfile",
- "thiserror 2.0.12",
- "tokio",
- "tokio-util 0.7.15",
- "tracing",
- "tracing-subscriber",
- "yellowstone-grpc-client",
- "yellowstone-grpc-proto",
-]
-
-[[package]]
-name = "nitro-da-indexer-api"
-version = "0.1.7"
-dependencies = [
- "anchor-lang",
- "chrono",
- "jsonrpsee",
- "nitro-da-blober",
- "nitro-da-proofs",
- "serde",
- "solana-sdk",
- "solana-transaction-status",
-]
-
-[[package]]
-name = "nitro-da-proofs"
-version = "0.1.7"
-dependencies = [
- "anchor-lang",
- "arbitrary",
- "arbtest",
- "bincode",
- "blake3",
- "hex",
- "itertools 0.14.0",
- "mutants",
- "nitro-da-blober",
- "risc0-zkvm",
- "serde",
- "serde_json",
- "solana-accounts-db",
- "solana-sdk",
- "thiserror 2.0.12",
- "tracing",
 ]
 
 [[package]]

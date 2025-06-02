@@ -1,5 +1,5 @@
 [package]
-name = "nitro-da-client"
+name = "data-anchor-client"
 description = "Contains blober client for interacting with the Blober program on Solana."
 version = { workspace = true }
 edition = { workspace = true }
@@ -34,8 +34,8 @@ solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
 
 # Locals
-nitro-da-blober = { workspace = true }
-nitro-da-indexer-api = { workspace = true }
+data-anchor-blober = { workspace = true }
+data-anchor-api = { workspace = true }
 
 [dev-dependencies]
 # External dependencies

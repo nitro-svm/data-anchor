@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use nitro_da_blober::instruction::{
+use data_anchor_blober::instruction::{
     Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
 use solana_rpc_client_api::client_error::Error;

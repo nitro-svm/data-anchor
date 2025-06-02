@@ -4,11 +4,11 @@ use anchor_lang::{
     solana_program::instruction::Instruction, AccountDeserialize, Discriminator, InstructionData,
     Space, ToAccountMetas,
 };
-use futures::{stream::FuturesOrdered, StreamExt};
-use nitro_da_blober::{
+use data_anchor_blober::{
     accounts, find_blob_address, find_blober_address, hash_leaf, instruction, state::blob::Blob,
     CHUNK_SIZE,
 };
+use futures::{stream::FuturesOrdered, StreamExt};
 use rand::prelude::SliceRandom;
 use solana_program_test::*;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -20,12 +20,12 @@ use solana_test_validator::TestValidatorGenesis;
 #[tokio::test]
 async fn test_validator_transaction() {
     solana_logger::setup_with_default("solana_program_runtime=debug");
-    let program_id = nitro_da_blober::id();
+    let program_id = data_anchor_blober::id();
     let system_program = anchor_lang::solana_program::system_program::id();
 
     let (test_validator, payer) = TestValidatorGenesis::default()
         .add_program(
-            "../../target/deploy/nitro_da_blober",
+            "../../target/deploy/data_anchor_blober",
             program_id.to_bytes().into(),
         )
         .start_async()

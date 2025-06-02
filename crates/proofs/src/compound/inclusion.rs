@@ -231,7 +231,7 @@ mod tests {
     use anchor_lang::{AnchorSerialize, Discriminator};
     use arbtest::arbtest;
     use blober_account_state::BlobAccount;
-    use nitro_da_blober::{
+    use data_anchor_blober::{
         hash_blob, initial_hash,
         state::{blob::Blob, blober::Blober},
         BLOB_DATA_END, BLOB_DATA_START, CHUNK_SIZE,
@@ -335,7 +335,7 @@ mod tests {
             }
             // Always include the blober account.
             let mut blober_data = Blober {
-                caller: nitro_da_blober::id(),
+                caller: data_anchor_blober::id(),
                 hash: initial_hash(),
                 slot: 0,
             };
@@ -400,7 +400,7 @@ mod tests {
 
             // ----------------------- Payer proof -----------------------------------------
             let writable_blob_account = blob_account.0.pubkey();
-            let read_only_blober_account = nitro_da_blober::id().to_bytes().into();
+            let read_only_blober_account = data_anchor_blober::id().to_bytes().into();
 
             // ------------------------- Bank hash -------------------------
             let parent_bankhash = arbitrary_hash(u)?;

@@ -4,12 +4,12 @@ use std::collections::HashSet;
 
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use chrono::{DateTime, Utc};
+use data_anchor_proofs::compound::{
+    completeness::CompoundCompletenessProof, inclusion::CompoundInclusionProof,
+};
 use jsonrpsee::{
     core::{RpcResult, SubscriptionResult},
     proc_macros::rpc,
-};
-use nitro_da_proofs::compound::{
-    completeness::CompoundCompletenessProof, inclusion::CompoundInclusionProof,
 };
 use serde::{Deserialize, Serialize};
 use solana_sdk::{
@@ -114,14 +114,14 @@ pub trait IndexerRpc {
 
 /// A relevant [`blober`] instruction extracted from a [`VersionedTransaction`].
 pub enum RelevantInstruction {
-    DeclareBlob(nitro_da_blober::instruction::DeclareBlob),
-    InsertChunk(nitro_da_blober::instruction::InsertChunk),
-    FinalizeBlob(nitro_da_blober::instruction::FinalizeBlob),
+    DeclareBlob(data_anchor_blober::instruction::DeclareBlob),
+    InsertChunk(data_anchor_blober::instruction::InsertChunk),
+    FinalizeBlob(data_anchor_blober::instruction::FinalizeBlob),
 }
 
 impl RelevantInstruction {
     pub fn try_from_slice(compiled_instruction: &CompiledInstruction) -> Option<Self> {
-        use nitro_da_blober::instruction::*;
+        use data_anchor_blober::instruction::*;
         let discriminator = compiled_instruction.data.get(..8)?;
 
         match discriminator {

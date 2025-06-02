@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
 publish = true
-repository = "https://github.com/nitro-svm/nitro-data-module"
+repository = "https://github.com/nitro-svm/data-anchor"
 
 [workspace.dependencies]
 # External dependencies from crates.io

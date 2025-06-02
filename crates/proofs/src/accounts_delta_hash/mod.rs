@@ -7,7 +7,7 @@
 //! use solana_sdk::pubkey::Pubkey;
 //! use solana_sdk::account::Account;
 //!
-//! use nitro_da_proofs::accounts_delta_hash::AccountMerkleTree;
+//! use data_anchor_proofs::accounts_delta_hash::AccountMerkleTree;
 //!
 //!
 //! // These would be fetched using RPC or streaming updates, here we're just creating fake ones.

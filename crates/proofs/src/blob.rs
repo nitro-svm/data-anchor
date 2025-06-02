@@ -2,7 +2,7 @@
 
 use std::{cmp::min, fmt::Debug};
 
-use nitro_da_blober::{compute_blob_digest, CHUNK_SIZE};
+use data_anchor_blober::{compute_blob_digest, CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
 use solana_sdk::hash::HASH_BYTES;
 use thiserror::Error;
@@ -87,7 +87,7 @@ impl BlobProof {
 #[cfg(test)]
 mod tests {
     use arbtest::arbtest;
-    use nitro_da_blober::CHUNK_SIZE;
+    use data_anchor_blober::CHUNK_SIZE;
 
     use super::*;
 

@@ -1,5 +1,5 @@
-use nitro_da_cli::Options;
-use nitro_da_client::BloberClientResult;
+use data_anchor::Options;
+use data_anchor_client::BloberClientResult;
 use tracing::error;
 use tracing_subscriber::EnvFilter;
 
