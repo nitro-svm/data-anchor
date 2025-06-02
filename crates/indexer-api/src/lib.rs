@@ -16,6 +16,7 @@ use solana_sdk::{
     clock::Slot, instruction::CompiledInstruction, pubkey::Pubkey,
     transaction::VersionedTransaction,
 };
+use solana_transaction_status::InnerInstructions;
 
 /// A compound proof that proves whether a blob has been published in a specific slot.
 /// See [`CompoundInclusionProof`] and [`CompoundCompletenessProof`] for more information.
@@ -157,20 +158,59 @@ pub struct RelevantInstructionWithAccounts {
     pub instruction: RelevantInstruction,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VersionedTransactionWithInnerInstructions {
+    pub transaction: VersionedTransaction,
+    pub inner_instructions: Option<Vec<InnerInstructions>>,
+}
+
+impl From<VersionedTransaction> for VersionedTransactionWithInnerInstructions {
+    fn from(transaction: VersionedTransaction) -> Self {
+        Self {
+            transaction,
+            inner_instructions: None,
+        }
+    }
+}
+
+impl From<&VersionedTransaction> for VersionedTransactionWithInnerInstructions {
+    fn from(transaction: &VersionedTransaction) -> Self {
+        Self {
+            transaction: transaction.clone(),
+            inner_instructions: None,
+        }
+    }
+}
+
 /// Deserialize relevant instructions from a transaction, given the indices of the blob and blober
 /// accounts in the transaction.
 pub fn deserialize_relevant_instructions(
-    tx: &VersionedTransaction,
+    tx: &VersionedTransactionWithInnerInstructions,
     blob_pubkey_index: usize,
     blober_pubkey_index: usize,
 ) -> Vec<RelevantInstructionWithAccounts> {
-    tx.message
+    tx.transaction
+        .message
         .instructions()
         .iter()
+        .chain(tx.inner_instructions.iter().flat_map(|inner_instructions| {
+            inner_instructions
+                .iter()
+                .flat_map(|inner| &inner.instructions)
+                .map(|inner| &inner.instruction)
+        }))
         .filter_map(|compiled_instruction| {
             Some(RelevantInstructionWithAccounts {
-                blob: get_account_at_index(tx, compiled_instruction, blob_pubkey_index)?,
-                blober: get_account_at_index(tx, compiled_instruction, blober_pubkey_index)?,
+                blob: get_account_at_index(
+                    &tx.transaction,
+                    compiled_instruction,
+                    blob_pubkey_index,
+                )?,
+                blober: get_account_at_index(
+                    &tx.transaction,
+                    compiled_instruction,
+                    blober_pubkey_index,
+                )?,
                 instruction: RelevantInstruction::try_from_slice(compiled_instruction)?,
             })
         })
@@ -183,7 +223,7 @@ pub fn extract_relevant_instructions(
 ) -> Vec<RelevantInstructionWithAccounts> {
     transactions
         .iter()
-        .flat_map(|tx| deserialize_relevant_instructions(tx, 0, 1))
+        .flat_map(|tx| deserialize_relevant_instructions(&tx.into(), 0, 1))
         .collect()
 }
 

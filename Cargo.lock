@@ -4364,6 +4364,7 @@ dependencies = [
  "nitro-da-proofs",
  "serde",
  "solana-sdk",
+ "solana-transaction-status",
 ]
 
 [[package]]
