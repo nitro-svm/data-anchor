@@ -43,6 +43,10 @@ jobs:
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential cmake pkg-config libudev-dev
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
