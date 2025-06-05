@@ -250,12 +250,62 @@ pub fn deserialize_relevant_instructions(
         .collect()
 }
 
-/// Deserialize blober initializations from a transaction, returning a vector of tuples containing
-/// the blober and the trusted pubkey.
-pub fn deserialize_blober_initializations(
+/// Blober instructions that are relevant to the indexer.
+pub enum RelevantBloberInstruction {
+    Initialize(data_anchor_blober::instruction::Initialize),
+    Close(data_anchor_blober::instruction::Close),
+}
+
+impl std::fmt::Debug for RelevantBloberInstruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RelevantBloberInstruction::Initialize(instruction) => f
+                .debug_struct("Initialize")
+                .field("trusted", &instruction.trusted)
+                .finish(),
+            RelevantBloberInstruction::Close(_) => f.debug_struct("Close").finish(),
+        }
+    }
+}
+
+impl RelevantBloberInstruction {
+    pub fn try_from_slice(compiled_instruction: &CompiledInstruction) -> Option<Self> {
+        use data_anchor_blober::instruction::*;
+        let discriminator = compiled_instruction.data.get(..8)?;
+
+        match discriminator {
+            Initialize::DISCRIMINATOR => {
+                let data = compiled_instruction.data.get(8..).unwrap_or_default();
+                Initialize::try_from_slice(data)
+                    .map(RelevantBloberInstruction::Initialize)
+                    .ok()
+            }
+            Close::DISCRIMINATOR => {
+                let data = compiled_instruction.data.get(8..).unwrap_or_default();
+                Close::try_from_slice(data)
+                    .map(RelevantBloberInstruction::Close)
+                    .ok()
+            }
+            // If we don't recognize the discriminator, we ignore the instruction - there might be
+            // more instructions packed into the same transaction which might not be relevant to
+            // us.
+            _ => None,
+        }
+    }
+}
+
+/// A deserialized relevant blober instruction, containing the blober pubkey and the instruction.
+#[derive(Debug)]
+pub struct RelevantBloberInstructionWithPubkey {
+    pub blober: Pubkey,
+    pub instruction: RelevantBloberInstruction,
+}
+
+/// Deserialize blober instructions from a transaction, returning a vector of [`RelevantBloberInstructionWithPubkey`].
+pub fn deserialize_blober_instructions(
     program_id: &Pubkey,
     tx: &VersionedTransactionWithInnerInstructions,
-) -> Vec<(Pubkey, Pubkey)> {
+) -> Vec<RelevantBloberInstructionWithPubkey> {
     tx.iter_instructions()
         .filter_map(|compiled_instruction| {
             let program_id_idx: usize = compiled_instruction.program_id_index.into();
@@ -272,16 +322,12 @@ pub fn deserialize_blober_initializations(
 
             let blober = get_account_at_index(&tx.transaction, compiled_instruction, 0)?;
 
-            let discriminator = compiled_instruction.data.get(..8)?;
-            if discriminator != data_anchor_blober::instruction::Initialize::DISCRIMINATOR {
-                return None; // Skip instructions that are not InitializeBlober.
-            }
+            let instruction = RelevantBloberInstruction::try_from_slice(compiled_instruction)?;
 
-            let data = compiled_instruction.data.get(8..)?;
-            let instruction =
-                data_anchor_blober::instruction::Initialize::try_from_slice(data).ok()?;
-
-            Some((blober, instruction.trusted))
+            Some(RelevantBloberInstructionWithPubkey {
+                blober,
+                instruction,
+            })
         })
         .collect()
 }
