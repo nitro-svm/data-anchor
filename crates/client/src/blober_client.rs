@@ -219,9 +219,9 @@ impl BloberClient {
     }
 
     /// Uploads a blob of data with the given [`Blober`] PDA account.
-    /// Under the hood it creates a new [`blober::state::blob::Blob`] PDA which stores a incremental hash of the chunks
-    /// from the blob data. On completion of the blob upload, the blob PDA gets closed sending it's
-    /// funds back to the [`BloberClient::payer`].
+    /// Under the hood it creates a new [`data_anchor_blober::state::blob::Blob`] PDA which stores a
+    /// incremental hash of the chunks from the blob data. On completion of the blob upload, the
+    /// blob PDA gets closed sending it's funds back to the [`BloberClient::payer`].
     /// If the blob upload fails, the blob PDA gets discarded and the funds also get sent to the
     /// [`BloberClient::payer`].
     pub async fn upload_blob(
@@ -259,7 +259,7 @@ impl BloberClient {
         }
     }
 
-    /// Discards a [`blober::state::blob::Blob`] PDA account registered with the provided
+    /// Discards a [`data_anchor_blober::state::blob::Blob`] PDA account registered with the provided
     /// [`Blober`] PDA account.
     pub async fn discard_blob(
         &self,
@@ -303,7 +303,7 @@ impl BloberClient {
     /// This whole functions is basically a simulation that doesn't run anything. Instead of executing transactions,
     /// it just sums the expected fees and number of signatures.
     ///
-    /// The [`blober::state::blob::Blob`] PDA account is always newly created, so for estimating compute fees
+    /// The [`data_anchor_blober::state::blob::Blob`] PDA account is always newly created, so for estimating compute fees
     /// we don't even need the real keypair, any unused pubkey will do.
     pub async fn estimate_fees(
         &self,
@@ -642,8 +642,8 @@ impl BloberClient {
 
     /// Fetches blob messages for a given slot
     /// Returns a tuple of ([`Pubkey`], [`VersionedMessage`]) where the Pubkey is the address of
-    /// the [`blober::state::blob::Blob`] account and the VersionedMessage is the message that
-    /// included the [`blober::instruction::FinalizeBlob`] instruction.
+    /// the [`data_anchor_blober::state::blob::Blob`] account and the VersionedMessage is the message
+    /// that included the [`data_anchor_blober::instruction::FinalizeBlob`] instruction.
     pub async fn get_blob_messages(
         &self,
         slot: u64,

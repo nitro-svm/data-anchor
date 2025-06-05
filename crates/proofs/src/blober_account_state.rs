@@ -16,7 +16,7 @@ use crate::debug::NoPrettyPrint;
 /// An account whose state was hashed using the blober program.
 ///
 /// The bytes should already be sliced to the exact offset and length that the
-/// [`blober::instructions::FinalizeBlob`] instruction slices them to.
+/// [`data_anchor_blober::instructions::FinalizeBlob`] instruction slices them to.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct BlobAccount(pub Pubkey, pub Vec<u8>);
 
@@ -32,7 +32,7 @@ impl Debug for BlobAccount {
 
 /// A proof for the state of one or many accounts in a specific Solana slot.
 ///
-/// To create this proof, the Blober account's [`blober::blober::finalize_blob`] instruction must
+/// To create this proof, the Blober account's [`data_anchor_blober::blober::finalize_blob`] instruction must
 /// be invoked for each blob whose state should be proven. The starting offset and length of the
 /// "interesting" part of the account data that is to be hashed must also be provided.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -40,7 +40,7 @@ pub struct BloberAccountStateProof {
     /// The slot that the accounts were updated in.
     slot: Slot,
     /// The bytes should already be sliced to the exact offset and length that the
-    /// [`blober::instructions::FinalizeBlob`] instruction slices them to.
+    /// [`data_anchor_blober::instructions::FinalizeBlob`] instruction slices them to.
     pub(crate) blob_accounts: Vec<BlobAccount>,
 }
 

@@ -32,7 +32,8 @@ pub enum UploadMessages {
 }
 
 impl BloberClient {
-    /// Uploads the blob: [`blober::DeclareBlob`], [`blober::InsertChunk`] * N, [`blober::FinalizeBlob`].
+    /// Uploads the blob: [`data_anchor_blober::DeclareBlob`], [`data_anchor_blober::InsertChunk`] * N,
+    /// [`data_anchor_blober::FinalizeBlob`].
     pub(crate) async fn do_upload(
         &self,
         upload_messages: UploadMessages,
@@ -106,7 +107,8 @@ impl BloberClient {
         }
     }
 
-    /// Generates a [`blober::DeclareBlob`], vector of [`blober::InsertChunk`] and a [`blober::FinalizeBlob`] message.
+    /// Generates a [`data_anchor_blober::DeclareBlob`], vector of [`data_anchor_blober::InsertChunk`]
+    /// and a [`data_anchor_blober::FinalizeBlob`] message.
     pub(crate) async fn generate_messages(
         &self,
         blob: Pubkey,

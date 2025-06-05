@@ -113,7 +113,43 @@ pub trait IndexerRpc {
     async fn subscribe_blob_finalization(&self, blobers: HashSet<Pubkey>) -> SubscriptionResult;
 }
 
-/// A relevant [`blober`] instruction extracted from a [`VersionedTransaction`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VersionedTransactionWithInnerInstructions {
+    pub transaction: VersionedTransaction,
+    pub inner_instructions: Vec<InnerInstructions>,
+}
+
+impl From<VersionedTransaction> for VersionedTransactionWithInnerInstructions {
+    fn from(transaction: VersionedTransaction) -> Self {
+        Self {
+            transaction,
+            inner_instructions: Vec::new(),
+        }
+    }
+}
+
+impl From<&VersionedTransaction> for VersionedTransactionWithInnerInstructions {
+    fn from(transaction: &VersionedTransaction) -> Self {
+        Self {
+            transaction: transaction.clone(),
+            inner_instructions: Vec::new(),
+        }
+    }
+}
+
+impl VersionedTransactionWithInnerInstructions {
+    /// Create an iterator over all instructions in the transaction, including both top-level and
+    /// inner instructions.
+    pub fn iter_instructions(&self) -> impl Iterator<Item = &CompiledInstruction> {
+        self.transaction.message.instructions().iter().chain(
+            self.inner_instructions
+                .iter()
+                .flat_map(|inner| inner.instructions.iter().map(|inner| &inner.instruction)),
+        )
+    }
+}
+
+/// A relevant [`data_anchor_blober`] instruction extracted from a [`VersionedTransaction`].
 pub enum RelevantInstruction {
     DeclareBlob(data_anchor_blober::instruction::DeclareBlob),
     InsertChunk(data_anchor_blober::instruction::InsertChunk),
@@ -175,42 +211,6 @@ pub struct RelevantInstructionWithAccounts {
     pub blob: Pubkey,
     pub blober: Pubkey,
     pub instruction: RelevantInstruction,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VersionedTransactionWithInnerInstructions {
-    pub transaction: VersionedTransaction,
-    pub inner_instructions: Vec<InnerInstructions>,
-}
-
-impl From<VersionedTransaction> for VersionedTransactionWithInnerInstructions {
-    fn from(transaction: VersionedTransaction) -> Self {
-        Self {
-            transaction,
-            inner_instructions: Vec::new(),
-        }
-    }
-}
-
-impl From<&VersionedTransaction> for VersionedTransactionWithInnerInstructions {
-    fn from(transaction: &VersionedTransaction) -> Self {
-        Self {
-            transaction: transaction.clone(),
-            inner_instructions: Vec::new(),
-        }
-    }
-}
-
-impl VersionedTransactionWithInnerInstructions {
-    /// Create an iterator over all instructions in the transaction, including both top-level and
-    /// inner instructions.
-    pub fn iter_instructions(&self) -> impl Iterator<Item = &CompiledInstruction> {
-        self.transaction.message.instructions().iter().chain(
-            self.inner_instructions
-                .iter()
-                .flat_map(|inner| inner.instructions.iter().map(|inner| &inner.instruction)),
-        )
-    }
 }
 
 /// Deserialize relevant instructions from a transaction, given the indices of the blob and blober

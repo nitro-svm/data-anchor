@@ -32,13 +32,13 @@ jobs:
 
       - name: Build Binary
         run: |
-          cargo build --release --target ${{ matrix.target }} -p nitro-da-cli
+          cargo build --release --target ${{ matrix.target }} -p data-anchor
 
       - name: Prepare Artifact
         shell: bash
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czvf ../../../nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nitro-da-cli
+          tar -czvf ../../../data-anchor-${{ github.ref_name }}-${{ matrix.target }}.tar.gz data-anchor
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
@@ -49,7 +49,7 @@ jobs:
 
       - name: Upload to AWS S3
         run: |
-          aws s3 cp "nitro-da-cli-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" "s3://${{ secrets.AWS_S3_BUCKET }}/nitro-da-cli/${{ github.ref_name }}/" --acl public-read
+          aws s3 cp "data-anchor-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" "s3://${{ secrets.AWS_S3_BUCKET }}/data-anchor/${{ github.ref_name }}/" --acl public-read
 
   update-install-script:
     name: Update and Upload install script
