@@ -76,12 +76,12 @@ yellowstone-grpc-client = "=6.0.0"
 yellowstone-grpc-proto = "=6.0.0"
 
 # Locals
-data-anchor = "0.1.4"
-data-anchor-client = "0.1.4"
+data-anchor = "0.1.7"
+data-anchor-api = "0.1.7"
+data-anchor-client = "0.1.7"
 data-anchor-indexer = { path = "crates/indexer" }
-data-anchor-api = "0.1.4"
-data-anchor-proofs = "0.1.4"
-data-anchor-blober = { version = "0.1.6", features = ["no-entrypoint"] }
+data-anchor-proofs = "0.1.7"
+data-anchor-blober = { version = "0.1.7", features = ["no-entrypoint"] }
 
 [patch.crates-io]
 data-anchor = { path = "crates/cli" }

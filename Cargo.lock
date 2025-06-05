@@ -1902,7 +1902,9 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-blober"
-version = "0.1.6"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96105cd4264afbcdc3d1c756bb0aaa52cc55dee24b9da2a1a2b864181f9e3288"
 dependencies = [
  "anchor-lang",
  "hex",
@@ -12799,3 +12801,7 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "data-anchor-blober"
+version = "0.1.6"
