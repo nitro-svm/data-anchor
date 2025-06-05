@@ -4,6 +4,7 @@ use std::collections::HashSet;
 
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use chrono::{DateTime, Utc};
+use data_anchor_blober::{BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX};
 use data_anchor_proofs::compound::{
     completeness::CompoundCompletenessProof, inclusion::CompoundInclusionProof,
 };
@@ -119,6 +120,23 @@ pub enum RelevantInstruction {
     FinalizeBlob(data_anchor_blober::instruction::FinalizeBlob),
 }
 
+impl std::fmt::Debug for RelevantInstruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RelevantInstruction::DeclareBlob(instruction) => f
+                .debug_struct("DeclareBlob")
+                .field("size", &instruction.blob_size)
+                .field("timestamp", &instruction.timestamp)
+                .finish(),
+            RelevantInstruction::InsertChunk(instruction) => f
+                .debug_struct("InsertChunk")
+                .field("idx", &instruction.idx)
+                .finish(),
+            RelevantInstruction::FinalizeBlob(_) => f.debug_struct("FinalizeBlob").finish(),
+        }
+    }
+}
+
 impl RelevantInstruction {
     pub fn try_from_slice(compiled_instruction: &CompiledInstruction) -> Option<Self> {
         use data_anchor_blober::instruction::*;
@@ -152,6 +170,7 @@ impl RelevantInstruction {
 }
 
 /// A deserialized relevant instruction, containing the blob and blober pubkeys and the instruction.
+#[derive(Debug)]
 pub struct RelevantInstructionWithAccounts {
     pub blob: Pubkey,
     pub blober: Pubkey,
@@ -161,14 +180,14 @@ pub struct RelevantInstructionWithAccounts {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionedTransactionWithInnerInstructions {
     pub transaction: VersionedTransaction,
-    pub inner_instructions: Option<Vec<InnerInstructions>>,
+    pub inner_instructions: Vec<InnerInstructions>,
 }
 
 impl From<VersionedTransaction> for VersionedTransactionWithInnerInstructions {
     fn from(transaction: VersionedTransaction) -> Self {
         Self {
             transaction,
-            inner_instructions: None,
+            inner_instructions: Vec::new(),
         }
     }
 }
@@ -177,53 +196,111 @@ impl From<&VersionedTransaction> for VersionedTransactionWithInnerInstructions {
     fn from(transaction: &VersionedTransaction) -> Self {
         Self {
             transaction: transaction.clone(),
-            inner_instructions: None,
+            inner_instructions: Vec::new(),
         }
+    }
+}
+
+impl VersionedTransactionWithInnerInstructions {
+    /// Create an iterator over all instructions in the transaction, including both top-level and
+    /// inner instructions.
+    pub fn iter_instructions(&self) -> impl Iterator<Item = &CompiledInstruction> {
+        self.transaction.message.instructions().iter().chain(
+            self.inner_instructions
+                .iter()
+                .flat_map(|inner| inner.instructions.iter().map(|inner| &inner.instruction)),
+        )
     }
 }
 
 /// Deserialize relevant instructions from a transaction, given the indices of the blob and blober
 /// accounts in the transaction.
 pub fn deserialize_relevant_instructions(
+    program_id: &Pubkey,
     tx: &VersionedTransactionWithInnerInstructions,
     blob_pubkey_index: usize,
     blober_pubkey_index: usize,
 ) -> Vec<RelevantInstructionWithAccounts> {
-    tx.transaction
-        .message
-        .instructions()
-        .iter()
-        .chain(tx.inner_instructions.iter().flat_map(|inner_instructions| {
-            inner_instructions
-                .iter()
-                .flat_map(|inner| &inner.instructions)
-                .map(|inner| &inner.instruction)
-        }))
+    tx.iter_instructions()
         .filter_map(|compiled_instruction| {
-            Some(RelevantInstructionWithAccounts {
-                blob: get_account_at_index(
-                    &tx.transaction,
-                    compiled_instruction,
-                    blob_pubkey_index,
-                )?,
-                blober: get_account_at_index(
-                    &tx.transaction,
-                    compiled_instruction,
-                    blober_pubkey_index,
-                )?,
-                instruction: RelevantInstruction::try_from_slice(compiled_instruction)?,
-            })
+            let program_id_idx: usize = compiled_instruction.program_id_index.into();
+            let relevant_program_id = tx
+                .transaction
+                .message
+                .static_account_keys()
+                .get(program_id_idx)?;
+
+            if program_id != relevant_program_id {
+                return None; // Skip instructions not related to the specified program ID.
+            }
+
+            let blob =
+                get_account_at_index(&tx.transaction, compiled_instruction, blob_pubkey_index)?;
+            let blober =
+                get_account_at_index(&tx.transaction, compiled_instruction, blober_pubkey_index)?;
+            let instruction = RelevantInstruction::try_from_slice(compiled_instruction)?;
+            let relevant_instruction = RelevantInstructionWithAccounts {
+                blob,
+                blober,
+                instruction,
+            };
+
+            Some(relevant_instruction)
+        })
+        .collect()
+}
+
+/// Deserialize blober initializations from a transaction, returning a vector of tuples containing
+/// the blober and the trusted pubkey.
+pub fn deserialize_blober_initializations(
+    program_id: &Pubkey,
+    tx: &VersionedTransactionWithInnerInstructions,
+) -> Vec<(Pubkey, Pubkey)> {
+    tx.iter_instructions()
+        .filter_map(|compiled_instruction| {
+            let program_id_idx: usize = compiled_instruction.program_id_index.into();
+
+            let relevant_program_id = tx
+                .transaction
+                .message
+                .static_account_keys()
+                .get(program_id_idx)?;
+
+            if program_id != relevant_program_id {
+                return None; // Skip instructions not related to the specified program ID.
+            }
+
+            let blober = get_account_at_index(&tx.transaction, compiled_instruction, 0)?;
+
+            let discriminator = compiled_instruction.data.get(..8)?;
+            if discriminator != data_anchor_blober::instruction::Initialize::DISCRIMINATOR {
+                return None; // Skip instructions that are not InitializeBlober.
+            }
+
+            let data = compiled_instruction.data.get(8..)?;
+            let instruction =
+                data_anchor_blober::instruction::Initialize::try_from_slice(data).ok()?;
+
+            Some((blober, instruction.trusted))
         })
         .collect()
 }
 
 /// Extract relevant instructions from a list of transactions.
 pub fn extract_relevant_instructions(
+    program_id: &Pubkey,
     transactions: &[VersionedTransaction],
 ) -> Vec<RelevantInstructionWithAccounts> {
     transactions
         .iter()
-        .flat_map(|tx| deserialize_relevant_instructions(&tx.into(), 0, 1))
+        .flat_map(|tx| {
+            deserialize_relevant_instructions(
+                program_id,
+                &tx.into(),
+                BLOB_ACCOUNT_INSTRUCTION_IDX,
+                BLOB_BLOBER_INSTRUCTION_IDX,
+            )
+        })
         .collect()
 }
 

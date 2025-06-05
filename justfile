@@ -188,8 +188,8 @@ run-yellowstone-consumer url token:
 
 # Run the indexer binary
 [group('indexer')]
-run-indexer:
-    cargo run --bin data-anchor-indexer -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696' -g none
+run-indexer rpc-url program-id="CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP":
+    cargo run --bin data-anchor-indexer -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696' -g none -r {{ rpc-url }} -p {{ program-id }}
 
 # Build the docker image for the indexer
 [group('docker')]

@@ -16,7 +16,8 @@ use data_anchor_blober::{
     find_blob_address, find_blober_address,
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
-    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
+    BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, CHUNK_SIZE,
+    COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
 };
 use futures::StreamExt;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
@@ -383,6 +384,7 @@ impl BloberClient {
             .collect::<Result<Vec<_>, _>>()?;
 
         let relevant_instructions = extract_relevant_instructions(
+            &self.program_id,
             &relevant_transactions
                 .iter()
                 .filter_map(|encoded| match &encoded.transaction.meta {
@@ -457,6 +459,7 @@ impl BloberClient {
         };
 
         let relevant_instructions = extract_relevant_instructions(
+            &self.program_id,
             &transactions
                 .iter()
                 .filter_map(|tx| match &tx.meta {
@@ -521,6 +524,7 @@ impl BloberClient {
                 continue;
             };
             let new_relevant_instructions = extract_relevant_instructions(
+                &self.program_id,
                 &transactions
                     .iter()
                     .filter_map(|tx| match &tx.meta {
@@ -676,8 +680,16 @@ impl BloberClient {
                     .iter()
                     .filter_map(|compiled_instruction| {
                         Some(RelevantInstructionWithAccounts {
-                            blob: get_account_at_index(&tx, compiled_instruction, 0)?,
-                            blober: get_account_at_index(&tx, compiled_instruction, 1)?,
+                            blob: get_account_at_index(
+                                &tx,
+                                compiled_instruction,
+                                BLOB_ACCOUNT_INSTRUCTION_IDX,
+                            )?,
+                            blober: get_account_at_index(
+                                &tx,
+                                compiled_instruction,
+                                BLOB_BLOBER_INSTRUCTION_IDX,
+                            )?,
                             instruction: RelevantInstruction::try_from_slice(compiled_instruction)?,
                         })
                     })

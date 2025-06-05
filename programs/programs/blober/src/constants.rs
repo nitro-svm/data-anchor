@@ -24,6 +24,15 @@ pub const COMPOUND_TX_SIZE: u16 = 854;
 /// The max size of data for a compound transaction containing the first two (declare and insert) instructions.
 pub const COMPOUND_DECLARE_TX_SIZE: u16 = 868;
 
+/// The index of the blob account in the instruction accounts list.
+pub const BLOB_ACCOUNT_INSTRUCTION_IDX: usize = 0;
+
+/// The index of the blober account in the instruction accounts list.
+pub const BLOB_BLOBER_INSTRUCTION_IDX: usize = 1;
+
+/// The index of the payer account in the instruction accounts list.
+pub const BLOB_PAYER_INSTRUCTION_IDX: usize = 2;
+
 /// The size (in bytes) of the bitmap needed to track which chunks have arrived
 #[constant]
 pub const CHUNKS_BITMAP_SIZE: u16 = MAX_CHUNKS / 8;

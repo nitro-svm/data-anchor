@@ -1964,6 +1964,7 @@ dependencies = [
  "remoc",
  "serde",
  "serde_json",
+ "solana-rpc-client",
  "solana-sdk",
  "sqlx",
  "tempfile",
@@ -5593,18 +5594,18 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
 name = "remoc"
-version = "0.15.3"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5374e929d4ef3b89d787b6f760ed932ebbcb714eb87c29d365f0bf9e70175875"
+checksum = "367bdc98bd1519bc8fb2b896aae0addc1baa04af1eb7c32335d3f37804731fc8"
 dependencies = [
  "async-trait",
+ "bincode",
  "byteorder",
  "bytes",
  "futures 0.3.31",
- "rand 0.9.1",
+ "rand 0.8.5",
  "remoc_macro",
  "serde",
- "serde_json",
  "tokio",
  "tokio-util 0.7.15",
  "tracing",
@@ -5614,9 +5615,9 @@ dependencies = [
 
 [[package]]
 name = "remoc_macro"
-version = "0.15.3"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a62e864361f315f51c3a26826533291f59fd628fc12c07dce0d6884a20fc9dad"
+checksum = "62ab746dcde127016dbba8ff766ac70a652a107b9effd76b15fe65a3af18cb64"
 dependencies = [
  "proc-macro2",
  "quote",
