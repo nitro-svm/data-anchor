@@ -1138,7 +1138,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.13.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -1903,8 +1903,6 @@ dependencies = [
 [[package]]
 name = "data-anchor-blober"
 version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96105cd4264afbcdc3d1c756bb0aaa52cc55dee24b9da2a1a2b864181f9e3288"
 dependencies = [
  "anchor-lang",
  "hex",
@@ -12801,7 +12799,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "data-anchor-blober"
-version = "0.1.6"
