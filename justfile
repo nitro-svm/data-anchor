@@ -183,8 +183,8 @@ run-yellowstone:
 
 # Run the yellowstone consumer binary
 [group('indexer')]
-run-yellowstone-consumer:
-    cargo run --bin yellowstone-consumer
+run-yellowstone-consumer url token:
+    cargo run --bin yellowstone-consumer -- -y {{ url }} -x {{ token }}
 
 # Run the indexer binary
 [group('indexer')]
