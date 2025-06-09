@@ -30,6 +30,12 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install system tools
+        if: matrix.os == "ubuntu-latest"
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential cmake pkg-config libudev-dev
+
       - name: Build Binary
         run: |
           cargo build --release --target ${{ matrix.target }} -p data-anchor
