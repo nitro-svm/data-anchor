@@ -573,7 +573,7 @@ impl BloberClient {
         loop {
             let blobs = self
                 .indexer()
-                .get_blobs(blober, slot)
+                .get_blobs(blober.into(), slot)
                 .await
                 .map_err(|e| IndexerError::Blobs(slot, e.to_string()))?;
             if let Some(blobs) = blobs {
@@ -622,7 +622,7 @@ impl BloberClient {
         loop {
             let proof = self
                 .indexer()
-                .get_proof(blober, slot)
+                .get_proof(blober.into(), slot)
                 .await
                 .map_err(|e| IndexerError::Proof(slot, e.to_string()))?;
             if let Some(proofs) = proof {
@@ -635,7 +635,7 @@ impl BloberClient {
     /// Fetches compound proof for a given blob PDA [`Pubkey`] from the [`IndexerRpcClient`].
     pub async fn get_blob_proof(&self, blob: Pubkey) -> BloberClientResult<Option<CompoundProof>> {
         self.indexer()
-            .get_proof_for_blob(blob)
+            .get_proof_for_blob(blob.into())
             .await
             .map_err(|e| IndexerError::ProofForBlob(blob.to_string(), e.to_string()).into())
     }
