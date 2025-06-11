@@ -2,6 +2,92 @@
 
 This crate is used by the client to verify the correctness of data from the indexer service.
 
+## Proof Modules Overview
+
+This crate exposes several proof types that together allow clients to validate information
+returned by the indexer against on-chain state. Each proof is built from data that already
+exists on chain so that a client can recompute the expected value and verify it locally:
+
+- **Accounts delta hash proofs** - prove membership (inclusion) or absence (exclusion) of
+  an account in the Merkle tree of updated accounts for a slot. The root of that tree is
+  the `accounts_delta_hash`, which can be checked against the value found in a [`BankHashProof`](#bank-hash-proof).
+- **Bank hash proofs** - contain the components that hash together to form the bank hash
+  for a block, including the accounts delta hash. Verifying it shows that the accounts
+  delta tree really produced the bank hash returned by Solana RPC.
+- **Slot hash proofs** - prove which bank hash was stored in the `SlotHashes` sysvar for
+  a specific slot. This ties the bank hash to a slot number and blockhash recorded on chain.
+- **Blob proofs** - prove that a blob uploaded through the `blober` program hashes to the
+  expected digest. A client provides the raw blob bytes to recompute the digest locally.
+- **Compound proofs** - combine accounts delta hash, bank hash, slot hash and blob proofs
+  into one structure. They show either that given blobs were included (`CompoundInclusionProof`)
+  or that no blobs were present (`CompoundCompletenessProof`) in a specific block.
+
+Inclusion proofs demonstrate that an account's data was updated in a block, whereas
+exclusion proofs show that it was untouched. The indexer builds these proofs by walking
+the Merkle tree for the slot and gathering the sibling hashes needed to recompute the
+`accounts_delta_hash`. To verify them you supply the expected root (often taken from a
+`BankHashProof`).
+
+`BankHashProof` is derived from block metadata - parent bank hash, `accounts_delta_hash`,
+signature count and blockhash - and can be checked by hashing these fields and comparing
+with the bank hash returned by Solana RPC. `SlotHashProof` contains a copy of the
+`SlotHashes` sysvar so that a client can check that this bank hash was recorded for the
+slot. `BlobProof` is computed from the chunk order and digest stored in the blob account
+and lets a client verify the raw bytes.
+
+`CompoundInclusionProof` and `CompoundCompletenessProof` bundle all of the above together.
+They are what the indexer returns when a client requests a proof for a slot or for a
+particular blob. By verifying a compound proof you ensure that the blobs returned by the
+indexer correspond to the actual on-chain state and that no uploads were missed.
+
+When a client retrieves data from the indexer it can use these proofs to check that each
+piece of data matches what actually happened on chain.
+
+### Verifying proofs
+
+Below are short snippets showing how a client might verify each proof type:
+
+- **Accounts delta hash proofs**
+
+```rust
+use data_anchor_proofs::accounts_delta_hash::{inclusion::InclusionProof, exclusion::ExclusionProof};
+
+inclusion_proof.verify(expected_accounts_delta_hash);
+exclusion_proof.verify(expected_accounts_delta_hash)?;
+```
+
+- **Bank hash proof**
+
+```rust
+use data_anchor_proofs::bank_hash::BankHashProof;
+
+bank_hash_proof.verify(expected_bank_hash);
+```
+
+- **Slot hash proof**
+
+```rust
+use data_anchor_proofs::slot_hash::SlotHashProof;
+
+slot_hash_proof.verify(slot, bank_hash, accounts_delta_hash)?;
+```
+
+- **Blob proof**
+
+```rust
+use data_anchor_proofs::blob::BlobProof;
+
+blob_proof.verify(&blob_bytes)?;
+```
+
+- **Compound proofs** (`CompoundInclusionProof` / `CompoundCompletenessProof`)
+
+```rust
+use data_anchor_proofs::compound::{inclusion::CompoundInclusionProof, completeness::CompoundCompletenessProof, inclusion::ProofBlob};
+
+compound_proof.verify(blober_program, blockhash, &[ProofBlob { blob: blob_pubkey, data: Some(blob_bytes) }])?;
+```
+
 ## Accounts Exclusion Proofs
 
 The [`AccountMerkleTree`](https://github.com/nitro-svm/data-anchor/blob/main/crates/proofs/src/accounts_delta_hash/account_merkle_tree/tree.rs#L33-L38)
