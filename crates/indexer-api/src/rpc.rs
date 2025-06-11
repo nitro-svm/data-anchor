@@ -29,6 +29,20 @@ pub struct TimeRange {
     pub end: Option<DateTime<Utc>>,
 }
 
+impl TimeRange {
+    /// Returns the start and end times as a tuple of `DateTime<Utc>`, with defaults for
+    /// missing values.
+    pub fn to_db_defaults(&self) -> (DateTime<Utc>, DateTime<Utc>) {
+        #[allow(clippy::unwrap_used, reason = "Hardcoding 0 will never panic")]
+        let default_start = DateTime::<Utc>::from_timestamp_micros(0).unwrap();
+
+        (
+            self.start.unwrap_or(default_start),
+            self.end.unwrap_or(Utc::now()),
+        )
+    }
+}
+
 /// Request parameters for retrieving blobs by a specific blober's pubkey and a time range.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BlobsByBlober {
@@ -87,6 +101,29 @@ pub trait IndexerRpc {
     /// error if there was a database or RPC failure, and an empty list if no blobs were found.
     #[method(name = "get_blobs_by_payer")]
     async fn get_blobs_by_payer(&self, payer: BlobsByPayer) -> RpcResult<Vec<Vec<u8>>>;
+
+    /// Retrieve a list of blobs for a given network name and time range. Returns an error if there
+    /// was a database or RPC failure, and an empty list if no blobs were found.
+    #[method(name = "get_blobs_by_network")]
+    async fn get_blobs_by_network(
+        &self,
+        network_name: String,
+        time_range: TimeRange,
+    ) -> RpcResult<Vec<Vec<u8>>>;
+
+    /// Retrieve a list of blobs for a given namespace and time range. Returns an error if there
+    /// was a database or RPC failure, and an empty list if no blobs were found.
+    #[method(name = "get_blobs_by_namespace")]
+    async fn get_blobs_by_namespace(
+        &self,
+        namespace: String,
+        time_range: TimeRange,
+    ) -> RpcResult<Vec<Vec<u8>>>;
+
+    /// Retrieve a list of payers for a given network name. Returns an error if there was a
+    /// database or RPC failure, and an empty list if no payers were found.
+    #[method(name = "get_payers_by_network")]
+    async fn get_payers_by_network(&self, network_name: String) -> RpcResult<Vec<PubkeyFromStr>>;
 
     /// Retrieve a proof for a given slot and blober pubkey. Returns an error if there was a
     /// database or RPC failure, and None if the slot has not been completed yet.
