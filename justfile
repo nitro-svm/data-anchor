@@ -214,3 +214,53 @@ docker-run-db:
 [working-directory('.github/workflows/db')]
 docker-stop-db:
     docker compose -f ./no-tls-db.yml down
+
+[group('tofu')]
+[private]
+[working-directory('infrastructure')]
+initialize-workspace workspace="devnet":
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    tofu init -migrate-state
+    tofu workspace select {{ workspace }}
+
+# Refresh the Auto Scaling Group
+[confirm('This will refresh the Auto Scaling Group for the devnet. Are you sure you want to continue [y/n]?')]
+[group('tofu')]
+[working-directory('infrastructure')]
+refresh-asg:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    ASG_NAME=$(tofu output -raw autoscaling_group_name)
+
+    aws autoscaling start-instance-refresh --auto-scaling-group-name "${ASG_NAME}"
+
+# Apply devnet infrastructure
+[confirm('This will apply the devnet infrastructure. Are you sure you want to continue [y/n]?')]
+[group('tofu')]
+[working-directory('infrastructure')]
+apply-devnet: initialize-workspace && refresh-asg
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
+
+    tofu apply -var="release_id=${RELEASE}"
+
+# Apply mainnet infrastructure
+[confirm('This will apply the mainnet infrastructure. Are you sure you want to continue [y/n]?')]
+[group('tofu')]
+[working-directory('infrastructure')]
+apply-mainnet: (initialize-workspace "mainnet") && refresh-asg
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
+
+    tofu apply \
+        -var="program_id=8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc" \
+        -var="rpc_url=https://api.mainnet.solana.com" \
+        -var="yellowstone_url=https://laserstream-mainnet-fra.helius-rpc.com" \
+        -var="release_id=${RELEASE}"
