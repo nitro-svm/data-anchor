@@ -225,7 +225,7 @@ initialize-workspace workspace="devnet":
     tofu workspace select {{ workspace }}
 
 # Refresh the Auto Scaling Group
-[confirm('This will refresh the Auto Scaling Group for the devnet. Are you sure you want to continue [y/n]?')]
+[confirm('This will refresh the Auto Scaling Group. Are you sure you want to continue [y/n]?')]
 [group('tofu')]
 [working-directory('infrastructure')]
 refresh-asg:
@@ -263,3 +263,15 @@ apply-mainnet: (initialize-workspace "mainnet") && refresh-asg
         -var="rpc_url=https://hana-o8f2gi-fast-mainnet.helius-rpc.com" \
         -var="yellowstone_url=https://laserstream-mainnet-fra.helius-rpc.com" \
         -var="release_id=${RELEASE}"
+
+# Apply staging infrastructure
+[confirm('This will apply the staging infrastructure. Are you sure you want to continue [y/n]?')]
+[group('tofu')]
+[working-directory('infrastructure')]
+apply-staging: (initialize-workspace "staging") && refresh-asg
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
+
+    tofu apply -var="release_id=${RELEASE}"
