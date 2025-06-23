@@ -222,7 +222,6 @@ initialize-workspace workspace="devnet":
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    tofu init -migrate-state
     tofu workspace select {{ workspace }}
 
 # Refresh the Auto Scaling Group
@@ -261,6 +260,6 @@ apply-mainnet: (initialize-workspace "mainnet") && refresh-asg
 
     tofu apply \
         -var="program_id=8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc" \
-        -var="rpc_url=https://api.mainnet.solana.com" \
+        -var="rpc_url=https://hana-o8f2gi-fast-mainnet.helius-rpc.com" \
         -var="yellowstone_url=https://laserstream-mainnet-fra.helius-rpc.com" \
         -var="release_id=${RELEASE}"
