@@ -11,6 +11,12 @@ export ARBTEST_BUDGET_MS := "10000"
 fmt-justfile:
     just --fmt --unstable --check
 
+# Run formatting checks for the infrastructure directory
+[group('lint')]
+[working-directory('infrastructure')]
+fmt-tofu:
+    tofu fmt -check
+
 # Run lint and formatting checks for the programs directory
 [group('lint')]
 [working-directory('programs')]
@@ -21,7 +27,7 @@ lint-programs:
 
 # Run lint and formatting checks for the entire project
 [group('lint')]
-lint: lint-programs fmt-justfile
+lint: lint-programs fmt-justfile fmt-tofu
     cargo +nightly fmt -- --check
     cargo clippy --all-targets --all-features
     zepter
@@ -30,6 +36,12 @@ lint: lint-programs fmt-justfile
 [private]
 fmt-justfile-fix:
     just --fmt --unstable
+
+# Fix formatting issues in the infrastructure directory
+[group('lint')]
+[working-directory('infrastructure')]
+fmt-tofu-fix:
+    tofu fmt
 
 # Fix lint and formatting issues in the programs directory
 [group('lint')]
@@ -41,7 +53,7 @@ lint-programs-fix:
 
 # Fix lint and formatting issues in the entire project
 [group('lint')]
-lint-fix: lint-programs-fix fmt-justfile-fix
+lint-fix: lint-programs-fix fmt-justfile-fix fmt-tofu-fix
     cargo +nightly fmt
     cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
     zepter
@@ -218,7 +230,7 @@ docker-stop-db:
 [group('tofu')]
 [private]
 [working-directory('infrastructure')]
-initialize-workspace workspace="devnet":
+initialize-workspace workspace="staging":
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -236,11 +248,23 @@ refresh-asg:
 
     aws autoscaling start-instance-refresh --auto-scaling-group-name "${ASG_NAME}"
 
+# Apply staging infrastructure
+[confirm('This will apply the staging infrastructure. Are you sure you want to continue [y/n]?')]
+[group('tofu')]
+[working-directory('infrastructure')]
+apply-staging: initialize-workspace && refresh-asg
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
+
+    tofu apply -var="release_id=${RELEASE}"
+
 # Apply devnet infrastructure
 [confirm('This will apply the devnet infrastructure. Are you sure you want to continue [y/n]?')]
 [group('tofu')]
 [working-directory('infrastructure')]
-apply-devnet: initialize-workspace && refresh-asg
+apply-devnet: (initialize-workspace "devnet") && refresh-asg
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -263,15 +287,3 @@ apply-mainnet: (initialize-workspace "mainnet") && refresh-asg
         -var="rpc_url=https://hana-o8f2gi-fast-mainnet.helius-rpc.com" \
         -var="yellowstone_url=https://laserstream-mainnet-fra.helius-rpc.com" \
         -var="release_id=${RELEASE}"
-
-# Apply staging infrastructure
-[confirm('This will apply the staging infrastructure. Are you sure you want to continue [y/n]?')]
-[group('tofu')]
-[working-directory('infrastructure')]
-apply-staging: (initialize-workspace "staging") && refresh-asg
-    #!/usr/bin/env bash
-    set -euxo pipefail
-
-    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
-
-    tofu apply -var="release_id=${RELEASE}"

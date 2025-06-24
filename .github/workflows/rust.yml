@@ -65,6 +65,10 @@ concurrency:
   # CI run to fail, and we want to keep a clean history for major branches.
   cancel-in-progress: ${{ (github.ref != 'refs/heads/main') }}
 
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
   lint:
     name: lint
@@ -98,6 +102,20 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential cmake pkg-config libudev-dev
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_INFRA_ROLE }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Init OpenTofu
+        working-directory: infrastructure
+        run: tofu init
 
       - name: Run lint and formatting checks
         run: just lint
