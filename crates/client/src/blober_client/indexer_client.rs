@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, IndexerRpcClient};
+use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, IndexerRpcClient, TimeRange};
 use data_anchor_blober::find_blober_address;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
@@ -56,8 +56,32 @@ impl BloberClient {
             .map_err(|e| IndexerError::BlobsForPayer(payer.to_string(), e.to_string()).into())
     }
 
+    /// Fetches blobs for a given network and time range from the [`IndexerRpcClient`].
+    pub async fn get_blobs_by_network(
+        &self,
+        network_name: String,
+        time_range: TimeRange,
+    ) -> BloberClientResult<Vec<Vec<u8>>> {
+        self.indexer()
+            .get_blobs_by_network(network_name.clone(), time_range)
+            .await
+            .map_err(|e| IndexerError::BlobsForNetwork(network_name, e.to_string()).into())
+    }
+
+    /// Fetches blobs for a given namespace and time range from the [`IndexerRpcClient`].
+    pub async fn get_blobs_by_namespace(
+        &self,
+        namespace: String,
+        time_range: TimeRange,
+    ) -> BloberClientResult<Vec<Vec<u8>>> {
+        self.indexer()
+            .get_blobs_by_namespace(namespace.clone(), time_range)
+            .await
+            .map_err(|e| IndexerError::BlobsForNamespace(namespace, e.to_string()).into())
+    }
+
     /// Fetches compound proof for a given slot from the [`IndexerRpcClient`].
-    pub async fn get_slot_proof(
+    pub async fn get_proof(
         &self,
         slot: u64,
         namespace: &str,
@@ -80,7 +104,10 @@ impl BloberClient {
     }
 
     /// Fetches compound proof for a given blob PDA [`Pubkey`] from the [`IndexerRpcClient`].
-    pub async fn get_blob_proof(&self, blob: Pubkey) -> BloberClientResult<Option<CompoundProof>> {
+    pub async fn get_proof_for_blob(
+        &self,
+        blob: Pubkey,
+    ) -> BloberClientResult<Option<CompoundProof>> {
         self.indexer()
             .get_proof_for_blob(blob.into())
             .await

@@ -126,6 +126,12 @@ pub enum IndexerError {
     /// Failed to read blobs for payer {0} via indexer client: {1}
     #[error("Failed to read proof for payer {0} via indexer client: {1}")]
     BlobsForPayer(String, String),
+    /// Failed to read blobs for network {0} via indexer client: {1}
+    #[error("Failed to read blobs for network {0} via indexer client: {1}")]
+    BlobsForNetwork(String, String),
+    /// Failed to read blobs for namespace {0} via indexer client: {1}
+    #[error("Failed to read blobs for namespace {0} via indexer client: {1}")]
+    BlobsForNamespace(String, String),
     /// Failed to read proof for blob {0} via indexer client: {1}
     #[error("Failed to read proof for blob {0} via indexer client: {1}")]
     ProofForBlob(String, String),

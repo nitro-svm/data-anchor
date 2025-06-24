@@ -103,7 +103,7 @@ impl IndexerSubCommand {
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::Proofs(SlotArgs { slot }) => {
-                let proof = client.get_slot_proof(*slot, namespace, None).await?;
+                let proof = client.get_proof(*slot, namespace, None).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(Some(proof))).into())
             }
             IndexerSubCommand::BlobsForBlober {
@@ -139,7 +139,7 @@ impl IndexerSubCommand {
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::ProofForBlob { blob } => {
-                let proof = client.get_blob_proof(blob.to_owned()).await?;
+                let proof = client.get_proof_for_blob(blob.to_owned()).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
         }
