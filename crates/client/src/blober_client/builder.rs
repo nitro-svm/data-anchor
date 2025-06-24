@@ -1,6 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
-use jsonrpsee::ws_client::WsClientBuilder;
+use jsonrpsee::ws_client::{HeaderMap, WsClientBuilder};
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
@@ -10,7 +10,7 @@ use crate::{
         blober_client_builder::{self, IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient},
         BloberClientBuilder,
     },
-    BatchClient, BloberClient, BloberClientResult,
+    BatchClient, BloberClient, BloberClientError, BloberClientResult,
 };
 
 impl<State: blober_client_builder::State> BloberClientBuilder<State> {
@@ -28,11 +28,26 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
     pub async fn indexer_from_url(
         self,
         indexer_url: &str,
+        indexer_api_token: Option<String>,
     ) -> BloberClientResult<BloberClientBuilder<SetIndexerClient<State>>>
     where
         State::IndexerClient: IsUnset,
     {
-        let indexer_client = WsClientBuilder::new().build(indexer_url).await?;
+        let mut headers = HeaderMap::new();
+        if let Some(token) = indexer_api_token {
+            headers.insert(
+                "x-api-key",
+                token.parse().map_err(|_| {
+                    BloberClientError::InvalidIndexerApiToken(
+                        "Failed to parse API token".to_owned(),
+                    )
+                })?,
+            );
+        }
+        let indexer_client = WsClientBuilder::new()
+            .set_headers(headers)
+            .build(indexer_url)
+            .await?;
         Ok(self.indexer_client(Arc::new(indexer_client)))
     }
 

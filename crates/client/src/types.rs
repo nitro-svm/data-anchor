@@ -33,6 +33,9 @@ pub enum BloberClientError {
     /// Invalid indexer url: {0}
     #[error("Invalid indexer url: {0}")]
     InvalidIndexerUrl(#[from] jsonrpsee::core::client::Error),
+    /// Invalid indexer API token: {0}
+    #[error("Invalid indexer API token: {0}")]
+    InvalidIndexerApiToken(String),
     /// Invalid key or namespace for blober
     #[error("Invalid key or namespace for blober")]
     InvalidKeyOrNamespace,

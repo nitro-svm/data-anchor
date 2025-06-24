@@ -53,6 +53,15 @@ struct Cli {
     #[arg(short, long, global = true, env = "BLOBER_INDEXER_URL")]
     pub indexer_url: Option<String>,
 
+    /// The API token for the indexer, if required.
+    #[arg(
+        long,
+        global = true,
+        env = "BLOBER_INDEXER_API_TOKEN",
+        hide_env_values = true
+    )]
+    pub indexer_api_token: Option<String>,
+
     /// The path to the Solana [`Config`] file.
     #[arg(
         short,
@@ -93,6 +102,7 @@ pub struct Options {
     program_id: Pubkey,
     payer: Arc<Keypair>,
     indexer_url: Option<String>,
+    indexer_api_token: Option<String>,
     namespace: String,
     config: Config,
     output: OutputFormat,
@@ -124,6 +134,7 @@ impl Options {
         Self {
             namespace,
             indexer_url: args.indexer_url,
+            indexer_api_token: args.indexer_api_token,
             command: args.command,
             program_id,
             output: args.output,
@@ -140,7 +151,7 @@ impl Options {
 
         let client = if let Some(indexer_url) = self.indexer_url {
             builder
-                .indexer_from_url(&indexer_url)
+                .indexer_from_url(&indexer_url, self.indexer_api_token.clone())
                 .await?
                 .build_with_config(self.config)
                 .await?
