@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, TimeRange};
+use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, PubkeyFromStr, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
@@ -52,6 +52,9 @@ pub enum IndexerSubCommand {
         /// The namespace to query.
         #[arg(short, long)]
         namespace: String,
+        /// The payer address to query.
+        #[arg(long)]
+        payer_pubkey: Option<Pubkey>,
         #[clap(flatten)]
         time_args: TimeArgs,
     },
@@ -169,11 +172,13 @@ impl IndexerSubCommand {
             }
             IndexerSubCommand::BlobsForNamespace {
                 namespace,
+                payer_pubkey,
                 time_args: TimeArgs { start, end },
             } => {
                 let data = client
-                    .get_blobs_by_namespace(
+                    .get_blobs_by_namespace_for_payer(
                         namespace.to_owned(),
+                        payer_pubkey.map(PubkeyFromStr),
                         TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),

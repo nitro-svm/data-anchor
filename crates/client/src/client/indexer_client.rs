@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, IndexerRpcClient, TimeRange};
+use data_anchor_api::{
+    BlobsByBlober, BlobsByPayer, CompoundProof, IndexerRpcClient, PubkeyFromStr, TimeRange,
+};
 use data_anchor_blober::find_blober_address;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
@@ -69,13 +71,14 @@ impl DataAnchorClient {
     }
 
     /// Fetches blobs for a given namespace and time range from the [`IndexerRpcClient`].
-    pub async fn get_blobs_by_namespace(
+    pub async fn get_blobs_by_namespace_for_payer(
         &self,
         namespace: String,
+        payer_pubkey: Option<PubkeyFromStr>,
         time_range: TimeRange,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         self.indexer()
-            .get_blobs_by_namespace(namespace.clone(), time_range)
+            .get_blobs_by_namespace_for_payer(namespace.clone(), payer_pubkey, time_range)
             .await
             .map_err(|e| IndexerError::BlobsForNamespace(namespace, e.to_string()).into())
     }

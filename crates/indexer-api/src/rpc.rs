@@ -114,9 +114,10 @@ pub trait IndexerRpc {
     /// Retrieve a list of blobs for a given namespace and time range. Returns an error if there
     /// was a database or RPC failure, and an empty list if no blobs were found.
     #[method(name = "get_blobs_by_namespace")]
-    async fn get_blobs_by_namespace(
+    async fn get_blobs_by_namespace_for_payer(
         &self,
         namespace: String,
+        payer: Option<PubkeyFromStr>,
         time_range: TimeRange,
     ) -> RpcResult<Vec<Vec<u8>>>;
 
