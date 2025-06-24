@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use data_anchor_client::{BloberClient, BloberClientResult, FeeStrategy, Priority};
+use data_anchor_client::{DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority};
 use serde::Serialize;
 use tracing::{info, instrument};
 
@@ -41,9 +41,9 @@ impl BloberSubCommand {
     #[instrument(skip(client), level = "debug")]
     pub async fn run(
         &self,
-        client: Arc<BloberClient>,
+        client: Arc<DataAnchorClient>,
         namespace: &str,
-    ) -> BloberClientResult<CommandOutput> {
+    ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BloberSubCommand::Initialize => {
                 info!("Initializing blober account with namespace: {namespace}");

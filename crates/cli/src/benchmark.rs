@@ -12,7 +12,8 @@ use bytesize::ByteSize;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use data_anchor_client::{
-    BloberClient, BloberClientError, BloberClientResult, FeeStrategy, Priority, UploadBlobError,
+    DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy, Priority,
+    UploadBlobError,
 };
 use futures::StreamExt;
 use itertools::{iproduct, Itertools};
@@ -93,9 +94,9 @@ impl BenchmarkSubCommand {
     #[instrument(skip(client), level = "debug")]
     pub async fn run(
         &self,
-        client: Arc<BloberClient>,
+        client: Arc<DataAnchorClient>,
         namespace: &str,
-    ) -> BloberClientResult<CommandOutput> {
+    ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BenchmarkSubCommand::GenerateData {
                 data_path,
@@ -159,7 +160,7 @@ impl BenchmarkSubCommand {
                             .from_writer(file)
                     });
 
-                let _: BloberClientResult = async {
+                let _: DataAnchorClientResult = async {
                     for (count, random_length, size) in combination_matrix {
                         trace!(
                             "Generating data files with size {size}{} and count {count}...",
@@ -211,7 +212,7 @@ async fn generate_data(
     count: usize,
     random_length: bool,
     size: usize,
-) -> BloberClientResult {
+) -> DataAnchorClientResult {
     let mut rng = rand::thread_rng();
 
     delete_all_in_dir(data_path).await?;
@@ -249,9 +250,9 @@ async fn measure_performance(
     timeout: u64,
     concurrency: u64,
     priority: Priority,
-    client: Arc<BloberClient>,
+    client: Arc<DataAnchorClient>,
     namespace: &str,
-) -> BloberClientResult<BenchMeasurement> {
+) -> DataAnchorClientResult<BenchMeasurement> {
     let reads = data_path
         .read_dir()?
         .filter_map(|entry| {
@@ -283,7 +284,7 @@ async fn measure_performance(
 
     let status = StatusData::new(total_files);
 
-    let (results, upload_times): (Vec<BloberClientResult<_>>, Vec<f64>) =
+    let (results, upload_times): (Vec<DataAnchorClientResult<_>>, Vec<f64>) =
         futures::stream::iter(data)
             .map(|blob_data| {
                 let status = status.clone();
@@ -308,7 +309,7 @@ async fn measure_performance(
                 }
             })
             .buffer_unordered(concurrency as usize)
-            .collect::<Vec<(BloberClientResult<_>, f64)>>()
+            .collect::<Vec<(DataAnchorClientResult<_>, f64)>>()
             .await
             .into_iter()
             .unzip();
@@ -337,7 +338,7 @@ async fn measure_performance(
 pub fn write_measurements(
     measurements: Vec<BenchMeasurement>,
     has_headers: bool,
-) -> BloberClientResult<String> {
+) -> DataAnchorClientResult<String> {
     let mut writer = csv::WriterBuilder::new()
         .has_headers(has_headers)
         .from_writer(Vec::new());
@@ -432,7 +433,7 @@ impl BenchMeasurement {
         start_balance: u64,
         end_balance: u64,
         total_files: usize,
-        errors: Vec<BloberClientError>,
+        errors: Vec<DataAnchorClientError>,
         blob_upload_times: &[f64],
     ) -> Self {
         let balance_diff = start_balance - end_balance;
@@ -440,13 +441,13 @@ impl BenchMeasurement {
         let (declare_failures, insert_failures, finalize_failures) = errors.iter().fold(
             (0u64, 0u64, 0u64),
             |(declare, insert, finalize), error| match error {
-                BloberClientError::UploadBlob(UploadBlobError::DeclareBlob(_)) => {
+                DataAnchorClientError::UploadBlob(UploadBlobError::DeclareBlob(_)) => {
                     (declare + 1, insert, finalize)
                 }
-                BloberClientError::UploadBlob(UploadBlobError::InsertChunks(_)) => {
+                DataAnchorClientError::UploadBlob(UploadBlobError::InsertChunks(_)) => {
                     (declare, insert + 1, finalize)
                 }
-                BloberClientError::UploadBlob(UploadBlobError::FinalizeBlob(_)) => {
+                DataAnchorClientError::UploadBlob(UploadBlobError::FinalizeBlob(_)) => {
                     (declare, insert, finalize + 1)
                 }
                 _ => (declare, insert, finalize),

@@ -4,16 +4,16 @@ use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, IndexerRpcClie
 use data_anchor_blober::find_blober_address;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
-use crate::{BloberClient, BloberClientResult, IndexerError};
+use crate::{DataAnchorClient, DataAnchorClientResult, IndexerError};
 
-impl BloberClient {
+impl DataAnchorClient {
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
     pub async fn get_blobs(
         &self,
         slot: u64,
         namespace: &str,
         payer_pubkey: Option<Pubkey>,
-    ) -> BloberClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
         let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
 
@@ -34,7 +34,7 @@ impl BloberClient {
     pub async fn get_blobs_by_blober(
         &self,
         blober_blobs: BlobsByBlober,
-    ) -> BloberClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         let blober = blober_blobs.blober;
 
         self.indexer()
@@ -47,7 +47,7 @@ impl BloberClient {
     pub async fn get_blobs_by_payer(
         &self,
         payer_blobs: BlobsByPayer,
-    ) -> BloberClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         let payer = payer_blobs.payer;
 
         self.indexer()
@@ -61,7 +61,7 @@ impl BloberClient {
         &self,
         network_name: String,
         time_range: TimeRange,
-    ) -> BloberClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         self.indexer()
             .get_blobs_by_network(network_name.clone(), time_range)
             .await
@@ -73,7 +73,7 @@ impl BloberClient {
         &self,
         namespace: String,
         time_range: TimeRange,
-    ) -> BloberClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         self.indexer()
             .get_blobs_by_namespace(namespace.clone(), time_range)
             .await
@@ -86,7 +86,7 @@ impl BloberClient {
         slot: u64,
         namespace: &str,
         payer_pubkey: Option<Pubkey>,
-    ) -> BloberClientResult<CompoundProof> {
+    ) -> DataAnchorClientResult<CompoundProof> {
         let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
         let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
 
@@ -107,7 +107,7 @@ impl BloberClient {
     pub async fn get_proof_for_blob(
         &self,
         blob: Pubkey,
-    ) -> BloberClientResult<Option<CompoundProof>> {
+    ) -> DataAnchorClientResult<Option<CompoundProof>> {
         self.indexer()
             .get_proof_for_blob(blob.into())
             .await

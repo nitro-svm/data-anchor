@@ -13,20 +13,20 @@ use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signature::Signature
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 
 use crate::{
-    blober_client::get_blob_data_from_instructions,
+    client::get_blob_data_from_instructions,
     constants::{DEFAULT_CONCURRENCY, DEFAULT_LOOKBACK_SLOTS},
     helpers::filter_relevant_instructions,
-    BloberClient, BloberClientResult, LedgerDataBlobError,
+    DataAnchorClient, DataAnchorClientResult, LedgerDataBlobError,
 };
 
-impl BloberClient {
+impl DataAnchorClient {
     /// Returns the raw blob data from the ledger for the given signatures.
     pub async fn get_ledger_blobs_from_signatures(
         &self,
         namespace: &str,
         payer_pubkey: Option<Pubkey>,
         signatures: Vec<Signature>,
-    ) -> BloberClientResult<Vec<u8>> {
+    ) -> DataAnchorClientResult<Vec<u8>> {
         let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
         let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
 
@@ -105,7 +105,7 @@ impl BloberClient {
         namespace: &str,
         payer_pubkey: Option<Pubkey>,
         lookback_slots: Option<u64>,
-    ) -> BloberClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
         let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
 
@@ -235,7 +235,7 @@ impl BloberClient {
         slot: u64,
         namespace: &str,
         payer_pubkey: Option<Pubkey>,
-    ) -> BloberClientResult<Vec<(Pubkey, VersionedMessage)>> {
+    ) -> DataAnchorClientResult<Vec<(Pubkey, VersionedMessage)>> {
         let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
         let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
 

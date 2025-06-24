@@ -1,10 +1,10 @@
 use data_anchor::Options;
-use data_anchor_client::BloberClientResult;
+use data_anchor_client::DataAnchorClientResult;
 use tracing::error;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
-pub async fn main() -> BloberClientResult {
+pub async fn main() -> DataAnchorClientResult {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();

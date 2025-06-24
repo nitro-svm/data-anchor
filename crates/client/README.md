@@ -16,7 +16,7 @@ cargo add data-anchor-client
 To start uploading and reading data, pass the configs into the client like the following:
 
 ```rust
-let blober_client = BloberClient::builder()
+let data_anchor_client = DataAnchorClient::builder()
     .payer(payer)
     .program_id(program_id)
     .indexer_from_url(&indexer_url)
@@ -35,7 +35,7 @@ let blober_client = BloberClient::builder()
 Uploading data once you have a blober client is as simple as:
 
 ```rust
-let transaction_outcomes = blober_client.upload_blob(data, fee, blober_id, timeout).await?;
+let transaction_outcomes = data_anchor_client.upload_blob(data, fee, blober_id, timeout).await?;
 ```
 
 - The `data` is a slice of bytes (`&[u8]`) to upload
@@ -51,7 +51,7 @@ let transaction_outcomes = blober_client.upload_blob(data, fee, blober_id, timeo
 To later retrieve the data that was uploaded, you can either do it from the ledger directly:
 
 ```rust
-let blob = blober_client
+let blob = data_anchor_client
     .get_ledger_blobs_from_signatures(blober, signatures)
     .await?;
 ```
@@ -59,7 +59,7 @@ let blob = blober_client
 Where the `signatures` are the list of signatures you got by sending the upload request.
 
 ```rust
-let blobs = blober_client.get_ledger_blobs(slot, blober, lookback_slots).await?;
+let blobs = data_anchor_client.get_ledger_blobs(slot, blober, lookback_slots).await?;
 ```
 
 Where the `slot` is the slot at which the upload was finalized and `lookback_slots` is an optional parameter to limit how many slots before the `slot`
@@ -68,13 +68,13 @@ to fetch in the past.
 Or from the indexer service with:
 
 ```rust
-let blobs = blober_client.get_blobs(slot, blober).await?;
+let blobs = data_anchor_client.get_blobs(slot, blober).await?;
 ```
 
 And getting the indexer proofs (these prove that the indexer is sending you valid data):
 
 ```rust
-let proof = blober_client.get_slot_proof(slot, blober).await?;
+let proof = data_anchor_client.get_slot_proof(slot, blober).await?;
 ```
 
 For more details, check out the [docs](https://docs.rs/data-anchor-client).

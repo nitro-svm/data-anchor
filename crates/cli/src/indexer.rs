@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
 use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, TimeRange};
-use data_anchor_client::{BloberClient, BloberClientResult};
+use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
 use solana_sdk::pubkey::Pubkey;
@@ -112,9 +112,9 @@ impl IndexerSubCommand {
     #[instrument(skip(client), level = "debug")]
     pub async fn run(
         &self,
-        client: Arc<BloberClient>,
+        client: Arc<DataAnchorClient>,
         namespace: &str,
-    ) -> BloberClientResult<CommandOutput> {
+    ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             IndexerSubCommand::Blobs(SlotArgs { slot }) => {
                 let data = client.get_blobs(*slot, namespace, None).await?;

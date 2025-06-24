@@ -6,22 +6,24 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
 
 use crate::{
-    blober_client::{
-        blober_client_builder::{self, IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient},
-        BloberClientBuilder,
+    client::{
+        data_anchor_client_builder::{
+            self, IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient,
+        },
+        DataAnchorClientBuilder,
     },
-    BatchClient, BloberClient, BloberClientError, BloberClientResult,
+    BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
 };
 
-impl<State: blober_client_builder::State> BloberClientBuilder<State> {
+impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
     /// Adds an indexer client to the builder based on the given indexer URL.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use blober_client::BloberClient;
+    /// use data_anchor_client::DataAnchorClient;
     ///
-    /// let builder_with_indexer = BloberClient::builder()
+    /// let builder_with_indexer = DataAnchorClient::builder()
     ///     .indexer_from_url("ws://localhost:8080")
     ///     .await?;
     /// ```
@@ -29,7 +31,7 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
         self,
         indexer_url: &str,
         indexer_api_token: Option<String>,
-    ) -> BloberClientResult<BloberClientBuilder<SetIndexerClient<State>>>
+    ) -> DataAnchorClientResult<DataAnchorClientBuilder<SetIndexerClient<State>>>
     where
         State::IndexerClient: IsUnset,
     {
@@ -38,7 +40,7 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
             headers.insert(
                 "x-api-key",
                 token.parse().map_err(|_| {
-                    BloberClientError::InvalidIndexerApiToken(
+                    DataAnchorClientError::InvalidIndexerApiToken(
                         "Failed to parse API token".to_owned(),
                     )
                 })?,
@@ -51,7 +53,7 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
         Ok(self.indexer_client(Arc::new(indexer_client)))
     }
 
-    /// Builds a new `BloberClient` with an RPC client and a batch client built from the given
+    /// Builds a new `DataAnchorClient` with an RPC client and a batch client built from the given
     /// Solana cli [`Config`].
     ///
     /// # Example
@@ -59,20 +61,23 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
     /// ```rust
     /// use std::sync::Arc;
     ///
-    /// use blober_client::{BloberClient};
+    /// use data_anchor_client::{DataAnchorClient};
     /// use solana_cli_config::Config;
     /// use solana_sdk::{pubkey::Pubkey, signature::Keypair};
     ///
     /// let payer = Arc::new(Keypair::new());
     /// let program_id = Pubkey::new_unique();
     /// let solana_config = Config::default();
-    /// let client = BloberClient::builder()
+    /// let client = DataAnchorClient::builder()
     ///     .payer(payer)
     ///     .program_id(program_id)
     ///     .build_with_config(solana_config)
     ///     .await?;
     /// ```
-    pub async fn build_with_config(self, solana_config: Config) -> BloberClientResult<BloberClient>
+    pub async fn build_with_config(
+        self,
+        solana_config: Config,
+    ) -> DataAnchorClientResult<DataAnchorClient>
     where
         State::Payer: IsSet,
         State::ProgramId: IsSet,
@@ -90,7 +95,7 @@ impl<State: blober_client_builder::State> BloberClientBuilder<State> {
             .build())
     }
 
-    pub fn with_helius_fee_estimate(self) -> BloberClientBuilder<SetHeliusFeeEstimate<State>>
+    pub fn with_helius_fee_estimate(self) -> DataAnchorClientBuilder<SetHeliusFeeEstimate<State>>
     where
         State::HeliusFeeEstimate: IsUnset,
     {

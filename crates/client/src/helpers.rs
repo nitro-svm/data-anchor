@@ -18,7 +18,7 @@ use tracing::{info_span, Instrument, Span};
 use crate::{
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
-    BloberClient, BloberClientResult, Fee, FeeStrategy, Lamports, LedgerDataBlobError,
+    DataAnchorClient, DataAnchorClientResult, Fee, FeeStrategy, Lamports, LedgerDataBlobError,
     OutcomeError, SuccessfulTransaction, TransactionOutcome,
 };
 
@@ -31,14 +31,14 @@ pub enum UploadMessages {
     },
 }
 
-impl BloberClient {
+impl DataAnchorClient {
     /// Uploads the blob: [`data_anchor_blober::DeclareBlob`], [`data_anchor_blober::InsertChunk`] * N,
     /// [`data_anchor_blober::FinalizeBlob`].
     pub(crate) async fn do_upload(
         &self,
         upload_messages: UploadMessages,
         timeout: Option<Duration>,
-    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let before = Instant::now();
 
         match upload_messages {
@@ -116,7 +116,7 @@ impl BloberClient {
         blob_data: &[u8],
         fee_strategy: FeeStrategy,
         blober: Pubkey,
-    ) -> BloberClientResult<UploadMessages> {
+    ) -> DataAnchorClientResult<UploadMessages> {
         if blob_data.len() <= COMPOUND_TX_SIZE as usize {
             let fee_strategy_compound = self
                 .convert_fee_strategy_to_fixed(
@@ -295,7 +295,7 @@ impl BloberClient {
         fee_strategy: FeeStrategy,
         mutating_accounts: &[Pubkey],
         tx_type: TransactionType,
-    ) -> BloberClientResult<FeeStrategy> {
+    ) -> DataAnchorClientResult<FeeStrategy> {
         let FeeStrategy::BasedOnRecentFees(priority) = fee_strategy else {
             return Ok(fee_strategy);
         };

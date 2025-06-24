@@ -6,7 +6,7 @@ use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
-use data_anchor_client::{BloberClient, BloberClientResult};
+use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
@@ -27,15 +27,15 @@ struct Cli {
     pub command: Command,
 
     /// The program ID of the Blober program.
-    #[arg(short, long, global = true, env = "BLOBER_PROGRAM_ID")]
+    #[arg(short, long, global = true, env = "DATA_ANCHOR_PROGRAM_ID")]
     pub program_id: Option<Pubkey>,
 
     /// The namespace to use to generate the blober PDA.
-    #[arg(short, long, global = true, env = "BLOBER_NAMESPACE")]
+    #[arg(short, long, global = true, env = "DATA_ANCHOR_NAMESPACE")]
     pub namespace: Option<String>,
 
     /// The payer account to use for transactions.
-    #[arg(short = 's', long, global = true, env = "BLOBER_PAYER")]
+    #[arg(short = 's', long, global = true, env = "DATA_ANCHOR_PAYER")]
     pub payer: Option<String>,
 
     /// The output format to use.
@@ -43,21 +43,21 @@ struct Cli {
         short,
         long,
         global = true,
-        env = "BLOBER_OUTPUT",
+        env = "DATA_ANCHOR_OUTPUT",
         value_enum,
         default_value_t = OutputFormat::Text
     )]
     pub output: OutputFormat,
 
     /// The URL of the indexer to use.
-    #[arg(short, long, global = true, env = "BLOBER_INDEXER_URL")]
+    #[arg(short, long, global = true, env = "DATA_ANCHOR_INDEXER_URL")]
     pub indexer_url: Option<String>,
 
     /// The API token for the indexer, if required.
     #[arg(
         long,
         global = true,
-        env = "BLOBER_INDEXER_API_TOKEN",
+        env = "DATA_ANCHOR_INDEXER_API_TOKEN",
         hide_env_values = true
     )]
     pub indexer_api_token: Option<String>,
@@ -67,7 +67,7 @@ struct Cli {
         short,
         long,
         global = true,
-        env = "BLOBER_SOLANA_CONFIG_FILE",
+        env = "DATA_ANCHOR_SOLANA_CONFIG_FILE",
         default_value_t = solana_cli_config::CONFIG_FILE.as_ref().unwrap().clone()
     )]
     pub config_file: String,
@@ -121,13 +121,13 @@ impl Options {
 
         let Some(namespace) = args.namespace else {
             Cli::exit_with_missing_arg(
-                "Namespace is not set. Please provide a namespace using the --namespace flag or set the BLOBER_NAMESPACE environment variable.",
+                "Namespace is not set. Please provide a namespace using the --namespace flag or set the DATA_ANCHOR_NAMESPACE environment variable.",
             );
         };
 
         let Some(program_id) = args.program_id else {
             Cli::exit_with_missing_arg(
-                "Program ID is not set. Please provide a program ID using the --program-id flag or set the BLOBER_PROGRAM_ID environment variable.",
+                "Program ID is not set. Please provide a program ID using the --program-id flag or set the DATA_ANCHOR_PROGRAM_ID environment variable.",
             );
         };
 
@@ -144,8 +144,8 @@ impl Options {
     }
 
     /// Run the parsed CLI command.
-    pub async fn run(self) -> BloberClientResult {
-        let builder = BloberClient::builder()
+    pub async fn run(self) -> DataAnchorClientResult {
+        let builder = DataAnchorClient::builder()
             .payer(self.payer.clone())
             .program_id(self.program_id);
 

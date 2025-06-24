@@ -2,5 +2,5 @@
 pub const DEFAULT_CONCURRENCY: usize = 100;
 
 /// Default number of slots to look back for the
-/// [`crate::blober_client::BloberClient::get_ledger_blobs`] method.
+/// [`crate::client::DataAnchorClient::get_ledger_blobs`] method.
 pub const DEFAULT_LOOKBACK_SLOTS: u64 = 10;

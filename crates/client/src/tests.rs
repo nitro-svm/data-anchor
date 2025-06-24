@@ -28,7 +28,8 @@ use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 
 use crate::{
-    batch_client, helpers::get_unique_timestamp, BatchClient, BloberClient, FeeStrategy, Priority,
+    batch_client, helpers::get_unique_timestamp, BatchClient, DataAnchorClient, FeeStrategy,
+    Priority,
 };
 
 #[tokio::test]
@@ -87,7 +88,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
         .await
         .unwrap();
-    let blober_client = BloberClient::builder()
+    let data_anchor_client = DataAnchorClient::builder()
         .payer(payer.clone())
         .program_id(data_anchor_blober::id())
         .rpc_client(blober_rpc_client.clone())
@@ -96,7 +97,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
 
     let namespace = "test".to_owned();
     let blober_pubkey = find_blober_address(data_anchor_blober::id(), payer.pubkey(), &namespace);
-    blober_client
+    data_anchor_client
         .initialize_blober(fee_strategy, &namespace, Some(Duration::from_secs(5)))
         .await
         .unwrap();
@@ -127,7 +128,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
 
     // Retry in case of unreliable client
     let expected_fee = loop {
-        let res = blober_client
+        let res = data_anchor_client
             .estimate_fees(data.len(), blober_pubkey, priority)
             .await;
         if let Ok(fee) = res {
@@ -135,13 +136,13 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         }
     };
 
-    let slot_before_upload = blober_client
+    let slot_before_upload = data_anchor_client
         .rpc_client
         .get_slot_with_commitment(CommitmentConfig::confirmed())
         .await
         .unwrap();
 
-    let result = blober_client
+    let result = data_anchor_client
         .upload_blob(
             &data,
             fee_strategy,
@@ -176,7 +177,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
 
     let signatures = result.iter().map(|r| r.signature).collect::<Vec<_>>();
 
-    let ledger_data = blober_client
+    let ledger_data = data_anchor_client
         .get_ledger_blobs_from_signatures(&namespace, None, signatures)
         .await
         .unwrap();
@@ -185,7 +186,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
 
     let finalized_slot = result.last().unwrap().slot;
 
-    let all_ledger_blobs = blober_client
+    let all_ledger_blobs = data_anchor_client
         .get_ledger_blobs(
             finalized_slot,
             &namespace,
@@ -209,8 +210,8 @@ async fn failing_upload_returns_error() {
         batch_client::BatchClient::new(failing_rpc_client.clone(), vec![payer.clone()])
             .await
             .unwrap();
-    // Give a successful RPC client to the BloberClient to allow other calls to succeed.
-    let blober_client = BloberClient::builder()
+    // Give a successful RPC client to the DataAnchorClient to allow other calls to succeed.
+    let data_anchor_client = DataAnchorClient::builder()
         .payer(payer)
         .program_id(Pubkey::new_unique())
         .rpc_client(successful_rpc_client.clone())
@@ -224,7 +225,7 @@ async fn failing_upload_returns_error() {
         .take(10 * 1024)
         .collect::<Vec<_>>();
 
-    let err = blober_client
+    let err = data_anchor_client
         .upload_blob(
             &data,
             FeeStrategy::default(),

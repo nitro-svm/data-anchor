@@ -14,7 +14,7 @@ use crate::{
 
 /// Errors that can occur when interacting with the Blober client.
 #[derive(Debug, Error)]
-pub enum BloberClientError {
+pub enum DataAnchorClientError {
     /// Upload blob errors
     #[error(transparent)]
     UploadBlob(#[from] UploadBlobError),
@@ -68,7 +68,7 @@ pub enum LedgerDataBlobError {
 }
 
 /// Result returned when interacting with the Blober client.
-pub type BloberClientResult<T = ()> = Result<T, BloberClientError>;
+pub type DataAnchorClientResult<T = ()> = Result<T, DataAnchorClientError>;
 
 /// Transaction outcomes were not successfull.
 #[derive(Error, Debug)]

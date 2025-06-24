@@ -3,8 +3,7 @@ use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, pubkey::Pubkey,
 };
 
-use super::{Fee, Priority};
-use crate::BloberClientResult;
+use crate::{DataAnchorClientResult, Fee, Priority};
 
 /// The strategy to use for calculating the fees for transactions.
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +31,7 @@ impl FeeStrategy {
         client: &RpcClient,
         mutable_accounts: &[Pubkey],
         use_helius: bool,
-    ) -> BloberClientResult<Instruction> {
+    ) -> DataAnchorClientResult<Instruction> {
         let compute_unit_price = match self {
             Self::Fixed(fee) => fee.prioritization_fee_rate,
             Self::BasedOnRecentFees(priority) => {

@@ -19,7 +19,7 @@ use crate::{
     helpers::{check_outcomes, get_blob_data_from_instructions, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
-    BloberClientError, BloberClientResult,
+    DataAnchorClientError, DataAnchorClientResult,
 };
 
 mod builder;
@@ -27,7 +27,7 @@ mod indexer_client;
 mod ledger_client;
 
 #[derive(Builder, Clone)]
-pub struct BloberClient {
+pub struct DataAnchorClient {
     #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
     pub(crate) program_id: Pubkey,
@@ -39,7 +39,7 @@ pub struct BloberClient {
     pub(crate) helius_fee_estimate: bool,
 }
 
-impl BloberClient {
+impl DataAnchorClient {
     /// Returns the underlaying [`RpcClient`].
     pub fn rpc_client(&self) -> Arc<RpcClient> {
         self.rpc_client.clone()
@@ -56,7 +56,7 @@ impl BloberClient {
         fee_strategy: FeeStrategy,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
         let fee_strategy = self
@@ -96,7 +96,7 @@ impl BloberClient {
         fee_strategy: FeeStrategy,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
         let fee_strategy = self
@@ -129,16 +129,16 @@ impl BloberClient {
     /// Uploads a blob of data with the given [`Blober`] PDA account.
     /// Under the hood it creates a new [`data_anchor_blober::state::blob::Blob`] PDA which stores a
     /// incremental hash of the chunks from the blob data. On completion of the blob upload, the
-    /// blob PDA gets closed sending it's funds back to the [`BloberClient::payer`].
+    /// blob PDA gets closed sending it's funds back to the [`DataAnchorClient::payer`].
     /// If the blob upload fails, the blob PDA gets discarded and the funds also get sent to the
-    /// [`BloberClient::payer`].
+    /// [`DataAnchorClient::payer`].
     pub async fn upload_blob(
         &self,
         blob_data: &[u8],
         fee_strategy: FeeStrategy,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
         let timestamp = get_unique_timestamp();
 
@@ -159,7 +159,7 @@ impl BloberClient {
             .in_current_span()
             .await;
 
-        if let Err(BloberClientError::UploadBlob(UploadBlobError::DeclareBlob(_))) = res {
+        if let Err(DataAnchorClientError::UploadBlob(UploadBlobError::DeclareBlob(_))) = res {
             self.discard_blob(fee_strategy, blob, namespace, timeout)
                 .await
         } else {
@@ -175,7 +175,7 @@ impl BloberClient {
         blob: Pubkey,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> BloberClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
         let fee_strategy = self
@@ -218,7 +218,7 @@ impl BloberClient {
         blob_size: usize,
         blober: Pubkey,
         priority: Priority,
-    ) -> BloberClientResult<Fee> {
+    ) -> DataAnchorClientResult<Fee> {
         let prioritization_fee_rate = priority
             .get_priority_fee_estimate(
                 &self.rpc_client,

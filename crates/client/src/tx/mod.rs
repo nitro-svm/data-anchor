@@ -7,7 +7,7 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer,
 };
 
-use crate::{BloberClientResult, FeeStrategy};
+use crate::{DataAnchorClientResult, FeeStrategy};
 
 pub mod close_blober;
 pub mod compound;
@@ -94,7 +94,7 @@ pub trait MessageBuilder {
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction>;
 
-    async fn build_message(args: MessageArguments<Self::Input>) -> BloberClientResult<Message> {
+    async fn build_message(args: MessageArguments<Self::Input>) -> DataAnchorClientResult<Message> {
         let set_price = args
             .fee_strategy
             .set_compute_unit_price(

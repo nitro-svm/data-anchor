@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use data_anchor_client::{
-    BloberClient, BloberClientResult, FeeStrategy, Priority, TransactionType,
+    DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority, TransactionType,
 };
 use itertools::Itertools;
 use serde::Serialize;
@@ -91,9 +91,9 @@ impl BlobSubCommand {
     #[instrument(skip(client), level = "debug")]
     pub async fn run(
         &self,
-        client: Arc<BloberClient>,
+        client: Arc<DataAnchorClient>,
         namespace: &str,
-    ) -> BloberClientResult<CommandOutput> {
+    ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BlobSubCommand::Upload { data_path, data } => {
                 let blob_data = if let Some(data_path) = data_path {

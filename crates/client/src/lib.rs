@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 mod batch_client;
-mod blober_client;
+mod client;
 mod constants;
 mod fees;
 mod helpers;
@@ -10,4 +10,4 @@ mod tests;
 mod tx;
 mod types;
 
-pub use crate::{batch_client::*, blober_client::BloberClient, fees::*, types::*};
+pub use crate::{batch_client::*, client::DataAnchorClient, fees::*, types::*};

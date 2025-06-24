@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 
-use super::MicroLamports;
-use crate::BloberClientResult;
+use crate::{DataAnchorClientResult, MicroLamports};
 
 /// The percentile of recent prioritization fees to use as the compute unit price for a transaction.
 #[derive(
@@ -57,7 +56,7 @@ impl Priority {
         client: &RpcClient,
         mutable_accounts: &[Pubkey],
         _use_helius: bool,
-    ) -> BloberClientResult<MicroLamports> {
+    ) -> DataAnchorClientResult<MicroLamports> {
         self.calculate_compute_unit_price(client, mutable_accounts)
             .await
     }
@@ -71,7 +70,7 @@ impl Priority {
         &self,
         client: &RpcClient,
         mutable_accounts: &[Pubkey],
-    ) -> BloberClientResult<MicroLamports> {
+    ) -> DataAnchorClientResult<MicroLamports> {
         let recent_prioritization_fees = client
             .get_recent_prioritization_fees(mutable_accounts)
             .await?;
