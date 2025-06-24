@@ -16,9 +16,6 @@ pub enum IndexerSubCommand {
     /// Get blobs for a given slot.
     #[command(visible_alias = "b")]
     Blobs(SlotArgs),
-    /// Get compound proof for a given slot.
-    #[command(visible_alias = "p")]
-    Proofs(SlotArgs),
     /// Get blobs for a given blober.
     #[command(visible_alias = "bl")]
     BlobsForBlober {
@@ -40,6 +37,24 @@ pub enum IndexerSubCommand {
         #[clap(flatten)]
         time_args: TimeArgs,
     },
+    /// Get blobs for a given network and time range.
+    #[command(visible_alias = "bn")]
+    BlobsForNetwork {
+        /// The network name to query.
+        #[arg(short = 'm', long)]
+        network_name: String,
+        #[clap(flatten)]
+        time_args: TimeArgs,
+    },
+    /// Get blobs for a given namespace and time range.
+    #[command(visible_alias = "ns")]
+    BlobsForNamespace {
+        /// The namespace to query.
+        #[arg(short, long)]
+        namespace: String,
+        #[clap(flatten)]
+        time_args: TimeArgs,
+    },
     /// Get proof for a given blob.
     #[command(visible_alias = "pb")]
     ProofForBlob {
@@ -47,6 +62,9 @@ pub enum IndexerSubCommand {
         #[arg(short, long)]
         blob: Pubkey,
     },
+    /// Get compound proof for a given slot.
+    #[command(visible_alias = "p", alias = "proofs")]
+    Proof(SlotArgs),
 }
 
 #[derive(Debug, Clone, Args)]
@@ -102,10 +120,6 @@ impl IndexerSubCommand {
                 let data = client.get_blobs(*slot, namespace, None).await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
-            IndexerSubCommand::Proofs(SlotArgs { slot }) => {
-                let proof = client.get_proof(*slot, namespace, None).await?;
-                Ok(IndexerCommandOutput::Proofs(Box::new(Some(proof))).into())
-            }
             IndexerSubCommand::BlobsForBlober {
                 blober,
                 time_args: TimeArgs { start, end },
@@ -137,6 +151,40 @@ impl IndexerSubCommand {
                     })
                     .await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
+            }
+            IndexerSubCommand::BlobsForNetwork {
+                network_name,
+                time_args: TimeArgs { start, end },
+            } => {
+                let data = client
+                    .get_blobs_by_network(
+                        network_name.to_owned(),
+                        TimeRange {
+                            start: start.to_owned(),
+                            end: end.to_owned(),
+                        },
+                    )
+                    .await?;
+                Ok(IndexerCommandOutput::Blobs(data).into())
+            }
+            IndexerSubCommand::BlobsForNamespace {
+                namespace,
+                time_args: TimeArgs { start, end },
+            } => {
+                let data = client
+                    .get_blobs_by_namespace(
+                        namespace.to_owned(),
+                        TimeRange {
+                            start: start.to_owned(),
+                            end: end.to_owned(),
+                        },
+                    )
+                    .await?;
+                Ok(IndexerCommandOutput::Blobs(data).into())
+            }
+            IndexerSubCommand::Proof(SlotArgs { slot }) => {
+                let proof = client.get_proof(*slot, namespace, None).await?;
+                Ok(IndexerCommandOutput::Proofs(Box::new(Some(proof))).into())
             }
             IndexerSubCommand::ProofForBlob { blob } => {
                 let proof = client.get_proof_for_blob(blob.to_owned()).await?;
