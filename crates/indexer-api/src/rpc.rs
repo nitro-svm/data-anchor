@@ -5,7 +5,7 @@ use jsonrpsee::{
     core::{RpcResult, SubscriptionResult},
     proc_macros::rpc,
 };
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use solana_sdk::{clock::Slot, pubkey::Pubkey};
 
 use crate::CompoundProof;
@@ -130,7 +130,7 @@ pub trait IndexerRpc {
     /// database or RPC failure, and None if the slot has not been completed yet.
     #[method(name = "get_proof")]
     async fn get_proof(&self, blober: PubkeyFromStr, slot: u64)
-        -> RpcResult<Option<CompoundProof>>;
+    -> RpcResult<Option<CompoundProof>>;
 
     /// Retrieve a compound proof that covers a particular blob. Returns an error if there was a
     /// database or RPC failure, and None if the blob does not exist.

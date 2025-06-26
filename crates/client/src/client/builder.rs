@@ -6,13 +6,13 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
 
 use crate::{
+    BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
     client::{
+        DataAnchorClientBuilder,
         data_anchor_client_builder::{
             self, IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient,
         },
-        DataAnchorClientBuilder,
     },
-    BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
 };
 
 impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {

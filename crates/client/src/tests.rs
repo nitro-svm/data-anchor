@@ -28,8 +28,8 @@ use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 
 use crate::{
-    batch_client, helpers::get_unique_timestamp, BatchClient, DataAnchorClient, FeeStrategy,
-    Priority,
+    BatchClient, DataAnchorClient, FeeStrategy, Priority, batch_client,
+    helpers::get_unique_timestamp,
 };
 
 #[tokio::test]

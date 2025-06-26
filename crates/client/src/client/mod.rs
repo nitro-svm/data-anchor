@@ -3,23 +3,22 @@ use std::{sync::Arc, time::Duration};
 use anchor_lang::{Discriminator, Space};
 use bon::Builder;
 use data_anchor_blober::{
-    find_blob_address, find_blober_address,
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
-    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
 };
 use jsonrpsee::ws_client::WsClient;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
-use tracing::{info_span, Instrument, Span};
+use tracing::{Instrument, Span, info_span};
 
 use crate::{
+    DataAnchorClientError, DataAnchorClientResult,
     batch_client::{BatchClient, SuccessfulTransaction},
     fees::{Fee, FeeStrategy, Lamports, Priority},
     helpers::{check_outcomes, get_blob_data_from_instructions, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
-    DataAnchorClientError, DataAnchorClientResult,
 };
 
 mod builder;

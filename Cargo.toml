@@ -10,7 +10,7 @@ members = [
 exclude = ["programs"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 version = "0.2.0"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]

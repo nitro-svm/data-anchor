@@ -85,11 +85,11 @@ mod tests {
 
     use super::*;
     use crate::accounts_delta_hash::{
-        testing::{
-            choose_or_generate, generate_accounts, ArbAccount, ArbKeypair, TestAccounts,
-            UnwrapOrArbitrary,
-        },
         AccountMerkleTree,
+        testing::{
+            ArbAccount, ArbKeypair, TestAccounts, UnwrapOrArbitrary, choose_or_generate,
+            generate_accounts,
+        },
     };
 
     #[test]

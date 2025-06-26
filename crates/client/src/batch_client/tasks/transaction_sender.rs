@@ -14,7 +14,7 @@ use tokio::{
     task::JoinHandle,
     time::Instant,
 };
-use tracing::{trace, warn, Instrument, Span};
+use tracing::{Instrument, Span, trace, warn};
 
 use super::super::{
     channels::upgrade_and_send,
@@ -169,7 +169,7 @@ async fn send_transaction(
 mod tests {
     use anchor_lang::prelude::Pubkey;
     use solana_sdk::{hash::Hash, signer::Signer};
-    use tokio::time::{sleep_until, Duration, Instant};
+    use tokio::time::{Duration, Instant, sleep_until};
     use tracing::{Level, Span};
 
     use super::*;

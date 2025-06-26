@@ -61,9 +61,7 @@ impl TryFrom<MicroLamports> for Lamports {
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum LamportsFromMicroLamportsError {
-    #[error(
-        "Microlamports value is too large ({0} / 1 000 000 > 2^32-1), it would overflow ({1})"
-    )]
+    #[error("Microlamports value is too large ({0} / 1 000 000 > 2^32-1), it would overflow ({1})")]
     Overflow(u64, #[source] TryFromIntError),
 }
 

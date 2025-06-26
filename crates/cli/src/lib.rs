@@ -5,7 +5,7 @@ use std::sync::Arc;
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
-use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;

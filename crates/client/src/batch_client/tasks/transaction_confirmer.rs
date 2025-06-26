@@ -532,11 +532,11 @@ mod tests {
         assert_eq!(messages.len(), 2);
         assert_eq!(messages[0].1.index, 0);
         assert_eq!(
-            messages[0].0 .0.as_ref().unwrap().confirmation_status,
+            messages[0].0.0.as_ref().unwrap().confirmation_status,
             Some(TransactionConfirmationStatus::Confirmed)
         );
         assert_eq!(messages[1].1.index, 1);
-        assert_eq!(messages[1].0 .0, None);
+        assert_eq!(messages[1].0.0, None);
 
         // Nothing should have been queued for re-confirmation.
         transaction_confirmer_rx.try_recv().unwrap_err();
@@ -781,12 +781,16 @@ mod tests {
         assert_eq!(responses.len(), 5);
         // The first three in this batch should be committed, and the next two should be processing.
         // The other 5 shouldn't have been responded to yet.
-        assert!(responses[..3]
-            .iter()
-            .all(|r| r.status == TransactionStatus::Committed));
-        assert!(responses[3..]
-            .iter()
-            .all(|r| r.status == TransactionStatus::Processing));
+        assert!(
+            responses[..3]
+                .iter()
+                .all(|r| r.status == TransactionStatus::Committed)
+        );
+        assert!(
+            responses[3..]
+                .iter()
+                .all(|r| r.status == TransactionStatus::Processing)
+        );
         // It is the first five transactions that should have been responded to.
         assert_eq!(
             responses.iter().map(|r| r.index).collect::<Vec<_>>(),
@@ -806,12 +810,16 @@ mod tests {
         response_rx.recv_many(&mut responses, 100).await;
         assert_eq!(responses.len(), 5);
         // Again, the first three in this batch should be committed, and the next two should be processing.
-        assert!(responses[..3]
-            .iter()
-            .all(|r| r.status == TransactionStatus::Committed));
-        assert!(responses[3..]
-            .iter()
-            .all(|r| r.status == TransactionStatus::Processing));
+        assert!(
+            responses[..3]
+                .iter()
+                .all(|r| r.status == TransactionStatus::Committed)
+        );
+        assert!(
+            responses[3..]
+                .iter()
+                .all(|r| r.status == TransactionStatus::Processing)
+        );
         // Even if transactions were queued for re-confirming, they should be checked *after* the
         // initial transactions.
         assert_eq!(
@@ -843,9 +851,11 @@ mod tests {
         response_rx.recv_many(&mut responses, 100).await;
         // This time there should only be three committed transactions, and nothing else.
         assert_eq!(responses.len(), 3);
-        assert!(responses
-            .iter()
-            .all(|r| r.status == TransactionStatus::Committed));
+        assert!(
+            responses
+                .iter()
+                .all(|r| r.status == TransactionStatus::Committed)
+        );
         assert_eq!(
             responses.iter().map(|r| r.index).collect::<Vec<_>>(),
             // 4 from the first batch, and 8 and 3 (again!) from the second batch.

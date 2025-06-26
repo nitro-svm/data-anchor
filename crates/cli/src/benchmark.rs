@@ -2,8 +2,8 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -16,7 +16,7 @@ use data_anchor_client::{
     UploadBlobError,
 };
 use futures::StreamExt;
-use itertools::{iproduct, Itertools};
+use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_sdk::signer::Signer;
