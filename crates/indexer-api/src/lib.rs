@@ -20,3 +20,10 @@ pub enum CompoundProof {
     /// See [`CompoundCompletenessProof`].
     Completeness(CompoundCompletenessProof),
 }
+
+impl CompoundProof {
+    /// Returns if the proof is an inclusion proof.
+    pub fn is_inclusion(&self) -> bool {
+        matches!(self, CompoundProof::Inclusion(_))
+    }
+}
