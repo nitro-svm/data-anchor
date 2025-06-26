@@ -236,23 +236,11 @@ initialize-workspace workspace="staging":
 
     tofu workspace select {{ workspace }}
 
-# Refresh the Auto Scaling Group
-[confirm('This will refresh the Auto Scaling Group. Are you sure you want to continue [y/n]?')]
-[group('tofu')]
-[working-directory('infrastructure')]
-refresh-asg:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-
-    ASG_NAME=$(tofu output -raw autoscaling_group_name)
-
-    aws autoscaling start-instance-refresh --auto-scaling-group-name "${ASG_NAME}"
-
 # Apply staging infrastructure
 [confirm('This will apply the staging infrastructure. Are you sure you want to continue [y/n]?')]
 [group('tofu')]
 [working-directory('infrastructure')]
-apply-staging: initialize-workspace && refresh-asg
+apply-staging: initialize-workspace
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -264,7 +252,7 @@ apply-staging: initialize-workspace && refresh-asg
 [confirm('This will apply the devnet infrastructure. Are you sure you want to continue [y/n]?')]
 [group('tofu')]
 [working-directory('infrastructure')]
-apply-devnet: (initialize-workspace "devnet") && refresh-asg
+apply-devnet: (initialize-workspace "devnet")
     #!/usr/bin/env bash
     set -euxo pipefail
 
@@ -276,7 +264,7 @@ apply-devnet: (initialize-workspace "devnet") && refresh-asg
 [confirm('This will apply the mainnet infrastructure. Are you sure you want to continue [y/n]?')]
 [group('tofu')]
 [working-directory('infrastructure')]
-apply-mainnet: (initialize-workspace "mainnet") && refresh-asg
+apply-mainnet: (initialize-workspace "mainnet")
     #!/usr/bin/env bash
     set -euxo pipefail
 
