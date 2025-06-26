@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-proofs-v0.2.0...data-anchor-proofs-v0.3.0) - 2025-06-26
+
+### Other
+
+- Upgrade edition, version and formatting ([#211](https://github.com/nitro-svm/data-anchor/pull/211))
+- Update proof docs ([#181](https://github.com/nitro-svm/data-anchor/pull/181))
+
 ## [0.1.7](https://github.com/nitro-svm/nitro-data-module/compare/nitro-da-proofs-v0.1.6...nitro-da-proofs-v0.1.7) - 2025-05-30
 
 ### Other
