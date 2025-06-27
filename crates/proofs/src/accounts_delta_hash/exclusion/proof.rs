@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{hash::Hash, pubkey::Pubkey};
 use thiserror::Error;
 
 use crate::accounts_delta_hash::exclusion::{
@@ -34,10 +34,7 @@ pub enum ExclusionProofError {
 
 impl ExclusionProof {
     /// Verifies that an account is not present in the accounts_delta_hash.
-    pub fn verify(
-        &self,
-        accounts_delta_hash: solana_sdk::hash::Hash,
-    ) -> Result<(), ExclusionProofError> {
+    pub fn verify(&self, accounts_delta_hash: Hash) -> Result<(), ExclusionProofError> {
         use ExclusionProof::*;
         // Delegate to the specific proof type implementations.
         match self {

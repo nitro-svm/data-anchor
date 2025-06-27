@@ -4,6 +4,7 @@
 use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
+use solana_sdk::hash::{Hash, hashv};
 
 /// The proof for a bankhash is simply its components.
 ///
@@ -13,17 +14,17 @@ use serde::{Deserialize, Serialize};
 pub struct BankHashProof {
     /// The bankhash of the parent block.
     /// NOT the blockhash.
-    pub parent_bankhash: solana_sdk::hash::Hash,
+    pub parent_bankhash: Hash,
 
     /// The hash of all modified accounts in the block, see [`crate::accounts_delta_hash`].
-    pub(crate) accounts_delta_hash: solana_sdk::hash::Hash,
+    pub(crate) accounts_delta_hash: Hash,
 
     /// The number of signatures in the block.
     pub(crate) signature_count: u64,
 
     /// The Proof-of-History tick after interleaving all the transactions in the block.
     /// NOT related to the bankhash.
-    pub blockhash: solana_sdk::hash::Hash,
+    pub blockhash: Hash,
 }
 
 impl Debug for BankHashProof {
@@ -42,10 +43,10 @@ impl Debug for BankHashProof {
 impl BankHashProof {
     /// Creates a bank hash proof.
     pub fn new(
-        parent_bankhash: solana_sdk::hash::Hash,
-        accounts_delta_hash: solana_sdk::hash::Hash,
+        parent_bankhash: Hash,
+        accounts_delta_hash: Hash,
         signature_count: u64,
-        blockhash: solana_sdk::hash::Hash,
+        blockhash: Hash,
     ) -> Self {
         Self {
             parent_bankhash,
@@ -56,14 +57,14 @@ impl BankHashProof {
     }
 
     /// Verifies that the bankhash matches the expected value.
-    pub fn verify(&self, bank_hash: solana_sdk::hash::Hash) -> bool {
+    pub fn verify(&self, bank_hash: Hash) -> bool {
         self.hash() == bank_hash
     }
 
     /// Hashes the components to create the bankhash.
-    pub fn hash(&self) -> solana_sdk::hash::Hash {
+    pub fn hash(&self) -> Hash {
         // https://github.com/anza-xyz/agave/blob/v1.18.22/runtime/src/bank.rs#L6951-L6956
-        solana_sdk::hash::hashv(&[
+        hashv(&[
             self.parent_bankhash.as_ref(),
             self.accounts_delta_hash.as_ref(),
             self.signature_count.to_le_bytes().as_ref(),

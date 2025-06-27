@@ -6,7 +6,7 @@ use std::{
 };
 
 use itertools::Itertools;
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey};
 
 use crate::accounts_delta_hash::{
     account_merkle_tree::{
@@ -33,7 +33,7 @@ pub enum AccountsDeltaHashProof {
 /// Represents an immutable merkle tree of Solana accounts changed in a single block.
 #[derive(Clone, PartialEq)]
 pub struct AccountMerkleTree {
-    tree: Vec<Vec<solana_sdk::hash::Hash>>,
+    tree: Vec<Vec<Hash>>,
     leaves: BTreeMap<Pubkey, Leaf>,
 }
 
@@ -72,7 +72,7 @@ impl AccountMerkleTree {
     }
 
     /// Returns the root hash of the merkle tree.
-    pub fn root(&self) -> solana_sdk::hash::Hash {
+    pub fn root(&self) -> Hash {
         *self
             .tree
             .last()

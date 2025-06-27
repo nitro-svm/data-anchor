@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use solana_sdk::{
     account::{Account, ReadableAccount},
+    hash::Hash,
     pubkey::Pubkey,
 };
 
@@ -14,7 +15,7 @@ pub struct InclusionProofLevel {
     /// The index of the node in the merkle tree for this level.
     pub(crate) index: usize,
     /// The hashes of all the sibling nodes for this level.
-    pub(crate) siblings: Vec<solana_sdk::hash::Hash>,
+    pub(crate) siblings: Vec<Hash>,
 }
 
 /// A proof that a specific account is present in the accounts_delta_hash, and it's exact state.

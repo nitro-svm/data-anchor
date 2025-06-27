@@ -2,7 +2,7 @@
 //! no blobs in a specific Solana block.
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::{clock::Slot, pubkey::Pubkey};
+use solana_sdk::{clock::Slot, hash::Hash, pubkey::Pubkey};
 use thiserror::Error;
 
 use crate::{
@@ -35,10 +35,7 @@ pub enum CompoundCompletenessProofError {
     #[error(
         "The proof is for a different blockhash than the one provided, expected {expected:?}, found {found:?}"
     )]
-    BlockHashMismatch {
-        expected: solana_sdk::hash::Hash,
-        found: solana_sdk::hash::Hash,
-    },
+    BlockHashMismatch { expected: Hash, found: Hash },
     #[error(transparent)]
     AccountsDeltaHash(#[from] ExclusionProofError),
 }
@@ -62,7 +59,7 @@ impl CompoundCompletenessProof {
     pub fn verify(
         &self,
         blober: Pubkey,
-        blockhash: solana_sdk::hash::Hash,
+        blockhash: Hash,
     ) -> Result<(), CompoundCompletenessProofError> {
         if let Some(excluded) = self.blober_exclusion_proof.excluded() {
             // If the exclusion proof is for a specific account, it should be for the blober account.
@@ -90,7 +87,12 @@ mod tests {
     use std::collections::HashSet;
 
     use arbtest::arbtest;
-    use solana_sdk::{account::Account, slot_hashes::SlotHashes, sysvar, sysvar::SysvarId};
+    use solana_sdk::{
+        account::Account,
+        hash::Hash,
+        slot_hashes::SlotHashes,
+        sysvar::{self, SysvarId},
+    };
 
     use super::*;
     use crate::{
@@ -160,7 +162,7 @@ mod tests {
 
             let slot_hashes = u
                 .arbitrary_iter::<(u64, [u8; 32])>()?
-                .map(|tup| Ok((tup?.0, solana_sdk::hash::Hash::new_from_array(tup?.1))))
+                .map(|tup| Ok((tup?.0, Hash::new_from_array(tup?.1))))
                 // Include the hash that's being proven.
                 .chain([Ok((proven_slot, proven_hash))].into_iter())
                 .collect::<Result<HashSet<_>, _>>()?
