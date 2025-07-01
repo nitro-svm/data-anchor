@@ -11,7 +11,7 @@ exclude = ["programs"]
 
 [workspace.package]
 edition = "2024"
-version = "0.3.0"
+version = "0.3.1"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
@@ -83,11 +83,11 @@ yellowstone-grpc-client = "=6.0.0"
 yellowstone-grpc-proto = "=6.0.0"
 
 # Locals
-data-anchor = { path = "crates/cli", version = "0.3.0" }
-data-anchor-api = { path = "crates/indexer-api", version = "0.3.0" }
-data-anchor-client = { path = "crates/client", version = "0.3.0" }
+data-anchor = { path = "crates/cli", version = "0.3.1" }
+data-anchor-api = { path = "crates/indexer-api", version = "0.3.1" }
+data-anchor-client = { path = "crates/client", version = "0.3.1" }
 data-anchor-indexer = { path = "crates/indexer" }
-data-anchor-proofs = { path = "crates/proofs", version = "0.3.0" }
+data-anchor-proofs = { path = "crates/proofs", version = "0.3.1" }
 data-anchor-blober = { path = "programs/programs/blober", version = "0.1.7", features = [
   "no-entrypoint",
 ] }

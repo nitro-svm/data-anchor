@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-api-v0.3.0...data-anchor-api-v0.3.1) - 2025-07-01
+
+### Added
+
+- Add ledger size fallback for indexer to pick up blobs ([#221](https://github.com/nitro-svm/data-anchor/pull/221))
+
 ## [0.3.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-api-v0.2.0...data-anchor-api-v0.3.0) - 2025-06-26
 
 ### Added
