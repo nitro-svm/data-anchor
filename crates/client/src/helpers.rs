@@ -5,19 +5,18 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
-use data_anchor_api::{RelevantInstruction, RelevantInstructionWithAccounts};
+use data_anchor_api::RelevantInstructionWithAccounts;
 use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
 };
-use itertools::Itertools;
 use jsonrpsee::ws_client::WsClient;
 use solana_sdk::{message::Message, pubkey::Pubkey, signer::Signer};
 use tracing::{Instrument, Span, info_span};
 
 use crate::{
-    DataAnchorClient, DataAnchorClientResult, Fee, FeeStrategy, Lamports, LedgerDataBlobError,
-    OutcomeError, SuccessfulTransaction, TransactionOutcome,
+    DataAnchorClient, DataAnchorClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
+    SuccessfulTransaction, TransactionOutcome,
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
 };
@@ -395,72 +394,6 @@ pub(crate) fn check_outcomes(
     } else {
         Err(OutcomeError::Unsuccesful(outcomes))
     }
-}
-
-/// Extracts the blob data from the relevant instructions.
-pub(crate) fn get_blob_data_from_instructions(
-    relevant_instructions: &[RelevantInstructionWithAccounts],
-    blober: Pubkey,
-    blob: Pubkey,
-) -> Result<Vec<u8>, LedgerDataBlobError> {
-    let blob_size = relevant_instructions
-        .iter()
-        .filter_map(|instruction| {
-            if instruction.blober != blober || instruction.blob != blob {
-                return None;
-            }
-
-            match &instruction.instruction {
-                RelevantInstruction::DeclareBlob(declare) => Some(declare.blob_size),
-                _ => None,
-            }
-        })
-        .next()
-        .ok_or(LedgerDataBlobError::DeclareNotFound)?;
-
-    let inserts = relevant_instructions
-        .iter()
-        .filter_map(|instruction| {
-            if instruction.blober != blober || instruction.blob != blob {
-                return None;
-            }
-
-            let RelevantInstruction::InsertChunk(insert) = &instruction.instruction else {
-                return None;
-            };
-
-            Some(InsertChunk {
-                idx: insert.idx,
-                data: insert.data.clone(),
-            })
-        })
-        .collect::<Vec<InsertChunk>>();
-
-    let blob_data =
-        inserts
-            .iter()
-            .sorted_by_key(|insert| insert.idx)
-            .fold(Vec::new(), |mut acc, insert| {
-                acc.extend_from_slice(&insert.data);
-                acc
-            });
-
-    if blob_data.len() != blob_size as usize {
-        return Err(LedgerDataBlobError::SizeMismatch);
-    }
-
-    if !relevant_instructions.iter().any(|instruction| {
-        instruction.blober == blober
-            && instruction.blob == blob
-            && matches!(
-                instruction.instruction,
-                RelevantInstruction::FinalizeBlob(_)
-            )
-    }) {
-        return Err(LedgerDataBlobError::FinalizeNotFound);
-    }
-
-    Ok(blob_data)
 }
 
 /// Filters out the relevant instructions for finalized blobs into a [`HashMap`].

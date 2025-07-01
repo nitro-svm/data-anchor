@@ -11,7 +11,9 @@ publish = { workspace = true }
 [dependencies]
 # External dependencies from crates.io
 chrono = { workspace = true, features = ["serde"] }
+itertools = { workspace = true }
 jsonrpsee = { workspace = true, features = ["client-core"] }
+thiserror = { workspace = true }
 serde = { workspace = true, features = ["alloc", "derive"] }
 
 # Solana & Agave

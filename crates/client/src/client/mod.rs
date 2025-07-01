@@ -16,7 +16,7 @@ use crate::{
     DataAnchorClientError, DataAnchorClientResult,
     batch_client::{BatchClient, SuccessfulTransaction},
     fees::{Fee, FeeStrategy, Lamports, Priority},
-    helpers::{check_outcomes, get_blob_data_from_instructions, get_unique_timestamp},
+    helpers::{check_outcomes, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::{TransactionType, UploadBlobError},
 };

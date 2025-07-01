@@ -51,7 +51,6 @@ schemars = "0.8.21"
 serde_json = { version = "1.0.134", default-features = false }
 serde = { version = "1.0.216", default-features = false }
 sqlx = "0.8.3"
-tempfile = "3.14.0"
 thiserror = "2.0.9"
 tokio = { version = "1.42.0", features = ["full"] }
 tokio-util = "0.7.13"
@@ -76,6 +75,7 @@ solana-rpc-client-api = "=2.2.1"
 solana-sdk = "=2.2.1"
 solana-test-validator = "=2.2.1"
 solana-transaction-status = "=2.2.1"
+solana-transaction-status-client-types = "=2.2.1"
 solana_rbpf = "=0.8.4"
 anchor-lang = "=0.31.1"
 

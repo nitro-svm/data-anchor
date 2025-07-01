@@ -2420,10 +2420,12 @@ dependencies = [
  "chrono",
  "data-anchor-blober",
  "data-anchor-proofs",
+ "itertools 0.14.0",
  "jsonrpsee",
  "serde",
  "solana-sdk",
  "solana-transaction-status",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -2495,9 +2497,10 @@ dependencies = [
  "serde",
  "serde_json",
  "solana-rpc-client",
+ "solana-rpc-client-api",
  "solana-sdk",
+ "solana-transaction-status-client-types",
  "sqlx",
- "tempfile",
  "thiserror 2.0.12",
  "tokio",
  "tokio-util 0.7.15",

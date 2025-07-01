@@ -1,5 +1,8 @@
 use anchor_lang::{AnchorDeserialize, Discriminator};
-use data_anchor_blober::{BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX};
+use data_anchor_blober::{
+    BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, instruction::InsertChunk,
+};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use solana_sdk::{
     instruction::CompiledInstruction, pubkey::Pubkey, transaction::VersionedTransaction,
@@ -66,6 +69,28 @@ impl std::fmt::Debug for RelevantInstruction {
     }
 }
 
+impl Clone for RelevantInstruction {
+    fn clone(&self) -> Self {
+        match self {
+            RelevantInstruction::DeclareBlob(instruction) => {
+                RelevantInstruction::DeclareBlob(data_anchor_blober::instruction::DeclareBlob {
+                    blob_size: instruction.blob_size,
+                    timestamp: instruction.timestamp,
+                })
+            }
+            RelevantInstruction::InsertChunk(instruction) => {
+                RelevantInstruction::InsertChunk(data_anchor_blober::instruction::InsertChunk {
+                    idx: instruction.idx,
+                    data: instruction.data.clone(),
+                })
+            }
+            RelevantInstruction::FinalizeBlob(_) => {
+                RelevantInstruction::FinalizeBlob(data_anchor_blober::instruction::FinalizeBlob {})
+            }
+        }
+    }
+}
+
 impl RelevantInstruction {
     pub fn try_from_slice(compiled_instruction: &CompiledInstruction) -> Option<Self> {
         use data_anchor_blober::instruction::*;
@@ -99,7 +124,7 @@ impl RelevantInstruction {
 }
 
 /// A deserialized relevant instruction, containing the blob and blober pubkeys and the instruction.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RelevantInstructionWithAccounts {
     pub blob: Pubkey,
     pub blober: Pubkey,
@@ -253,4 +278,90 @@ pub fn get_account_at_index(
 ) -> Option<Pubkey> {
     let actual_index = *instruction.accounts.get(index)? as usize;
     tx.message.static_account_keys().get(actual_index).copied()
+}
+
+/// Errors that can occur when fetching blob data from the ledger.
+#[derive(Debug, thiserror::Error)]
+pub enum LedgerDataBlobError {
+    /// No declare instruction found
+    #[error("No declare blob instruction found")]
+    DeclareNotFound,
+    /// Multiple declare instructions found
+    #[error("Multiple declare instructions found")]
+    MultipleDeclares,
+    /// Declare blob size and inserts built blob size mismatch
+    #[error("Declare blob size and inserts blob size mismatch")]
+    SizeMismatch,
+    /// No finalize instruction found
+    #[error("No finalize instruction found")]
+    FinalizeNotFound,
+    /// Multiple finalize instructions found
+    #[error("Multiple finalize instructions found")]
+    MultipleFinalizes,
+}
+
+/// Extracts the blob data from the relevant instructions.
+pub fn get_blob_data_from_instructions(
+    relevant_instructions: &[RelevantInstructionWithAccounts],
+    blober: Pubkey,
+    blob: Pubkey,
+) -> Result<Vec<u8>, LedgerDataBlobError> {
+    let blob_size = relevant_instructions
+        .iter()
+        .filter_map(|instruction| {
+            if instruction.blober != blober || instruction.blob != blob {
+                return None;
+            }
+
+            match &instruction.instruction {
+                RelevantInstruction::DeclareBlob(declare) => Some(declare.blob_size),
+                _ => None,
+            }
+        })
+        .next()
+        .ok_or(LedgerDataBlobError::DeclareNotFound)?;
+
+    let inserts = relevant_instructions
+        .iter()
+        .filter_map(|instruction| {
+            if instruction.blober != blober || instruction.blob != blob {
+                return None;
+            }
+
+            let RelevantInstruction::InsertChunk(insert) = &instruction.instruction else {
+                return None;
+            };
+
+            Some(InsertChunk {
+                idx: insert.idx,
+                data: insert.data.clone(),
+            })
+        })
+        .collect::<Vec<InsertChunk>>();
+
+    let blob_data =
+        inserts
+            .iter()
+            .sorted_by_key(|insert| insert.idx)
+            .fold(Vec::new(), |mut acc, insert| {
+                acc.extend_from_slice(&insert.data);
+                acc
+            });
+
+    if blob_data.len() != blob_size as usize {
+        return Err(LedgerDataBlobError::SizeMismatch);
+    }
+
+    if !relevant_instructions.iter().any(|instruction| {
+        instruction.blober == blober
+            && instruction.blob == blob
+            && matches!(
+                instruction.instruction,
+                RelevantInstruction::FinalizeBlob(_)
+            )
+    }) {
+        return Err(LedgerDataBlobError::FinalizeNotFound);
+    }
+
+    Ok(blob_data)
 }

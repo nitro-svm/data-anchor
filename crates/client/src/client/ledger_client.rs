@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use data_anchor_api::{
-    RelevantInstruction, RelevantInstructionWithAccounts, extract_relevant_instructions,
-    get_account_at_index,
+    LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
+    extract_relevant_instructions, get_account_at_index, get_blob_data_from_instructions,
 };
 use data_anchor_blober::{
     BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, find_blober_address,
@@ -13,8 +13,7 @@ use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signature::Signature
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 
 use crate::{
-    DataAnchorClient, DataAnchorClientResult, LedgerDataBlobError,
-    client::get_blob_data_from_instructions,
+    DataAnchorClient, DataAnchorClientResult,
     constants::{DEFAULT_CONCURRENCY, DEFAULT_LOOKBACK_SLOTS},
     helpers::filter_relevant_instructions,
 };
