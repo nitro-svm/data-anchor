@@ -27,7 +27,7 @@ was a database or RPC failure, and an empty list if no blobs were found.
 #### Signature
 
 ```rust
-async fn get_blobs_by_blober(&self, blober: BlobsByBlober) -> RpcResult<Vec<Vec<u8>>>;
+async fn get_blobs_by_blober(&self, blober: Pubkey, time_range: Option<TimeRange>) -> RpcResult<Vec<Vec<u8>>>;
 ```
 
 Parameters:
@@ -36,12 +36,6 @@ Parameters:
 pub struct TimeRange {
     pub start: Option<DateTime<Utc>>,
     pub end: Option<DateTime<Utc>>,
-}
-
-pub struct BlobsByBlober {
-    pub blober: Pubkey,
-    #[serde(flatten)]
-    pub time_range: TimeRange,
 }
 ```
 
@@ -56,15 +50,19 @@ Which equals to the following options in JSON:
 ```json
 {
   "blober": "BAugq2PZwXBCw72YTRe93kgw3X6ghB3HfF7eSYBDhTsK",
-  "start": "2025-06-09T14:35:06.538958843Z"
+  "time_range": {
+    "start": "2025-06-09T14:35:06.538958843Z"
+  }
 }
 ```
 
 ```json
 {
   "blober": "BAugq2PZwXBCw72YTRe93kgw3X6ghB3HfF7eSYBDhTsK",
-  "start": "2025-06-09T14:30:06.538958843Z",
-  "end": "2025-06-09T14:35:06.538958843Z"
+  "time_range": {
+    "start": "2025-06-09T14:30:06.538958843Z",
+    "end": "2025-06-09T14:35:06.538958843Z"
+  }
 }
 ```
 
@@ -76,18 +74,7 @@ error if there was a database or RPC failure, and an empty list if no blobs were
 #### Signature
 
 ```rust
-async fn get_blobs_by_payer(&self, payer: BlobsByPayer) -> RpcResult<Vec<Vec<u8>>>;
-```
-
-Parameters:
-
-```rust
-pub struct BlobsByPayer {
-    pub payer: Pubkey,
-    pub network_name: String,
-    #[serde(flatten)]
-    pub time_range: TimeRange,
-}
+async fn get_blobs_by_payer(&self, payer: Pubkey, network_name: String, time_range: Option<TimeRange>) -> RpcResult<Vec<Vec<u8>>>;
 ```
 
 Which equals to the following options in JSON:
@@ -103,7 +90,9 @@ Which equals to the following options in JSON:
 {
   "payer": "BAugq2PZwXBCw72YTRe93kgw3X6ghB3HfF7eSYBDhTsK",
   "network_name": "ping",
-  "start": "2025-06-09T14:35:06.538958843Z"
+  "time_range": {
+    "start": "2025-06-09T14:35:06.538958843Z"
+  }
 }
 ```
 
@@ -111,8 +100,10 @@ Which equals to the following options in JSON:
 {
   "payer": "BAugq2PZwXBCw72YTRe93kgw3X6ghB3HfF7eSYBDhTsK",
   "network_name": "ping",
-  "start": "2025-06-09T14:30:06.538958843Z",
-  "end": "2025-06-09T14:35:06.538958843Z"
+  "time_range": {
+    "start": "2025-06-09T14:30:06.538958843Z",
+    "end": "2025-06-09T14:35:06.538958843Z"
+  }
 }
 ```
 
