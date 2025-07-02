@@ -43,30 +43,6 @@ impl TimeRange {
     }
 }
 
-/// Request parameters for retrieving blobs by a specific blober's pubkey and a time range.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct BlobsByBlober {
-    /// The blober's pubkey.
-    #[serde(deserialize_with = "deserialize_pubkey")]
-    pub blober: Pubkey,
-    /// The time range for which to retrieve blobs.
-    #[serde(flatten)]
-    pub time_range: TimeRange,
-}
-
-/// Request parameters for retrieving blobs by a specific payer's pubkey, network ID, and a time range.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct BlobsByPayer {
-    /// The payer's pubkey.
-    #[serde(deserialize_with = "deserialize_pubkey")]
-    pub payer: Pubkey,
-    /// The network name of the blobs.
-    pub network_name: String,
-    /// The time range for which to retrieve blobs.
-    #[serde(flatten)]
-    pub time_range: TimeRange,
-}
-
 /// A wrapper around a blober's pubkey, used to identify a blober in RPC calls.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PubkeyFromStr(#[serde(deserialize_with = "deserialize_pubkey")] pub Pubkey);
@@ -95,12 +71,21 @@ pub trait IndexerRpc {
     /// Retrieve a list of blobs for a given blober pubkey and time range. Returns an error if there
     /// was a database or RPC failure, and an empty list if no blobs were found.
     #[method(name = "get_blobs_by_blober")]
-    async fn get_blobs_by_blober(&self, blober: BlobsByBlober) -> RpcResult<Vec<Vec<u8>>>;
+    async fn get_blobs_by_blober(
+        &self,
+        blober: PubkeyFromStr,
+        time_range: Option<TimeRange>,
+    ) -> RpcResult<Vec<Vec<u8>>>;
 
     /// Retrieve a list of blobs for a given payer pubkey, network ID, and time range. Returns an
     /// error if there was a database or RPC failure, and an empty list if no blobs were found.
     #[method(name = "get_blobs_by_payer")]
-    async fn get_blobs_by_payer(&self, payer: BlobsByPayer) -> RpcResult<Vec<Vec<u8>>>;
+    async fn get_blobs_by_payer(
+        &self,
+        payer: PubkeyFromStr,
+        network_name: String,
+        time_range: Option<TimeRange>,
+    ) -> RpcResult<Vec<Vec<u8>>>;
 
     /// Retrieve a list of blobs for a given network name and time range. Returns an error if there
     /// was a database or RPC failure, and an empty list if no blobs were found.

@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-use data_anchor_api::{
-    BlobsByBlober, BlobsByPayer, CompoundProof, IndexerRpcClient, PubkeyFromStr, TimeRange,
-};
+use data_anchor_api::{CompoundProof, IndexerRpcClient, PubkeyFromStr, TimeRange};
 use data_anchor_blober::find_blober_address;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 
@@ -35,12 +33,11 @@ impl DataAnchorClient {
     /// Fetches blobs for a given [`BlobsByBlober`] from the [`IndexerRpcClient`].
     pub async fn get_blobs_by_blober(
         &self,
-        blober_blobs: BlobsByBlober,
+        blober: Pubkey,
+        time_range: Option<TimeRange>,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
-        let blober = blober_blobs.blober;
-
         self.indexer()
-            .get_blobs_by_blober(blober_blobs)
+            .get_blobs_by_blober(blober.into(), time_range)
             .await
             .map_err(|e| IndexerError::BlobsForBlober(blober.to_string(), e.to_string()).into())
     }
@@ -48,12 +45,12 @@ impl DataAnchorClient {
     /// Fetches blobs for a given [`BlobsByPayer`] from the [`IndexerRpcClient`].
     pub async fn get_blobs_by_payer(
         &self,
-        payer_blobs: BlobsByPayer,
+        payer: Pubkey,
+        network_name: String,
+        time_range: Option<TimeRange>,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
-        let payer = payer_blobs.payer;
-
         self.indexer()
-            .get_blobs_by_payer(payer_blobs)
+            .get_blobs_by_payer(payer.into(), network_name, time_range)
             .await
             .map_err(|e| IndexerError::BlobsForPayer(payer.to_string(), e.to_string()).into())
     }

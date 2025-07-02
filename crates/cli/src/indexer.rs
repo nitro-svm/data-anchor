@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{BlobsByBlober, BlobsByPayer, CompoundProof, PubkeyFromStr, TimeRange};
+use data_anchor_api::{CompoundProof, PubkeyFromStr, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
@@ -128,13 +128,13 @@ impl IndexerSubCommand {
                 time_args: TimeArgs { start, end },
             } => {
                 let data = client
-                    .get_blobs_by_blober(BlobsByBlober {
-                        blober: blober.to_owned(),
-                        time_range: TimeRange {
+                    .get_blobs_by_blober(
+                        blober.to_owned(),
+                        Some(TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),
-                        },
-                    })
+                        }),
+                    )
                     .await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
@@ -144,14 +144,14 @@ impl IndexerSubCommand {
                 time_args: TimeArgs { start, end },
             } => {
                 let data = client
-                    .get_blobs_by_payer(BlobsByPayer {
-                        payer: payer.to_owned(),
-                        network_name: network_name.to_owned(),
-                        time_range: TimeRange {
+                    .get_blobs_by_payer(
+                        payer.to_owned(),
+                        network_name.to_owned(),
+                        Some(TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),
-                        },
-                    })
+                        }),
+                    )
                     .await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
