@@ -108,7 +108,7 @@ pub enum IndexerError {
     #[error("Failed to read blobs for blober {0} via indexer client: {1}")]
     BlobsForBlober(String, String),
     /// Failed to read blobs for payer {0} via indexer client: {1}
-    #[error("Failed to read proof for payer {0} via indexer client: {1}")]
+    #[error("Failed to read blobs for payer {0} via indexer client: {1}")]
     BlobsForPayer(String, String),
     /// Failed to read blobs for network {0} via indexer client: {1}
     #[error("Failed to read blobs for network {0} via indexer client: {1}")]
