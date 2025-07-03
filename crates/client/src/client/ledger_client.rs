@@ -4,30 +4,63 @@ use data_anchor_api::{
     LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
     extract_relevant_instructions, get_account_at_index, get_blob_data_from_instructions,
 };
-use data_anchor_blober::{
-    BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, find_blober_address,
-};
+use data_anchor_blober::{BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX};
 use futures::StreamExt;
 use solana_client::rpc_config::{RpcBlockConfig, RpcTransactionConfig};
+use solana_rpc_client_api::client_error::Error;
 use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signature::Signature, signer::Signer};
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 
+use super::BloberIdentifier;
 use crate::{
-    DataAnchorClient, DataAnchorClientResult,
+    DataAnchorClient, DataAnchorClientResult, OutcomeError,
     constants::{DEFAULT_CONCURRENCY, DEFAULT_LOOKBACK_SLOTS},
     helpers::filter_relevant_instructions,
 };
+
+/// An error that can occur when uploading a blob to a blober account.
+#[derive(thiserror::Error, Debug)]
+pub enum ChainError {
+    /// Failed to query Solana RPC: {0}
+    #[error("Failed to query Solana RPC: {0}")]
+    SolanaRpc(#[from] Error),
+    /// Failed when sending transactions. Transaction errors:\n{}
+    #[error(transparent)]
+    TransactionFailure(#[from] OutcomeError),
+    /// Fee Strategy conversion failure: {0}
+    #[error("Fee Strategy conversion failure: {0}")]
+    ConversionError(&'static str),
+    /// Failed to declare blob: {0}
+    #[error("Failed to declare blob: {0}")]
+    DeclareBlob(OutcomeError),
+    /// Failed to insert chunks: {0}
+    #[error("Failed to insert chunks: {0}")]
+    InsertChunks(OutcomeError),
+    /// Failed to finalize blob: {0}
+    #[error("Failed to finalize blob: {0}")]
+    FinalizeBlob(OutcomeError),
+    /// Failed to discard blob: {0}
+    #[error("Failed to discard blob: {0}")]
+    DiscardBlob(OutcomeError),
+    /// Failed to compound upload: {0}
+    #[error("Failed to compound upload: {0}")]
+    CompoundUpload(OutcomeError),
+    /// Failed to initialize blober: {0}
+    #[error("Failed to initialize blober: {0}")]
+    InitializeBlober(OutcomeError),
+    /// Failed to close blober: {0}
+    #[error("Failed to close blober: {0}")]
+    CloseBlober(OutcomeError),
+}
 
 impl DataAnchorClient {
     /// Returns the raw blob data from the ledger for the given signatures.
     pub async fn get_ledger_blobs_from_signatures(
         &self,
-        namespace: &str,
-        payer_pubkey: Option<Pubkey>,
+        identifier: BloberIdentifier,
         signatures: Vec<Signature>,
     ) -> DataAnchorClientResult<Vec<u8>> {
-        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
-        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let relevant_transactions = futures::stream::iter(signatures)
             .map(|signature| async move {
@@ -101,12 +134,10 @@ impl DataAnchorClient {
     pub async fn get_ledger_blobs(
         &self,
         slot: u64,
-        namespace: &str,
-        payer_pubkey: Option<Pubkey>,
+        identifier: BloberIdentifier,
         lookback_slots: Option<u64>,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
-        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
-        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let block_config = RpcBlockConfig {
             commitment: Some(self.rpc_client.commitment()),
@@ -232,11 +263,9 @@ impl DataAnchorClient {
     pub async fn get_blob_messages(
         &self,
         slot: u64,
-        namespace: &str,
-        payer_pubkey: Option<Pubkey>,
+        identifier: BloberIdentifier,
     ) -> DataAnchorClientResult<Vec<(Pubkey, VersionedMessage)>> {
-        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
-        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let block: EncodedConfirmedBlock = self
             .rpc_client

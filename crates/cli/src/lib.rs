@@ -184,9 +184,7 @@ impl Options {
                     .await?;
                 let client = Arc::new(client);
 
-                subcommand
-                    .run(client.clone(), &self.namespace, self.blober_pda)
-                    .await
+                subcommand.run(client.clone(), self.blober_pda).await
             }
             subcommand => {
                 let Some(namespace) = &self.namespace else {

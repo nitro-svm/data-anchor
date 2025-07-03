@@ -17,8 +17,9 @@ use tracing::{Instrument, Span, info_span};
 use crate::{
     DataAnchorClient, DataAnchorClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
     SuccessfulTransaction, TransactionOutcome,
+    client::ChainError,
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
-    types::{TransactionType, UploadBlobError},
+    types::TransactionType,
 };
 
 pub enum UploadMessages {
@@ -49,7 +50,7 @@ impl DataAnchorClient {
                         .instrument(span)
                         .await,
                 )
-                .map_err(UploadBlobError::CompoundUpload)?)
+                .map_err(ChainError::CompoundUpload)?)
             }
             UploadMessages::StaggeredUpload {
                 declare_blob,
@@ -63,7 +64,7 @@ impl DataAnchorClient {
                         .instrument(span)
                         .await,
                 )
-                .map_err(UploadBlobError::DeclareBlob)?;
+                .map_err(ChainError::DeclareBlob)?;
 
                 let span = info_span!(parent: Span::current(), "insert_chunks");
                 let timeout =
@@ -81,7 +82,7 @@ impl DataAnchorClient {
                         .instrument(span)
                         .await,
                 )
-                .map_err(UploadBlobError::InsertChunks)?;
+                .map_err(ChainError::InsertChunks)?;
 
                 let span = info_span!(parent: Span::current(), "finalize_blob");
                 let timeout =
@@ -95,7 +96,7 @@ impl DataAnchorClient {
                         .instrument(span)
                         .await,
                 )
-                .map_err(UploadBlobError::FinalizeBlob)?;
+                .map_err(ChainError::FinalizeBlob)?;
 
                 Ok(tx1
                     .into_iter()
@@ -332,7 +333,7 @@ impl DataAnchorClient {
             }
         }
 
-        Err(UploadBlobError::ConversionError("Fee strategy conversion failed after retries").into())
+        Err(ChainError::ConversionError("Fee strategy conversion failed after retries").into())
     }
 
     /// Get a reference to the Indexer RPC client.

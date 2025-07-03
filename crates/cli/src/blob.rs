@@ -146,7 +146,10 @@ impl BlobSubCommand {
             }
             BlobSubCommand::Fetch { signatures } => {
                 let blob = client
-                    .get_ledger_blobs_from_signatures(namespace, None, signatures.to_owned())
+                    .get_ledger_blobs_from_signatures(
+                        namespace.to_owned().into(),
+                        signatures.to_owned(),
+                    )
                     .await?;
                 Ok(BlobCommandOutput::Fetching(vec![blob]).into())
             }
@@ -155,7 +158,7 @@ impl BlobSubCommand {
                 lookback_slots,
             } => {
                 let blobs = client
-                    .get_ledger_blobs(*slot, namespace, None, *lookback_slots)
+                    .get_ledger_blobs(*slot, namespace.to_owned().into(), *lookback_slots)
                     .await?;
                 Ok(BlobCommandOutput::Fetching(blobs).into())
             }

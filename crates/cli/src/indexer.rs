@@ -9,7 +9,7 @@ use serde::Serialize;
 use solana_sdk::pubkey::Pubkey;
 use tracing::instrument;
 
-use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};
+use crate::formatting::CommandOutput;
 
 #[derive(Debug, Parser)]
 pub enum IndexerSubCommand {
@@ -116,16 +116,12 @@ impl IndexerSubCommand {
     pub async fn run(
         &self,
         client: Arc<DataAnchorClient>,
-        namespace: &Option<String>,
         blober_pda: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             IndexerSubCommand::Blobs(SlotArgs { slot }) => {
-                let Some(namespace) = namespace else {
-                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
-                };
-                let data = client.get_blobs(*slot, namespace, None).await?;
-                Ok(IndexerCommandOutput::Blobs(data).into())
+                let data = client.get_blobs(*slot, blober_pda.into()).await?;
+                Ok(IndexerCommandOutput::Blobs(data.unwrap_or_default()).into())
             }
             IndexerSubCommand::BlobsForBlober {
                 blober,
@@ -133,7 +129,7 @@ impl IndexerSubCommand {
             } => {
                 let data = client
                     .get_blobs_by_blober(
-                        blober.to_owned(),
+                        (*blober).into(),
                         Some(TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),
@@ -192,11 +188,8 @@ impl IndexerSubCommand {
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::Proof(SlotArgs { slot }) => {
-                let Some(namespace) = namespace else {
-                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
-                };
-                let proof = client.get_proof(*slot, namespace, None).await?;
-                Ok(IndexerCommandOutput::Proofs(Box::new(Some(proof))).into())
+                let proof = client.get_proof(*slot, blober_pda.into()).await?;
+                Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
             IndexerSubCommand::ProofForBlob { blob } => {
                 let proof = client.get_proof_for_blob(blob.to_owned()).await?;

@@ -1,41 +1,57 @@
-use std::time::Duration;
-
 use data_anchor_api::{CompoundProof, IndexerRpcClient, TimeRange};
-use data_anchor_blober::find_blober_address;
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use solana_sdk::{clock::Slot, pubkey::Pubkey, signer::Signer};
 
-use crate::{DataAnchorClient, DataAnchorClientResult, IndexerError};
+use super::BloberIdentifier;
+use crate::{DataAnchorClient, DataAnchorClientResult};
+
+#[derive(thiserror::Error, Debug)]
+pub enum IndexerError {
+    /// Failed to read blobs for slot {0} via indexer client: {1}
+    #[error("Failed to read blobs for slot {0} via indexer client: {1}")]
+    Blobs(Slot, String),
+    /// Failed to read proof for slot {0} via indexer client: {1}
+    #[error("Failed to read proof for slot {0} via indexer client: {1}")]
+    Proof(Slot, String),
+    /// Failed to read blobs for blober {0} via indexer client: {1}
+    #[error("Failed to read blobs for blober {0} via indexer client: {1}")]
+    BlobsForBlober(String, String),
+    /// Failed to read blobs for payer {0} via indexer client: {1}
+    #[error("Failed to read blobs for payer {0} via indexer client: {1}")]
+    BlobsForPayer(String, String),
+    /// Failed to read blobs for network {0} via indexer client: {1}
+    #[error("Failed to read blobs for network {0} via indexer client: {1}")]
+    BlobsForNetwork(String, String),
+    /// Failed to read blobs for namespace {0} via indexer client: {1}
+    #[error("Failed to read blobs for namespace {0} via indexer client: {1}")]
+    BlobsForNamespace(String, String),
+    /// Failed to read proof for blob {0} via indexer client: {1}
+    #[error("Failed to read proof for blob {0} via indexer client: {1}")]
+    ProofForBlob(String, String),
+}
 
 impl DataAnchorClient {
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
     pub async fn get_blobs(
         &self,
         slot: u64,
-        namespace: &str,
-        payer_pubkey: Option<Pubkey>,
-    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
-        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
-        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+        identifier: BloberIdentifier,
+    ) -> DataAnchorClientResult<Option<Vec<Vec<u8>>>> {
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
-        loop {
-            let blobs = self
-                .indexer()
-                .get_blobs(blober.into(), slot)
-                .await
-                .map_err(|e| IndexerError::Blobs(slot, e.to_string()))?;
-            if let Some(blobs) = blobs {
-                return Ok(blobs);
-            }
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        self.indexer()
+            .get_blobs(blober.into(), slot)
+            .await
+            .map_err(|e| IndexerError::Blobs(slot, e.to_string()).into())
     }
 
     /// Fetches blobs for a given blober and time range from the [`IndexerRpcClient`].
     pub async fn get_blobs_by_blober(
         &self,
-        blober: Pubkey,
+        identifier: BloberIdentifier,
         time_range: Option<TimeRange>,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
+
         self.indexer()
             .get_blobs_by_blober(blober.into(), time_range)
             .await
@@ -88,23 +104,14 @@ impl DataAnchorClient {
     pub async fn get_proof(
         &self,
         slot: u64,
-        namespace: &str,
-        payer_pubkey: Option<Pubkey>,
-    ) -> DataAnchorClientResult<CompoundProof> {
-        let payer_pubkey = payer_pubkey.unwrap_or(self.payer.pubkey());
-        let blober = find_blober_address(self.program_id, payer_pubkey, namespace);
+        identifier: BloberIdentifier,
+    ) -> DataAnchorClientResult<Option<CompoundProof>> {
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
-        loop {
-            let proof = self
-                .indexer()
-                .get_proof(blober.into(), slot)
-                .await
-                .map_err(|e| IndexerError::Proof(slot, e.to_string()))?;
-            if let Some(proofs) = proof {
-                return Ok(proofs);
-            }
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        self.indexer()
+            .get_proof(blober.into(), slot)
+            .await
+            .map_err(|e| IndexerError::Proof(slot, e.to_string()).into())
     }
 
     /// Fetches compound proof for a given blob PDA [`Pubkey`] from the [`IndexerRpcClient`].

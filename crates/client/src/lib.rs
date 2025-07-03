@@ -10,4 +10,9 @@ mod tests;
 mod tx;
 mod types;
 
-pub use crate::{batch_client::*, client::DataAnchorClient, fees::*, types::*};
+pub use crate::{
+    batch_client::*,
+    client::{BloberIdentifier, ChainError, DataAnchorClient, IndexerError},
+    fees::*,
+    types::*,
+};

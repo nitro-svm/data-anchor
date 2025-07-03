@@ -12,8 +12,8 @@ use bytesize::ByteSize;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use data_anchor_client::{
-    DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy, Priority,
-    UploadBlobError,
+    ChainError, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
+    Priority,
 };
 use futures::StreamExt;
 use itertools::{Itertools, iproduct};
@@ -441,13 +441,13 @@ impl BenchMeasurement {
         let (declare_failures, insert_failures, finalize_failures) = errors.iter().fold(
             (0u64, 0u64, 0u64),
             |(declare, insert, finalize), error| match error {
-                DataAnchorClientError::UploadBlob(UploadBlobError::DeclareBlob(_)) => {
+                DataAnchorClientError::UploadBlob(ChainError::DeclareBlob(_)) => {
                     (declare + 1, insert, finalize)
                 }
-                DataAnchorClientError::UploadBlob(UploadBlobError::InsertChunks(_)) => {
+                DataAnchorClientError::UploadBlob(ChainError::InsertChunks(_)) => {
                     (declare, insert + 1, finalize)
                 }
-                DataAnchorClientError::UploadBlob(UploadBlobError::FinalizeBlob(_)) => {
+                DataAnchorClientError::UploadBlob(ChainError::FinalizeBlob(_)) => {
                     (declare, insert, finalize + 1)
                 }
                 _ => (declare, insert, finalize),

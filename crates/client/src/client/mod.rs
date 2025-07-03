@@ -18,12 +18,56 @@ use crate::{
     fees::{Fee, FeeStrategy, Lamports, Priority},
     helpers::{check_outcomes, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
-    types::{TransactionType, UploadBlobError},
+    types::TransactionType,
 };
 
 mod builder;
 mod indexer_client;
 mod ledger_client;
+
+pub use indexer_client::IndexerError;
+pub use ledger_client::ChainError;
+
+/// Identifier for a blober, which can be either a combination of payer and namespace or just a pubkey.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BloberIdentifier {
+    Namespace(String),
+    PayerAndNamespace { payer: Pubkey, namespace: String },
+    Pubkey(Pubkey),
+}
+
+impl From<String> for BloberIdentifier {
+    fn from(namespace: String) -> Self {
+        BloberIdentifier::Namespace(namespace)
+    }
+}
+
+impl From<(Pubkey, String)> for BloberIdentifier {
+    fn from((payer, namespace): (Pubkey, String)) -> Self {
+        BloberIdentifier::PayerAndNamespace { payer, namespace }
+    }
+}
+
+impl From<Pubkey> for BloberIdentifier {
+    fn from(pubkey: Pubkey) -> Self {
+        BloberIdentifier::Pubkey(pubkey)
+    }
+}
+
+impl BloberIdentifier {
+    /// Converts the [`BloberIdentifier`] to a [`Pubkey`] representing the blober address.
+    pub fn to_blober_address(&self, program_id: Pubkey, payer: Pubkey) -> Pubkey {
+        match self {
+            BloberIdentifier::Namespace(namespace) => {
+                find_blober_address(program_id, payer, namespace)
+            }
+            BloberIdentifier::PayerAndNamespace { payer, namespace } => {
+                find_blober_address(program_id, *payer, namespace)
+            }
+            BloberIdentifier::Pubkey(pubkey) => *pubkey,
+        }
+    }
+}
 
 #[derive(Builder, Clone)]
 pub struct DataAnchorClient {
@@ -86,7 +130,7 @@ impl DataAnchorClient {
                 .instrument(span)
                 .await,
         )
-        .map_err(UploadBlobError::InitializeBlober)?)
+        .map_err(ChainError::InitializeBlober)?)
     }
 
     /// Closes a [`Blober`] PDA account.
@@ -122,7 +166,7 @@ impl DataAnchorClient {
                 .instrument(span)
                 .await,
         )
-        .map_err(UploadBlobError::CloseBlober)?)
+        .map_err(ChainError::CloseBlober)?)
     }
 
     /// Uploads a blob of data with the given [`Blober`] PDA account.
@@ -158,7 +202,7 @@ impl DataAnchorClient {
             .in_current_span()
             .await;
 
-        if let Err(DataAnchorClientError::UploadBlob(UploadBlobError::DeclareBlob(_))) = res {
+        if let Err(DataAnchorClientError::UploadBlob(ChainError::DeclareBlob(_))) = res {
             self.discard_blob(fee_strategy, blob, namespace, timeout)
                 .await
         } else {
@@ -203,7 +247,7 @@ impl DataAnchorClient {
                 .instrument(span)
                 .await,
         )
-        .map_err(UploadBlobError::DiscardBlob)?)
+        .map_err(ChainError::DiscardBlob)?)
     }
 
     /// Estimates fees for uploading a blob of the size `blob_size` with the given `priority`.

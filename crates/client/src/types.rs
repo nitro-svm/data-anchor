@@ -5,11 +5,12 @@ use data_anchor_blober::instruction::{
     Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
 use solana_rpc_client_api::client_error::Error;
-use solana_sdk::{clock::Slot, commitment_config::ParseCommitmentLevelError};
+use solana_sdk::commitment_config::ParseCommitmentLevelError;
 use thiserror::Error;
 
 use crate::{
     TransactionOutcome,
+    client::{ChainError, IndexerError},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageBuilder},
 };
 
@@ -18,13 +19,10 @@ use crate::{
 pub enum DataAnchorClientError {
     /// Upload blob errors
     #[error(transparent)]
-    UploadBlob(#[from] UploadBlobError),
+    UploadBlob(#[from] ChainError),
     /// Indexer errors
     #[error(transparent)]
     Indexer(#[from] IndexerError),
-    /// Deployment errors
-    #[error(transparent)]
-    Deployment(#[from] DeploymentError),
     /// Failed to query Solana RPC: {0}
     #[error("Failed to query Solana RPC: {0}")]
     SolanaRpc(#[from] Error),
@@ -59,85 +57,6 @@ pub enum OutcomeError {
         .0.iter().filter_map(TransactionOutcome::error).map(|t| format!("- {}: {} [{}]", t.data, t.error, t.logs.join("\n"))).collect::<Vec<_>>().join("\n")
     )]
     Unsuccesful(Vec<TransactionOutcome<TransactionType>>),
-}
-
-/// An error that can occur when uploading a blob to a blober account.
-#[derive(Error, Debug)]
-pub enum UploadBlobError {
-    /// Failed to query Solana RPC: {0}
-    #[error("Failed to query Solana RPC: {0}")]
-    SolanaRpc(#[from] Error),
-    /// Failed when sending transactions. Transaction errors:\n{}
-    #[error(transparent)]
-    TransactionFailure(#[from] OutcomeError),
-    /// Fee Strategy conversion failure: {0}
-    #[error("Fee Strategy conversion failure: {0}")]
-    ConversionError(&'static str),
-    /// Failed to declare blob: {0}
-    #[error("Failed to declare blob: {0}")]
-    DeclareBlob(OutcomeError),
-    /// Failed to insert chunks: {0}
-    #[error("Failed to insert chunks: {0}")]
-    InsertChunks(OutcomeError),
-    /// Failed to finalize blob: {0}
-    #[error("Failed to finalize blob: {0}")]
-    FinalizeBlob(OutcomeError),
-    /// Failed to discard blob: {0}
-    #[error("Failed to discard blob: {0}")]
-    DiscardBlob(OutcomeError),
-    /// Failed to compound upload: {0}
-    #[error("Failed to compound upload: {0}")]
-    CompoundUpload(OutcomeError),
-    /// Failed to initialize blober: {0}
-    #[error("Failed to initialize blober: {0}")]
-    InitializeBlober(OutcomeError),
-    /// Failed to close blober: {0}
-    #[error("Failed to close blober: {0}")]
-    CloseBlober(OutcomeError),
-}
-
-#[derive(Error, Debug)]
-pub enum IndexerError {
-    /// Failed to read blobs for slot {0} via indexer client: {1}
-    #[error("Failed to read blobs for slot {0} via indexer client: {1}")]
-    Blobs(Slot, String),
-    /// Failed to read proof for slot {0} via indexer client: {1}
-    #[error("Failed to read proof for slot {0} via indexer client: {1}")]
-    Proof(Slot, String),
-    /// Failed to read blobs for blober {0} via indexer client: {1}
-    #[error("Failed to read blobs for blober {0} via indexer client: {1}")]
-    BlobsForBlober(String, String),
-    /// Failed to read blobs for payer {0} via indexer client: {1}
-    #[error("Failed to read blobs for payer {0} via indexer client: {1}")]
-    BlobsForPayer(String, String),
-    /// Failed to read blobs for network {0} via indexer client: {1}
-    #[error("Failed to read blobs for network {0} via indexer client: {1}")]
-    BlobsForNetwork(String, String),
-    /// Failed to read blobs for namespace {0} via indexer client: {1}
-    #[error("Failed to read blobs for namespace {0} via indexer client: {1}")]
-    BlobsForNamespace(String, String),
-    /// Failed to read proof for blob {0} via indexer client: {1}
-    #[error("Failed to read proof for blob {0} via indexer client: {1}")]
-    ProofForBlob(String, String),
-}
-
-#[derive(Error, Debug)]
-pub enum DeploymentError {
-    /// Failed to create buffer account: {0}
-    #[error("Failed to create buffer account: {0}")]
-    Buffer(String),
-    /// Failed to deploy program: {0}
-    #[error("Failed to deploy program: {0}")]
-    Deploy(String),
-    /// Failed to get minimum balance for rent exemption: {0}
-    #[error("Failed to get minimum balance for rent exemption: {0}")]
-    RentBalance(String),
-    /// Failed to get recent blockhash
-    #[error("Failed to get recent blockhash")]
-    BlockHash,
-    /// Failed to read program bytecode: {0}
-    #[error("Failed to read program bytecode: {0}")]
-    Bytecode(String),
 }
 
 /// Transaction types which can be performed by the [`data_anchor_blober::blober`] program.

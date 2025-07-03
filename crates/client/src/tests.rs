@@ -178,7 +178,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let signatures = result.iter().map(|r| r.signature).collect::<Vec<_>>();
 
     let ledger_data = data_anchor_client
-        .get_ledger_blobs_from_signatures(&namespace, None, signatures)
+        .get_ledger_blobs_from_signatures(blober_pubkey.into(), signatures)
         .await
         .unwrap();
 
@@ -189,8 +189,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let all_ledger_blobs = data_anchor_client
         .get_ledger_blobs(
             finalized_slot,
-            &namespace,
-            None,
+            blober_pubkey.into(),
             Some(finalized_slot - slot_before_upload + 1),
         )
         .await
