@@ -10,7 +10,7 @@ use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
 };
-use jsonrpsee::ws_client::WsClient;
+use jsonrpsee::http_client::HttpClient;
 use solana_sdk::{message::Message, pubkey::Pubkey, signer::Signer};
 use tracing::{Instrument, Span, info_span};
 
@@ -339,7 +339,7 @@ impl DataAnchorClient {
     ///
     /// # Panics
     /// If the client is not present. It will be present in real code, but may not be in tests.
-    pub(crate) fn indexer(&self) -> &WsClient {
+    pub(crate) fn indexer(&self) -> &HttpClient {
         self.indexer_client
             .as_ref()
             .expect("indexer client to be present")

@@ -1,6 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
-use jsonrpsee::ws_client::{HeaderMap, WsClientBuilder};
+use jsonrpsee::{http_client::HttpClientBuilder, ws_client::HeaderMap};
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::commitment_config::CommitmentConfig;
@@ -46,10 +46,9 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
                 })?,
             );
         }
-        let indexer_client = WsClientBuilder::new()
+        let indexer_client = HttpClientBuilder::new()
             .set_headers(headers)
-            .build(indexer_url)
-            .await?;
+            .build(indexer_url)?;
         Ok(self.indexer_client(Arc::new(indexer_client)))
     }
 

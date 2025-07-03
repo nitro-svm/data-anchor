@@ -7,7 +7,7 @@ use data_anchor_blober::{
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
 };
-use jsonrpsee::ws_client::WsClient;
+use jsonrpsee::http_client::HttpClient;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 use tracing::{Instrument, Span, info_span};
@@ -33,7 +33,7 @@ pub struct DataAnchorClient {
     pub(crate) rpc_client: Arc<RpcClient>,
     pub(crate) batch_client: BatchClient,
     // Optional for the sake of testing, because in some tests indexer client is not used
-    pub(crate) indexer_client: Option<Arc<WsClient>>,
+    pub(crate) indexer_client: Option<Arc<HttpClient>>,
     #[builder(default = false)]
     pub(crate) helius_fee_estimate: bool,
 }
