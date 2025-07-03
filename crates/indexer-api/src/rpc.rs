@@ -136,7 +136,11 @@ pub trait IndexerRpc {
     /// Listen to blob finalization events from specified blobers. This will return a stream of
     /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is
     /// shut down.
-    #[subscription(name = "subscribe_blob_finalization" => "listen_subscribe_blob_finalization", unsubscribe = "unsubscribe_blob_finalization", item = (Pubkey, Slot))]
+    #[subscription(
+        name = "subscribe_blob_finalization" => "listen_subscribe_blob_finalization",
+        unsubscribe = "unsubscribe_blob_finalization", 
+        item = (Pubkey, Slot)
+    )]
     async fn subscribe_blob_finalization(
         &self,
         blobers: HashSet<PubkeyFromStr>,
