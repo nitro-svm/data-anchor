@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{CompoundProof, PubkeyFromStr, TimeRange};
+use data_anchor_api::{CompoundProof, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
 use solana_sdk::pubkey::Pubkey;
 use tracing::instrument;
 
-use crate::formatting::CommandOutput;
+use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};
 
 #[derive(Debug, Parser)]
 pub enum IndexerSubCommand {
@@ -30,7 +30,7 @@ pub enum IndexerSubCommand {
     BlobsForPayer {
         /// The payer address to query.
         #[arg(short = 'y', long)]
-        payer: Pubkey,
+        blob_payer: Pubkey,
         /// The network name to query.
         #[arg(short = 'm', long)]
         network_name: String,
@@ -116,10 +116,14 @@ impl IndexerSubCommand {
     pub async fn run(
         &self,
         client: Arc<DataAnchorClient>,
-        namespace: &str,
+        namespace: &Option<String>,
+        blober_pda: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             IndexerSubCommand::Blobs(SlotArgs { slot }) => {
+                let Some(namespace) = namespace else {
+                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
+                };
                 let data = client.get_blobs(*slot, namespace, None).await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
@@ -139,13 +143,13 @@ impl IndexerSubCommand {
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::BlobsForPayer {
-                payer,
+                blob_payer,
                 network_name,
                 time_args: TimeArgs { start, end },
             } => {
                 let data = client
                     .get_blobs_by_payer(
-                        payer.to_owned(),
+                        blob_payer.to_owned(),
                         network_name.to_owned(),
                         Some(TimeRange {
                             start: start.to_owned(),
@@ -178,7 +182,7 @@ impl IndexerSubCommand {
                 let data = client
                     .get_blobs_by_namespace_for_payer(
                         namespace.to_owned(),
-                        payer_pubkey.map(PubkeyFromStr),
+                        payer_pubkey.to_owned(),
                         TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),
@@ -188,6 +192,9 @@ impl IndexerSubCommand {
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::Proof(SlotArgs { slot }) => {
+                let Some(namespace) = namespace else {
+                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
+                };
                 let proof = client.get_proof(*slot, namespace, None).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(Some(proof))).into())
             }

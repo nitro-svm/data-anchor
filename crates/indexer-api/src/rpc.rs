@@ -1,11 +1,11 @@
-use std::{collections::HashSet, str::FromStr};
+use std::collections::HashSet;
 
 use chrono::{DateTime, Utc};
 use jsonrpsee::{
     core::{RpcResult, SubscriptionResult},
     proc_macros::rpc,
 };
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Serialize};
 use solana_sdk::{clock::Slot, pubkey::Pubkey};
 
 use crate::CompoundProof;
@@ -14,7 +14,7 @@ use crate::CompoundProof;
 /// payer's pubkey, and the network of the blober.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BloberData {
-    #[serde(deserialize_with = "deserialize_pubkey")]
+    #[serde(with = "pubkey_with_str")]
     pub blober: Pubkey,
     pub payer: Pubkey,
     pub network_id: u64,
@@ -45,7 +45,7 @@ impl TimeRange {
 
 /// A wrapper around a blober's pubkey, used to identify a blober in RPC calls.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct PubkeyFromStr(#[serde(deserialize_with = "deserialize_pubkey")] pub Pubkey);
+pub struct PubkeyFromStr(#[serde(with = "pubkey_with_str")] pub Pubkey);
 
 impl From<PubkeyFromStr> for Pubkey {
     fn from(value: PubkeyFromStr) -> Self {
@@ -147,10 +147,24 @@ pub trait IndexerRpc {
     ) -> SubscriptionResult;
 }
 
-fn deserialize_pubkey<'de, D>(deserializer: D) -> Result<Pubkey, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    String::deserialize(deserializer)
-        .and_then(|key| Pubkey::from_str(&key).map_err(de::Error::custom))
+mod pubkey_with_str {
+    use std::str::FromStr;
+
+    use serde::{Deserialize, Deserializer, de};
+    use solana_sdk::pubkey::Pubkey;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Pubkey, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)
+            .and_then(|key| Pubkey::from_str(&key).map_err(de::Error::custom))
+    }
+
+    pub fn serialize<S>(pubkey: &Pubkey, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&pubkey.to_string())
+    }
 }
