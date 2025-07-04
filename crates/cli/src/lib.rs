@@ -199,7 +199,16 @@ impl Options {
 
                 match subcommand {
                     Command::Blob(subcommand) => subcommand.run(client.clone(), namespace).await,
-                    Command::Blober(subcommand) => subcommand.run(client.clone(), namespace).await,
+                    Command::Blober(subcommand) => {
+                        subcommand
+                            .run(
+                                client.clone(),
+                                namespace,
+                                self.program_id,
+                                self.payer.pubkey(),
+                            )
+                            .await
+                    }
                     Command::Benchmark(subcommand) => {
                         subcommand.run(client.clone(), namespace).await
                     }

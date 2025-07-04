@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
 use clap::Parser;
+use data_anchor_blober::find_blober_address;
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority};
 use serde::Serialize;
+use solana_sdk::pubkey::Pubkey;
 use tracing::{info, instrument};
 
 use crate::formatting::CommandOutput;
@@ -21,18 +23,21 @@ pub enum BloberSubCommand {
 pub struct BloberCommandOutput {
     namespace: String,
     action: BloberSubCommand,
+    program_id: Pubkey,
+    payer: Pubkey,
 }
 
 impl std::fmt::Display for BloberCommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Blober account {} has been successfully {}",
+            "Blober account {} has been successfully {} (Pubkey: {})",
             self.namespace,
             match self.action {
                 BloberSubCommand::Initialize => "initialized",
                 BloberSubCommand::Close => "closed",
-            }
+            },
+            find_blober_address(self.program_id, self.payer, &self.namespace)
         )
     }
 }
@@ -43,6 +48,8 @@ impl BloberSubCommand {
         &self,
         client: Arc<DataAnchorClient>,
         namespace: &str,
+        program_id: Pubkey,
+        payer: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BloberSubCommand::Initialize => {
@@ -68,6 +75,8 @@ impl BloberSubCommand {
         Ok(BloberCommandOutput {
             namespace: namespace.to_owned(),
             action: *self,
+            program_id,
+            payer,
         }
         .into())
     }
