@@ -70,7 +70,7 @@ impl DataAnchorClient {
                         RpcTransactionConfig {
                             commitment: Some(self.rpc_client.commitment()),
                             encoding: Some(UiTransactionEncoding::Base58),
-                            ..Default::default()
+                            max_supported_transaction_version: Some(0),
                         },
                     )
                     .await
@@ -142,6 +142,7 @@ impl DataAnchorClient {
         let block_config = RpcBlockConfig {
             commitment: Some(self.rpc_client.commitment()),
             encoding: Some(UiTransactionEncoding::Base58),
+            max_supported_transaction_version: Some(0),
             ..Default::default()
         };
         let block = self
@@ -274,6 +275,7 @@ impl DataAnchorClient {
                 RpcBlockConfig {
                     commitment: Some(self.rpc_client.commitment()),
                     encoding: Some(UiTransactionEncoding::Base58),
+                    max_supported_transaction_version: Some(0),
                     ..Default::default()
                 },
             )
