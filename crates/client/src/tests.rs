@@ -142,7 +142,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .await
         .unwrap();
 
-    let result = data_anchor_client
+    let (result, _) = data_anchor_client
         .upload_blob(
             &data,
             fee_strategy,

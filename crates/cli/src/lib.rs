@@ -203,7 +203,7 @@ impl Options {
                         subcommand
                             .run(
                                 client.clone(),
-                                namespace,
+                                self.blober_pda.into(),
                                 self.program_id,
                                 self.payer.pubkey(),
                             )

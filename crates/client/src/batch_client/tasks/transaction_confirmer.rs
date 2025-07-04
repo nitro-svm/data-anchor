@@ -2,7 +2,7 @@ use std::{ops::ControlFlow, option::Option, sync::Arc};
 
 use solana_client::rpc_client::SerializableTransaction;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{clock::Slot, transaction::TransactionError};
+use solana_sdk::transaction::TransactionError;
 use solana_transaction_status::{
     TransactionStatus as SolanaTransactionStatus, UiTransactionEncoding,
 };
@@ -81,7 +81,7 @@ async fn transaction_confirm_loop(
     }
     let blockdata = *blockdata_rx.borrow_and_update();
     let batch = get_next_batch_for_confirmation(transaction_confirmer_rx).await?;
-    let Some((responses, slot)) =
+    let Some(responses) =
         get_transaction_statuses(rpc_client, transaction_confirmer_tx, batch).await?
     else {
         // If transaction status retrieval fails, don't stop the loop, just keep going
@@ -96,6 +96,7 @@ async fn transaction_confirm_loop(
     } = categorize_transaction_responses(responses, blockdata.last_valid_block_height);
 
     for (status, logs, msg) in status_updates {
+        let slot = status.slot;
         let status = TransactionStatus::from_solana_status(status, logs, rpc_client.commitment());
 
         // If the transaction wasn't committed or failed, it has to be checked again.
@@ -217,15 +218,14 @@ async fn get_transaction_statuses(
     // when the transaction confirmer sender could not be upgraded, breaking out of the loop.
 ) -> ControlFlow<
     (),
-    Option<(
+    Option<
         impl Iterator<
             Item = (
                 (Option<SolanaTransactionStatus>, Vec<String>),
                 ConfirmTransactionMessage,
             ),
         >,
-        Slot,
-    )>,
+    >,
 > {
     let signatures: Vec<_> = batch
         .iter()
@@ -288,8 +288,7 @@ async fn get_transaction_statuses(
         .zip(all_logs.into_iter())
         .zip(batch.into_iter());
 
-    let slot = response.context.slot;
-    ControlFlow::Continue(Some((responses, slot)))
+    ControlFlow::Continue(Some(responses))
 }
 
 /// Gets a batch of up to 256 transactions to be confirmed from the channel.
@@ -502,7 +501,7 @@ mod tests {
             solana_sdk::hash::Hash::default(),
         );
         let confirmer_tx = transaction_confirmer_tx.downgrade();
-        let ControlFlow::Continue(Some((messages, _))) = get_transaction_statuses(
+        let ControlFlow::Continue(Some(messages)) = get_transaction_statuses(
             &rpc_client,
             &confirmer_tx,
             vec![

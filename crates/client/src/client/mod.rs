@@ -2,12 +2,14 @@ use std::{sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
 use bon::Builder;
+use data_anchor_api::pubkey_with_str;
 use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
 };
 use jsonrpsee::http_client::HttpClient;
+use serde::Serialize;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 use tracing::{Instrument, Span, info_span};
@@ -29,11 +31,15 @@ pub use indexer_client::IndexerError;
 pub use ledger_client::ChainError;
 
 /// Identifier for a blober, which can be either a combination of payer and namespace or just a pubkey.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum BloberIdentifier {
     Namespace(String),
-    PayerAndNamespace { payer: Pubkey, namespace: String },
-    Pubkey(Pubkey),
+    PayerAndNamespace {
+        #[serde(with = "pubkey_with_str")]
+        payer: Pubkey,
+        namespace: String,
+    },
+    Pubkey(#[serde(with = "pubkey_with_str")] Pubkey),
 }
 
 impl From<String> for BloberIdentifier {
@@ -65,6 +71,15 @@ impl BloberIdentifier {
                 find_blober_address(program_id, *payer, namespace)
             }
             BloberIdentifier::Pubkey(pubkey) => *pubkey,
+        }
+    }
+
+    /// Returns the namespace of the blober identifier.
+    pub fn namespace(&self) -> Option<&str> {
+        match self {
+            BloberIdentifier::Namespace(namespace) => Some(namespace),
+            BloberIdentifier::PayerAndNamespace { namespace, .. } => Some(namespace),
+            BloberIdentifier::Pubkey(_) => None,
         }
     }
 }
@@ -137,10 +152,10 @@ impl DataAnchorClient {
     pub async fn close_blober(
         &self,
         fee_strategy: FeeStrategy,
-        namespace: &str,
+        identifier: BloberIdentifier,
         timeout: Option<Duration>,
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
-        let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(fee_strategy, &[blober], TransactionType::CloseBlober)
@@ -181,7 +196,7 @@ impl DataAnchorClient {
         fee_strategy: FeeStrategy,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
         let timestamp = get_unique_timestamp();
 
@@ -206,7 +221,7 @@ impl DataAnchorClient {
             self.discard_blob(fee_strategy, blob, namespace, timeout)
                 .await
         } else {
-            res
+            res.map(|r| (r, blob))
         }
     }
 
@@ -218,7 +233,7 @@ impl DataAnchorClient {
         blob: Pubkey,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
+    ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
         let fee_strategy = self
@@ -241,13 +256,16 @@ impl DataAnchorClient {
 
         let span = info_span!(parent: Span::current(), "discard_blob");
 
-        Ok(check_outcomes(
-            self.batch_client
-                .send(vec![(TransactionType::DiscardBlob, msg)], timeout)
-                .instrument(span)
-                .await,
-        )
-        .map_err(ChainError::DiscardBlob)?)
+        Ok((
+            check_outcomes(
+                self.batch_client
+                    .send(vec![(TransactionType::DiscardBlob, msg)], timeout)
+                    .instrument(span)
+                    .await,
+            )
+            .map_err(ChainError::DiscardBlob)?,
+            blob,
+        ))
     }
 
     /// Estimates fees for uploading a blob of the size `blob_size` with the given `priority`.

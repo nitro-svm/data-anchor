@@ -2455,6 +2455,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "solana-account-decoder-client-types",
  "solana-cli-config",
  "solana-client",
  "solana-rpc-client",

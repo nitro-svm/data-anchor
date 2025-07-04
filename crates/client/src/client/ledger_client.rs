@@ -1,12 +1,21 @@
 use std::collections::{HashMap, HashSet};
 
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use data_anchor_api::{
     LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
     extract_relevant_instructions, get_account_at_index, get_blob_data_from_instructions,
 };
-use data_anchor_blober::{BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX};
+use data_anchor_blober::{
+    BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, state::blober::Blober,
+};
 use futures::StreamExt;
-use solana_client::rpc_config::{RpcBlockConfig, RpcTransactionConfig};
+use solana_account_decoder_client_types::UiAccountEncoding;
+use solana_client::{
+    rpc_config::{
+        RpcAccountInfoConfig, RpcBlockConfig, RpcProgramAccountsConfig, RpcTransactionConfig,
+    },
+    rpc_filter::{Memcmp, RpcFilterType},
+};
 use solana_rpc_client_api::client_error::Error;
 use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signature::Signature, signer::Signer};
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
@@ -329,5 +338,36 @@ impl DataAnchorClient {
             .collect::<Vec<_>>();
 
         Ok(finalized)
+    }
+
+    /// Lists all blober accounts owned by the payer.
+    pub async fn list_blobers(&self) -> DataAnchorClientResult<Vec<Pubkey>> {
+        let blobers = self
+            .rpc_client
+            .get_program_accounts_with_config(
+                &self.program_id,
+                RpcProgramAccountsConfig {
+                    filters: Some(vec![RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+                        0,
+                        Blober::DISCRIMINATOR.to_vec(),
+                    ))]),
+                    account_config: RpcAccountInfoConfig {
+                        encoding: Some(UiAccountEncoding::Base64),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await?;
+
+        Ok(blobers
+            .into_iter()
+            .filter_map(|(pubkey, account)| {
+                let state = account.data.get(Blober::DISCRIMINATOR.len()..)?;
+                let blober_state = Blober::try_from_slice(state).ok()?;
+
+                (blober_state.caller == self.payer.pubkey()).then_some(pubkey)
+            })
+            .collect())
     }
 }

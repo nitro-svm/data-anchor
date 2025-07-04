@@ -75,13 +75,15 @@ impl CommandOutput {
             CommandOutput::Blob(output) => match output {
                 BlobCommandOutput::Posting {
                     slot,
+                    address,
                     signatures,
                     success,
                 } => {
                     let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
-                    writer.write_record(["slot", "signatures", "success"])?;
+                    writer.write_record(["slot", "address", "signatures", "success"])?;
                     writer.write_record(&[
                         format!("{slot}"),
+                        format!("{address}"),
                         signatures
                             .iter()
                             .map(|sig| sig.to_string())
@@ -135,10 +137,12 @@ impl CommandOutput {
             CommandOutput::Blob(output) => match output {
                 BlobCommandOutput::Posting {
                     slot,
+                    address,
                     signatures,
                     success,
                 } => serde_json::to_string(&json!({
                     "slot": slot,
+                    "address": address.to_string(),
                     "signatures": signatures.iter().map(|sig| sig.to_string()).collect::<Vec<_>>(),
                     "success": success,
                 })),
@@ -178,10 +182,12 @@ impl CommandOutput {
             CommandOutput::Blob(output) => match output {
                 BlobCommandOutput::Posting {
                     slot,
+                    address,
                     signatures,
                     success,
                 } => serde_json::to_string_pretty(&json!({
                     "slot": slot,
+                    "address": address.to_string(),
                     "signatures": signatures.iter().map(|sig| sig.to_string()).collect::<Vec<_>>(),
                     "success": success,
                 })),

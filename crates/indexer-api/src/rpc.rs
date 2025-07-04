@@ -147,7 +147,7 @@ pub trait IndexerRpc {
     ) -> SubscriptionResult;
 }
 
-mod pubkey_with_str {
+pub mod pubkey_with_str {
     use std::str::FromStr;
 
     use serde::{Deserialize, Deserializer, de};

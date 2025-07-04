@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
+use data_anchor_api::pubkey_with_str;
 use data_anchor_client::{
     DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority, TransactionType,
 };
@@ -52,6 +53,8 @@ pub enum BlobSubCommand {
 pub enum BlobCommandOutput {
     Posting {
         slot: Slot,
+        #[serde(with = "pubkey_with_str")]
+        address: Pubkey,
         signatures: Vec<Signature>,
         success: bool,
     },
@@ -70,12 +73,13 @@ impl std::fmt::Display for BlobCommandOutput {
             }
             BlobCommandOutput::Posting {
                 slot,
+                address,
                 signatures,
                 success,
             } => {
                 write!(
                     f,
-                    "Slot: {slot}, Signatures: [{}], Success: {success}",
+                    "Slot: {slot}, Address: {address}, Signatures: [{}], Success: {success}",
                     signatures
                         .iter()
                         .map(|sig| sig.to_string())
@@ -111,7 +115,7 @@ impl BlobSubCommand {
                         .unwrap_or_else(|_| panic!("failed to read from stdin"));
                     data.into_bytes()
                 };
-                let results = client
+                let (results, address) = client
                     .upload_blob(
                         &blob_data,
                         FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
@@ -122,13 +126,14 @@ impl BlobSubCommand {
                 let last_tx = results.last().expect("there should be at least one result");
                 Ok(BlobCommandOutput::Posting {
                     slot: last_tx.slot,
+                    address,
                     signatures: results.iter().map(|tx| tx.signature).collect(),
                     success: !matches!(last_tx.data, TransactionType::DiscardBlob),
                 }
                 .into())
             }
             BlobSubCommand::Discard { blob } => {
-                let results = client
+                let (results, _) = client
                     .discard_blob(
                         FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
                         *blob,
@@ -139,6 +144,7 @@ impl BlobSubCommand {
                 let last_tx = results.last().expect("there should be at least one result");
                 Ok(BlobCommandOutput::Posting {
                     slot: last_tx.slot,
+                    address: *blob,
                     signatures: results.iter().map(|tx| tx.signature).collect(),
                     success: matches!(last_tx.data, TransactionType::DiscardBlob),
                 }
