@@ -6,8 +6,7 @@ use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
-use data_anchor_blober::find_blober_address;
-use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
+use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientResult};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
@@ -120,10 +119,9 @@ pub struct Options {
     command: Command,
     program_id: Pubkey,
     payer: Arc<Keypair>,
-    blober_pda: Pubkey,
+    blober_pda: BloberIdentifier,
     indexer_url: Option<String>,
     indexer_api_token: Option<String>,
-    namespace: Option<String>,
     config: Config,
     output: OutputFormat,
 }
@@ -139,24 +137,21 @@ impl Options {
         let payer = Arc::new(Keypair::read_from_file(payer_path).unwrap());
         trace!("Parsed options: {args:?} {config:?} {payer:?}");
 
-        let namespace = args.namespace.clone();
-
         let Some(program_id) = args.program_id else {
             Cli::exit_with_missing_arg(PROGRAM_ID_MISSING_MSG);
         };
 
         let blober_pda = if let Some(blober_pda) = args.blober_pda {
-            blober_pda
+            blober_pda.into()
         } else {
             let Some(nmsp) = args.namespace else {
                 Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
             };
 
-            find_blober_address(program_id, payer.pubkey(), &nmsp)
+            (payer.pubkey(), nmsp).into()
         };
 
         Self {
-            namespace,
             indexer_url: args.indexer_url,
             indexer_api_token: args.indexer_api_token,
             command: args.command,
@@ -184,10 +179,16 @@ impl Options {
                     .await?;
                 let client = Arc::new(client);
 
-                subcommand.run(client.clone(), self.blober_pda).await
+                subcommand
+                    .run(
+                        client.clone(),
+                        self.blober_pda
+                            .to_blober_address(self.program_id, self.payer.pubkey()),
+                    )
+                    .await
             }
             subcommand => {
-                let Some(namespace) = &self.namespace else {
+                let Some(namespace) = &self.blober_pda.namespace() else {
                     Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
                 };
                 let client = DataAnchorClient::builder()
@@ -203,7 +204,7 @@ impl Options {
                         subcommand
                             .run(
                                 client.clone(),
-                                self.blober_pda.into(),
+                                self.blober_pda,
                                 self.program_id,
                                 self.payer.pubkey(),
                             )

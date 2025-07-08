@@ -2,14 +2,12 @@ use std::{sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
 use bon::Builder;
-use data_anchor_api::pubkey_with_str;
 use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
     instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
     state::blober::Blober,
 };
 use jsonrpsee::http_client::HttpClient;
-use serde::Serialize;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 use tracing::{Instrument, Span, info_span};
@@ -31,15 +29,35 @@ pub use indexer_client::IndexerError;
 pub use ledger_client::ChainError;
 
 /// Identifier for a blober, which can be either a combination of payer and namespace or just a pubkey.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BloberIdentifier {
     Namespace(String),
-    PayerAndNamespace {
-        #[serde(with = "pubkey_with_str")]
-        payer: Pubkey,
-        namespace: String,
-    },
-    Pubkey(#[serde(with = "pubkey_with_str")] Pubkey),
+    PayerAndNamespace { payer: Pubkey, namespace: String },
+    Pubkey(Pubkey),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum BloberIdentifierError {
+    /// Error indicating that the blober identifier is missing.
+    #[error(
+        "Missing blober identifier: either namespace, namespace and payer or blober PDA must be provided."
+    )]
+    MissingBloberIdentifier,
+}
+
+impl TryFrom<(Option<String>, Option<Pubkey>)> for BloberIdentifier {
+    type Error = BloberIdentifierError;
+
+    fn try_from(
+        (namespace, blober_pda): (Option<String>, Option<Pubkey>),
+    ) -> Result<Self, Self::Error> {
+        match (namespace, blober_pda) {
+            (Some(namespace), None) => Ok(namespace.into()),
+            (None, Some(pubkey)) => Ok(pubkey.into()),
+            (Some(namespace), Some(payer)) => Ok((payer, namespace).into()),
+            _ => Err(BloberIdentifierError::MissingBloberIdentifier),
+        }
+    }
 }
 
 impl From<String> for BloberIdentifier {

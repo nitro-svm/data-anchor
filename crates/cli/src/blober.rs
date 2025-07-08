@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use data_anchor_api::{PubkeyFromStr, pubkey_with_str};
-use data_anchor_blober::find_blober_address;
+use data_anchor_api::PubkeyFromStr;
 use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
-use serde::Serialize;
+use serde::{Serialize, ser::SerializeStruct};
 use solana_sdk::pubkey::Pubkey;
 use tracing::{info, instrument};
 
@@ -28,15 +27,34 @@ pub enum BloberSubCommand {
     List,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct BloberCommandOutput {
     identifier: BloberIdentifier,
     action: BloberSubCommand,
-    #[serde(with = "pubkey_with_str")]
     program_id: Pubkey,
-    #[serde(with = "pubkey_with_str")]
     payer: Pubkey,
     blobers: Vec<PubkeyFromStr>,
+}
+
+impl Serialize for BloberCommandOutput {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("BloberCommandOutput", 5)?;
+        state.serialize_field(
+            "identifier",
+            &self
+                .identifier
+                .to_blober_address(self.program_id, self.payer)
+                .to_string(),
+        )?;
+        state.serialize_field("action", &self.action)?;
+        state.serialize_field("program_id", &self.program_id.to_string())?;
+        state.serialize_field("payer", &self.payer.to_string())?;
+        state.serialize_field("blobers", &self.blobers)?;
+        state.end()
+    }
 }
 
 impl std::fmt::Display for BloberCommandOutput {
@@ -61,7 +79,8 @@ impl std::fmt::Display for BloberCommandOutput {
                 write!(
                     f,
                     "Blober account address for namespace {namespace}: {}",
-                    find_blober_address(self.program_id, self.payer, namespace)
+                    self.identifier
+                        .to_blober_address(self.program_id, self.payer)
                 )
             }
             on_chain => {
