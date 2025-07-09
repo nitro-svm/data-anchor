@@ -125,14 +125,6 @@ pub trait IndexerRpc {
         blob_address: PubkeyFromStr,
     ) -> RpcResult<Option<CompoundProof>>;
 
-    /// Add a list of blober PDA addresses to the list of tracked blobers.
-    #[method(name = "add_blobers")]
-    async fn add_blobers(&self, blobers: HashSet<BloberData>) -> RpcResult<()>;
-
-    /// Remove a list of blober PDA addresses from the list of tracked blobers.
-    #[method(name = "remove_blobers")]
-    async fn remove_blobers(&self, blobers: HashSet<PubkeyFromStr>) -> RpcResult<()>;
-
     /// Listen to blob finalization events from specified blobers. This will return a stream of
     /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is
     /// shut down.
