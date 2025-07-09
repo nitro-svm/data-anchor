@@ -46,6 +46,16 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
                 })?,
             );
         }
+        headers.insert(
+            "user-agent",
+            format!("data-anchor-client/{}", env!("CARGO_PKG_VERSION"))
+                .parse()
+                .map_err(|_| {
+                    DataAnchorClientError::InvalidIndexerApiToken(
+                        "Failed to set user-agent".to_owned(),
+                    )
+                })?,
+        );
         let indexer_client = HttpClientBuilder::new()
             .set_headers(headers)
             .build(indexer_url)?;
