@@ -34,7 +34,6 @@ where
     pub payer: Pubkey,
     pub client: Arc<RpcClient>,
     pub fee_strategy: FeeStrategy,
-    pub use_helius: bool,
     pub input: Input,
 }
 
@@ -48,7 +47,6 @@ where
         payer: &Keypair,
         client: Arc<RpcClient>,
         fee_strategy: FeeStrategy,
-        use_helius: bool,
         input: Input,
     ) -> Self {
         Self {
@@ -56,7 +54,6 @@ where
             blober,
             program_id,
             fee_strategy,
-            use_helius,
             input,
             payer: payer.pubkey(),
         }
@@ -72,7 +69,6 @@ where
             payer: self.payer,
             client: self.client.clone(),
             fee_strategy: self.fee_strategy,
-            use_helius: self.use_helius,
             input: T::from(&self.input),
         }
     }
@@ -97,11 +93,7 @@ pub trait MessageBuilder {
     async fn build_message(args: MessageArguments<Self::Input>) -> DataAnchorClientResult<Message> {
         let set_price = args
             .fee_strategy
-            .set_compute_unit_price(
-                &args.client,
-                &Self::mutable_accounts(&args),
-                args.use_helius,
-            )
+            .set_compute_unit_price(&args.client, &Self::mutable_accounts(&args))
             .await?;
 
         // This limit is chosen empirically
@@ -160,7 +152,6 @@ pub trait MessageBuilder {
                     &payer,
                     rpc_client.clone(),
                     FeeStrategy::default(),
-                    false,
                     input,
                 );
 

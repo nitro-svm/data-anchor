@@ -55,7 +55,6 @@ impl Priority {
         &self,
         client: &RpcClient,
         mutable_accounts: &[Pubkey],
-        _use_helius: bool,
     ) -> DataAnchorClientResult<MicroLamports> {
         self.calculate_compute_unit_price(client, mutable_accounts)
             .await

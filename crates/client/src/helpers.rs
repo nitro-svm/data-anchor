@@ -132,7 +132,6 @@ impl DataAnchorClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy_compound,
-                self.helius_fee_estimate,
                 Compound::new(blob, timestamp, blob_data.to_vec()),
             ))
             .in_current_span()
@@ -157,7 +156,6 @@ impl DataAnchorClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy_compound,
-                self.helius_fee_estimate,
                 CompoundDeclare::new(blob, timestamp, blob_data.to_vec()),
             ))
             .in_current_span()
@@ -178,7 +176,6 @@ impl DataAnchorClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy_finalize,
-                self.helius_fee_estimate,
                 blob,
             ))
             .in_current_span()
@@ -204,7 +201,6 @@ impl DataAnchorClient {
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy_declare,
-            self.helius_fee_estimate,
             (
                 DeclareBlob {
                     blob_size: blob_data.len() as u32,
@@ -232,7 +228,6 @@ impl DataAnchorClient {
                     &self.payer,
                     self.rpc_client.clone(),
                     fee_strategy_insert,
-                    self.helius_fee_estimate,
                     (
                         InsertChunk {
                             idx: *chunk_index,
@@ -262,7 +257,6 @@ impl DataAnchorClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy_finalize,
-                self.helius_fee_estimate,
                 CompoundFinalize::new(*chunk_idx, chunk_data.to_vec(), blob),
             ))
             .await
@@ -274,7 +268,6 @@ impl DataAnchorClient {
                 &self.payer,
                 self.rpc_client.clone(),
                 fee_strategy_finalize,
-                self.helius_fee_estimate,
                 blob,
             ))
             .in_current_span()
@@ -306,11 +299,7 @@ impl DataAnchorClient {
 
         while fee_retries > 0 {
             let res = priority
-                .get_priority_fee_estimate(
-                    &self.rpc_client,
-                    &mutating_accounts,
-                    self.helius_fee_estimate,
-                )
+                .get_priority_fee_estimate(&self.rpc_client, &mutating_accounts)
                 .in_current_span()
                 .await;
 

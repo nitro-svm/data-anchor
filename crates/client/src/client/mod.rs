@@ -111,8 +111,6 @@ pub struct DataAnchorClient {
     pub(crate) batch_client: BatchClient,
     // Optional for the sake of testing, because in some tests indexer client is not used
     pub(crate) indexer_client: Option<Arc<HttpClient>>,
-    #[builder(default = false)]
-    pub(crate) helius_fee_estimate: bool,
 }
 
 impl DataAnchorClient {
@@ -150,7 +148,6 @@ impl DataAnchorClient {
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy,
-            self.helius_fee_estimate,
             (namespace.to_owned(), blober),
         ))
         .await
@@ -186,7 +183,6 @@ impl DataAnchorClient {
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy,
-            self.helius_fee_estimate,
             (),
         ))
         .await
@@ -265,7 +261,6 @@ impl DataAnchorClient {
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy,
-            self.helius_fee_estimate,
             blob,
         ))
         .in_current_span()
@@ -302,7 +297,6 @@ impl DataAnchorClient {
             .get_priority_fee_estimate(
                 &self.rpc_client,
                 &[Pubkey::new_unique(), blober, self.payer.pubkey()],
-                self.helius_fee_estimate,
             )
             .await?;
 

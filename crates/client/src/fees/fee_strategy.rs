@@ -30,13 +30,12 @@ impl FeeStrategy {
         &self,
         client: &RpcClient,
         mutable_accounts: &[Pubkey],
-        use_helius: bool,
     ) -> DataAnchorClientResult<Instruction> {
         let compute_unit_price = match self {
             Self::Fixed(fee) => fee.prioritization_fee_rate,
             Self::BasedOnRecentFees(priority) => {
                 priority
-                    .get_priority_fee_estimate(client, mutable_accounts, use_helius)
+                    .get_priority_fee_estimate(client, mutable_accounts)
                     .await?
             }
         };

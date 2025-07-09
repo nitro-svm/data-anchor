@@ -9,14 +9,12 @@ use crate::{
     BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
     client::{
         DataAnchorClientBuilder,
-        data_anchor_client_builder::{
-            self, IsSet, IsUnset, SetHeliusFeeEstimate, SetIndexerClient,
-        },
+        data_anchor_client_builder::{self, IsSet, IsUnset, SetIndexerClient},
     },
 };
 
 impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
-    /// Adds an indexer client to the builder based on the given indexer URL.
+    /// Adds an indexer client to the builder based on the given indexer URL and optional API token.
     ///
     /// # Example
     ///
@@ -24,7 +22,7 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
     /// use data_anchor_client::DataAnchorClient;
     ///
     /// let builder_with_indexer = DataAnchorClient::builder()
-    ///     .indexer_from_url("ws://localhost:8080")
+    ///     .indexer_from_url("http://localhost:8080", None)
     ///     .await?;
     /// ```
     pub async fn indexer_from_url(
@@ -102,12 +100,5 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
             .rpc_client(rpc_client.clone())
             .batch_client(BatchClient::new(rpc_client.clone(), vec![payer.clone()]).await?)
             .build())
-    }
-
-    pub fn with_helius_fee_estimate(self) -> DataAnchorClientBuilder<SetHeliusFeeEstimate<State>>
-    where
-        State::HeliusFeeEstimate: IsUnset,
-    {
-        self.helius_fee_estimate(true)
     }
 }
