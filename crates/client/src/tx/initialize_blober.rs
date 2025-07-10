@@ -2,10 +2,14 @@ use anchor_lang::{InstructionData, ToAccountMetas};
 use data_anchor_blober::instruction::Initialize;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
-use crate::tx::{MessageArguments, MessageBuilder};
+use crate::{
+    TransactionType,
+    tx::{MessageArguments, MessageBuilder},
+};
 
 impl MessageBuilder for Initialize {
     type Input = (String, Pubkey);
+    const TX_TYPE: TransactionType = TransactionType::InitializeBlober;
     const COMPUTE_UNIT_LIMIT: u32 = 28_000;
     #[cfg(test)]
     const INITIALIZE_BLOBER: bool = false;

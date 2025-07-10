@@ -2,10 +2,14 @@ use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
 use data_anchor_blober::instruction::FinalizeBlob;
 use solana_sdk::instruction::Instruction;
 
-use crate::tx::{MessageArguments, MessageBuilder};
+use crate::{
+    TransactionType,
+    tx::{MessageArguments, MessageBuilder},
+};
 
 impl MessageBuilder for FinalizeBlob {
     type Input = Pubkey;
+    const TX_TYPE: TransactionType = TransactionType::FinalizeBlob;
     const COMPUTE_UNIT_LIMIT: u32 = 25_000;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {

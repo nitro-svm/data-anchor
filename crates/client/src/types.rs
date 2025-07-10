@@ -17,9 +17,9 @@ use crate::{
 /// Errors that can occur when interacting with the Blober client.
 #[derive(Debug, Error)]
 pub enum DataAnchorClientError {
-    /// Upload blob errors
+    /// Chain interaction errors
     #[error(transparent)]
-    UploadBlob(#[from] ChainError),
+    ChainErrors(#[from] ChainError),
     /// Indexer errors
     #[error(transparent)]
     Indexer(#[from] IndexerError),

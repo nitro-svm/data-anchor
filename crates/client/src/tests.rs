@@ -28,8 +28,7 @@ use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 
 use crate::{
-    BatchClient, DataAnchorClient, FeeStrategy, Priority, batch_client,
-    helpers::get_unique_timestamp,
+    BatchClient, DataAnchorClient, FeeStrategy, batch_client, helpers::get_unique_timestamp,
 };
 
 #[tokio::test]
@@ -82,8 +81,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .unwrap();
     print!("Airdropping 10 SOL");
 
-    let priority = Priority::default();
-    let fee_strategy = FeeStrategy::BasedOnRecentFees(priority);
+    let fee_strategy = FeeStrategy::default();
 
     let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
         .await
@@ -133,7 +131,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     // Retry in case of unreliable client
     let expected_fee = loop {
         let res = data_anchor_client
-            .estimate_fees(data.len(), blober_pubkey, priority)
+            .estimate_fees(data.len(), blober_pubkey, fee_strategy)
             .await;
         if let Ok(fee) = res {
             break fee;

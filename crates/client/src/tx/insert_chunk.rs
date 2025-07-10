@@ -2,10 +2,14 @@ use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
 use data_anchor_blober::instruction::InsertChunk;
 use solana_sdk::instruction::Instruction;
 
-use crate::tx::{MessageArguments, MessageBuilder};
+use crate::{
+    TransactionType,
+    tx::{MessageArguments, MessageBuilder},
+};
 
 impl MessageBuilder for InsertChunk {
     type Input = (Self, Pubkey);
+    const TX_TYPE: TransactionType = TransactionType::InsertChunk(0);
     const COMPUTE_UNIT_LIMIT: u32 = 6_500;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {

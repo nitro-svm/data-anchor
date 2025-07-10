@@ -15,8 +15,8 @@ use solana_sdk::{message::Message, pubkey::Pubkey, signer::Signer};
 use tracing::{Instrument, Span, info_span};
 
 use crate::{
-    DataAnchorClient, DataAnchorClientResult, Fee, FeeStrategy, Lamports, OutcomeError,
-    SuccessfulTransaction, TransactionOutcome,
+    DataAnchorClient, DataAnchorClientResult, FeeStrategy, OutcomeError, SuccessfulTransaction,
+    TransactionOutcome,
     client::ChainError,
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::TransactionType,
@@ -118,10 +118,10 @@ impl DataAnchorClient {
         blober: Pubkey,
     ) -> DataAnchorClientResult<UploadMessages> {
         if blob_data.len() <= COMPOUND_TX_SIZE as usize {
-            let fee_strategy_compound = self
+            let fee_compound = fee_strategy
                 .convert_fee_strategy_to_fixed(
-                    fee_strategy,
-                    &[blober, blob],
+                    &self.rpc_client,
+                    &[blober, blob, self.payer.pubkey()],
                     TransactionType::Compound,
                 )
                 .await?;
@@ -131,7 +131,7 @@ impl DataAnchorClient {
                 blober,
                 &self.payer,
                 self.rpc_client.clone(),
-                fee_strategy_compound,
+                fee_compound,
                 Compound::new(blob, timestamp, blob_data.to_vec()),
             ))
             .in_current_span()
@@ -142,10 +142,10 @@ impl DataAnchorClient {
         }
 
         if blob_data.len() <= COMPOUND_DECLARE_TX_SIZE as usize {
-            let fee_strategy_compound = self
+            let fee_compound_declare = fee_strategy
                 .convert_fee_strategy_to_fixed(
-                    fee_strategy,
-                    &[blober, blob],
+                    &self.rpc_client,
+                    &[blober, blob, self.payer.pubkey()],
                     TransactionType::Compound,
                 )
                 .await?;
@@ -155,17 +155,17 @@ impl DataAnchorClient {
                 blober,
                 &self.payer,
                 self.rpc_client.clone(),
-                fee_strategy_compound,
+                fee_compound_declare,
                 CompoundDeclare::new(blob, timestamp, blob_data.to_vec()),
             ))
             .in_current_span()
             .await
             .expect("infallible with a fixed fee strategy");
 
-            let fee_strategy_finalize = self
+            let fee_finalize = fee_strategy
                 .convert_fee_strategy_to_fixed(
-                    fee_strategy,
-                    &[blober, blob],
+                    &self.rpc_client,
+                    &[blober, blob, self.payer.pubkey()],
                     TransactionType::FinalizeBlob,
                 )
                 .await?;
@@ -175,7 +175,7 @@ impl DataAnchorClient {
                 blober,
                 &self.payer,
                 self.rpc_client.clone(),
-                fee_strategy_finalize,
+                fee_finalize,
                 blob,
             ))
             .in_current_span()
@@ -191,8 +191,12 @@ impl DataAnchorClient {
 
         let chunks = split_blob_into_chunks(blob_data);
 
-        let fee_strategy_declare = self
-            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DeclareBlob)
+        let fee_declare = fee_strategy
+            .convert_fee_strategy_to_fixed(
+                &self.rpc_client,
+                &[blob, self.payer.pubkey()],
+                TransactionType::DeclareBlob,
+            )
             .await?;
 
         let declare_blob = DeclareBlob::build_message(MessageArguments::new(
@@ -200,7 +204,7 @@ impl DataAnchorClient {
             blober,
             &self.payer,
             self.rpc_client.clone(),
-            fee_strategy_declare,
+            fee_declare,
             (
                 DeclareBlob {
                     blob_size: blob_data.len() as u32,
@@ -213,8 +217,12 @@ impl DataAnchorClient {
         .await
         .expect("infallible with a fixed fee strategy");
 
-        let fee_strategy_insert = self
-            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::InsertChunk(0))
+        let fee_insert = fee_strategy
+            .convert_fee_strategy_to_fixed(
+                &self.rpc_client,
+                &[blob, self.payer.pubkey()],
+                TransactionType::InsertChunk(0),
+            )
             .await?;
 
         let mut chunk_iterator = chunks.iter();
@@ -227,7 +235,7 @@ impl DataAnchorClient {
                     blober,
                     &self.payer,
                     self.rpc_client.clone(),
-                    fee_strategy_insert,
+                    fee_insert,
                     (
                         InsertChunk {
                             idx: *chunk_index,
@@ -242,32 +250,40 @@ impl DataAnchorClient {
             }))
             .await;
 
-        let fee_strategy_finalize = self
-            .convert_fee_strategy_to_fixed(
-                fee_strategy,
-                &[blober, blob],
-                TransactionType::FinalizeBlob,
-            )
-            .await?;
-
         let finalize_blob = if let Some((chunk_idx, chunk_data)) = last_chunk {
+            let fee_compound_finalize = fee_strategy
+                .convert_fee_strategy_to_fixed(
+                    &self.rpc_client,
+                    &[blober, blob, self.payer.pubkey()],
+                    TransactionType::CompoundFinalize,
+                )
+                .await?;
+
             CompoundFinalize::build_message(MessageArguments::new(
                 self.program_id,
                 blober,
                 &self.payer,
                 self.rpc_client.clone(),
-                fee_strategy_finalize,
+                fee_compound_finalize,
                 CompoundFinalize::new(*chunk_idx, chunk_data.to_vec(), blob),
             ))
             .await
             .expect("infallible with a fixed fee strategy")
         } else {
+            let fee_finalize = fee_strategy
+                .convert_fee_strategy_to_fixed(
+                    &self.rpc_client,
+                    &[blober, blob, self.payer.pubkey()],
+                    TransactionType::FinalizeBlob,
+                )
+                .await?;
+
             FinalizeBlob::build_message(MessageArguments::new(
                 self.program_id,
                 blober,
                 &self.payer,
                 self.rpc_client.clone(),
-                fee_strategy_finalize,
+                fee_finalize,
                 blob,
             ))
             .in_current_span()
@@ -280,49 +296,6 @@ impl DataAnchorClient {
             insert_chunks,
             finalize_blob,
         })
-    }
-
-    /// Converts a [`FeeStrategy`] into a [`FeeStrategy::Fixed`] with the current compute unit price.
-    pub(crate) async fn convert_fee_strategy_to_fixed(
-        &self,
-        fee_strategy: FeeStrategy,
-        mutating_accounts: &[Pubkey],
-        tx_type: TransactionType,
-    ) -> DataAnchorClientResult<FeeStrategy> {
-        let FeeStrategy::BasedOnRecentFees(priority) = fee_strategy else {
-            return Ok(fee_strategy);
-        };
-
-        let mut fee_retries = 5;
-
-        let mutating_accounts = [mutating_accounts, &[self.payer.pubkey()]].concat();
-
-        while fee_retries > 0 {
-            let res = priority
-                .get_priority_fee_estimate(&self.rpc_client, &mutating_accounts)
-                .in_current_span()
-                .await;
-
-            match res {
-                Ok(fee) => {
-                    return Ok(FeeStrategy::Fixed(Fee {
-                        prioritization_fee_rate: fee,
-                        num_signatures: tx_type.num_signatures(),
-                        compute_unit_limit: tx_type.compute_unit_limit(),
-                        price_per_signature: Lamports(5000),
-                        blob_account_size: 0,
-                    }));
-                }
-                Err(e) => {
-                    fee_retries -= 1;
-                    if fee_retries == 0 {
-                        return Err(e);
-                    }
-                }
-            }
-        }
-
-        Err(ChainError::ConversionError("Fee strategy conversion failed after retries").into())
     }
 
     /// Get a reference to the Indexer RPC client.

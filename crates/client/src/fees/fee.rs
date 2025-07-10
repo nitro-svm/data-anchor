@@ -1,4 +1,5 @@
 use anchor_lang::prelude::Rent;
+use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
 
 use super::{Lamports, MicroLamports};
 
@@ -60,6 +61,11 @@ impl Fee {
     pub fn rent(&self) -> Lamports {
         let minimum_balance = Rent::default().minimum_balance(self.blob_account_size) as u32;
         Lamports::new(minimum_balance)
+    }
+
+    /// Creates a transaction for setting the compute unit price for a transaction.
+    pub fn set_compute_unit_price(&self) -> Instruction {
+        ComputeBudgetInstruction::set_compute_unit_price(self.prioritization_fee_rate.0)
     }
 }
 

@@ -441,13 +441,13 @@ impl BenchMeasurement {
         let (declare_failures, insert_failures, finalize_failures) = errors.iter().fold(
             (0u64, 0u64, 0u64),
             |(declare, insert, finalize), error| match error {
-                DataAnchorClientError::UploadBlob(ChainError::DeclareBlob(_)) => {
+                DataAnchorClientError::ChainErrors(ChainError::DeclareBlob(_)) => {
                     (declare + 1, insert, finalize)
                 }
-                DataAnchorClientError::UploadBlob(ChainError::InsertChunks(_)) => {
+                DataAnchorClientError::ChainErrors(ChainError::InsertChunks(_)) => {
                     (declare, insert + 1, finalize)
                 }
-                DataAnchorClientError::UploadBlob(ChainError::FinalizeBlob(_)) => {
+                DataAnchorClientError::ChainErrors(ChainError::FinalizeBlob(_)) => {
                     (declare, insert, finalize + 1)
                 }
                 _ => (declare, insert, finalize),

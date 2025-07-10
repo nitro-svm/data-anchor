@@ -63,6 +63,17 @@ pub enum ChainError {
     /// Missing blober namespace
     #[error("Missing blober namespace. Namespace is required for creating a blober account.")]
     MissingBloberNamespace,
+    /// Account already exists: {0}
+    #[error("Account already exists: {0}")]
+    AccountExists(String),
+    /// Account does not exist: {0}
+    #[error("Account does not exist: {0}")]
+    AccountDoesNotExist(String),
+    /// Payer has insufficient balance to pay for the transaction: required {0}, available {1}
+    #[error(
+        "Payer has insufficient balance to pay for the transaction: required {0}, available {1}"
+    )]
+    InsufficientBalance(u64, u64),
 }
 
 impl DataAnchorClient {

@@ -2,10 +2,14 @@ use anchor_lang::{InstructionData, ToAccountMetas};
 use data_anchor_blober::instruction::Close;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
-use crate::tx::{MessageArguments, MessageBuilder};
+use crate::{
+    TransactionType,
+    tx::{MessageArguments, MessageBuilder},
+};
 
 impl MessageBuilder for Close {
     type Input = ();
+    const TX_TYPE: TransactionType = TransactionType::CloseBlober;
     const COMPUTE_UNIT_LIMIT: u32 = 2_400;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {

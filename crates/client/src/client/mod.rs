@@ -9,13 +9,15 @@ use data_anchor_blober::{
 };
 use jsonrpsee::http_client::HttpClient;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
+use solana_sdk::{
+    commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Keypair, signer::Signer,
+};
 use tracing::{Instrument, Span, info_span};
 
 use crate::{
     DataAnchorClientError, DataAnchorClientResult,
     batch_client::{BatchClient, SuccessfulTransaction},
-    fees::{Fee, FeeStrategy, Lamports, Priority},
+    fees::{Fee, FeeStrategy, Lamports},
     helpers::{check_outcomes, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::TransactionType,
@@ -124,6 +126,30 @@ impl DataAnchorClient {
         self.payer.clone()
     }
 
+    async fn check_account_exists(&self, account: Pubkey) -> DataAnchorClientResult<bool> {
+        Ok(self
+            .rpc_client
+            .get_account_with_commitment(&account, CommitmentConfig::confirmed())
+            .await
+            .map(|res| res.value.is_some())?)
+    }
+
+    async fn require_balance(&self, cost: u64) -> DataAnchorClientResult {
+        if self.rpc_client.url().starts_with("MockSender") {
+            // In tests, we assume the payer has enough balance.
+            return Ok(());
+        }
+        let balance = self
+            .rpc_client
+            .get_balance_with_commitment(&self.payer.pubkey(), CommitmentConfig::confirmed())
+            .await
+            .map(|r| r.value)?;
+        if balance < cost {
+            return Err(ChainError::InsufficientBalance(balance, cost).into());
+        }
+        Ok(())
+    }
+
     /// Initializes a new [`Blober`] PDA account.
     pub async fn initialize_blober(
         &self,
@@ -133,21 +159,30 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
-        let fee_strategy = self
+        if self.check_account_exists(blober).await? {
+            return Err(
+                ChainError::AccountExists(format!("Blober PDA with address {blober}")).into(),
+            );
+        }
+
+        let fee = fee_strategy
             .convert_fee_strategy_to_fixed(
-                fee_strategy,
-                &[blober],
+                &self.rpc_client,
+                &[blober, self.payer.pubkey()],
                 TransactionType::InitializeBlober,
             )
             .in_current_span()
             .await?;
+
+        let cost = (fee.total_fee().0 + fee.rent().0) as u64;
+        self.require_balance(cost).await?;
 
         let msg = Initialize::build_message(MessageArguments::new(
             self.program_id,
             blober,
             &self.payer,
             self.rpc_client.clone(),
-            fee_strategy,
+            fee,
             (
                 identifier
                     .namespace()
@@ -178,17 +213,30 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
-        let fee_strategy = self
-            .convert_fee_strategy_to_fixed(fee_strategy, &[blober], TransactionType::CloseBlober)
+        if !self.check_account_exists(blober).await? {
+            return Err(ChainError::AccountDoesNotExist(format!(
+                "Blober PDA with address {blober}"
+            ))
+            .into());
+        }
+
+        let fee = fee_strategy
+            .convert_fee_strategy_to_fixed(
+                &self.rpc_client,
+                &[blober, self.payer.pubkey()],
+                TransactionType::CloseBlober,
+            )
             .in_current_span()
             .await?;
+
+        self.require_balance(fee.total_fee().0 as u64).await?;
 
         let msg = Close::build_message(MessageArguments::new(
             self.program_id,
             blober,
             &self.payer,
             self.rpc_client.clone(),
-            fee_strategy,
+            fee,
             (),
         ))
         .await
@@ -228,6 +276,17 @@ impl DataAnchorClient {
             blob_data.len(),
         );
 
+        if self.check_account_exists(blob).await? {
+            return Err(ChainError::AccountExists(format!("Blob PDA with address {blob}")).into());
+        }
+
+        let fee = self
+            .estimate_fees(blob_data.len(), blober, fee_strategy)
+            .await?;
+
+        self.require_balance((fee.total_fee().0 + fee.rent().0) as u64)
+            .await?;
+
         let upload_messages = self
             .generate_messages(blob, timestamp, blob_data, fee_strategy, blober)
             .await?;
@@ -237,7 +296,7 @@ impl DataAnchorClient {
             .in_current_span()
             .await;
 
-        if let Err(DataAnchorClientError::UploadBlob(ChainError::DeclareBlob(_))) = res {
+        if let Err(DataAnchorClientError::ChainErrors(ChainError::DeclareBlob(_))) = res {
             self.discard_blob(fee_strategy, blob, namespace, timeout)
                 .await
         } else {
@@ -256,17 +315,29 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
-        let fee_strategy = self
-            .convert_fee_strategy_to_fixed(fee_strategy, &[blob], TransactionType::DiscardBlob)
+        if !self.check_account_exists(blob).await? {
+            return Err(
+                ChainError::AccountDoesNotExist(format!("Blob PDA with address {blob}")).into(),
+            );
+        }
+
+        let fee = fee_strategy
+            .convert_fee_strategy_to_fixed(
+                &self.rpc_client,
+                &[blob, self.payer.pubkey()],
+                TransactionType::DiscardBlob,
+            )
             .in_current_span()
             .await?;
+
+        self.require_balance(fee.total_fee().0 as u64).await?;
 
         let msg = DiscardBlob::build_message(MessageArguments::new(
             self.program_id,
             blober,
             &self.payer,
             self.rpc_client.clone(),
-            fee_strategy,
+            fee,
             blob,
         ))
         .in_current_span()
@@ -297,14 +368,16 @@ impl DataAnchorClient {
         &self,
         blob_size: usize,
         blober: Pubkey,
-        priority: Priority,
+        fee_strategy: FeeStrategy,
     ) -> DataAnchorClientResult<Fee> {
-        let prioritization_fee_rate = priority
-            .get_priority_fee_estimate(
+        let prioritization_fee_rate = fee_strategy
+            .convert_fee_strategy_to_fixed(
                 &self.rpc_client,
                 &[Pubkey::new_unique(), blober, self.payer.pubkey()],
+                TransactionType::Compound,
             )
-            .await?;
+            .await?
+            .prioritization_fee_rate;
 
         let num_chunks = blob_size.div_ceil(CHUNK_SIZE as usize) as u16;
 

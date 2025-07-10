@@ -1,9 +1,9 @@
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction, instruction::Instruction, pubkey::Pubkey,
-};
+use solana_sdk::pubkey::Pubkey;
+use tracing::Instrument;
 
-use crate::{DataAnchorClientResult, Fee, Priority};
+use super::Lamports;
+use crate::{ChainError, DataAnchorClientResult, Fee, Priority, TransactionType};
 
 /// The strategy to use for calculating the fees for transactions.
 #[derive(Debug, Clone, Copy)]
@@ -20,27 +20,61 @@ impl Default for FeeStrategy {
     }
 }
 
+impl From<Fee> for FeeStrategy {
+    fn from(fee: Fee) -> Self {
+        Self::Fixed(fee)
+    }
+}
+
+impl From<Priority> for FeeStrategy {
+    fn from(priority: Priority) -> Self {
+        Self::BasedOnRecentFees(priority)
+    }
+}
+
 impl FeeStrategy {
-    /// Creates a transaction for setting the compute unit price for a transaction based on recent prioritization fees.
-    ///
-    /// # Arguments
-    /// - `client`: The RPC client to use for looking up recent prioritization fees.
-    /// - `mutable_accounts`: The addresses of the accounts that are mutable in the transaction (and thus need exclusive locks).
-    pub async fn set_compute_unit_price(
+    /// Converts a [`FeeStrategy`] into a [`Fee`] with the current compute unit price.
+    pub(crate) async fn convert_fee_strategy_to_fixed(
         &self,
-        client: &RpcClient,
-        mutable_accounts: &[Pubkey],
-    ) -> DataAnchorClientResult<Instruction> {
-        let compute_unit_price = match self {
-            Self::Fixed(fee) => fee.prioritization_fee_rate,
-            Self::BasedOnRecentFees(priority) => {
-                priority
-                    .get_priority_fee_estimate(client, mutable_accounts)
-                    .await?
+        rpc_client: &RpcClient,
+        mutating_accounts: &[Pubkey],
+        tx_type: TransactionType,
+    ) -> DataAnchorClientResult<Fee> {
+        let priority = match self {
+            FeeStrategy::Fixed(fee) => {
+                // If the fee strategy is already fixed, return it as is.
+                return Ok(*fee);
             }
+            FeeStrategy::BasedOnRecentFees(priority) => priority,
         };
-        Ok(ComputeBudgetInstruction::set_compute_unit_price(
-            compute_unit_price.0,
-        ))
+
+        let mut fee_retries = 5;
+
+        while fee_retries > 0 {
+            let res = priority
+                .get_priority_fee_estimate(rpc_client, mutating_accounts)
+                .in_current_span()
+                .await;
+
+            match res {
+                Ok(fee) => {
+                    return Ok(Fee {
+                        prioritization_fee_rate: fee,
+                        num_signatures: tx_type.num_signatures(),
+                        compute_unit_limit: tx_type.compute_unit_limit(),
+                        price_per_signature: Lamports(5000),
+                        blob_account_size: 0,
+                    });
+                }
+                Err(e) => {
+                    fee_retries -= 1;
+                    if fee_retries == 0 {
+                        return Err(e);
+                    }
+                }
+            }
+        }
+
+        Err(ChainError::ConversionError("Fee strategy conversion failed after retries").into())
     }
 }

@@ -7,7 +7,7 @@ use solana_sdk::{
     pubkey::Pubkey, signature::Keypair, signer::Signer,
 };
 
-use crate::{DataAnchorClientResult, FeeStrategy};
+use crate::{DataAnchorClientResult, Fee, TransactionType};
 
 pub mod close_blober;
 pub mod compound;
@@ -33,7 +33,7 @@ where
     pub blober: Pubkey,
     pub payer: Pubkey,
     pub client: Arc<RpcClient>,
-    pub fee_strategy: FeeStrategy,
+    pub fee: Fee,
     pub input: Input,
 }
 
@@ -46,14 +46,14 @@ where
         blober: Pubkey,
         payer: &Keypair,
         client: Arc<RpcClient>,
-        fee_strategy: FeeStrategy,
+        fee: Fee,
         input: Input,
     ) -> Self {
         Self {
             client,
             blober,
             program_id,
-            fee_strategy,
+            fee,
             input,
             payer: payer.pubkey(),
         }
@@ -68,7 +68,7 @@ where
             blober: self.blober,
             payer: self.payer,
             client: self.client.clone(),
-            fee_strategy: self.fee_strategy,
+            fee: self.fee,
             input: T::from(&self.input),
         }
     }
@@ -81,6 +81,7 @@ pub const SET_PRICE_AND_CU_LIMIT_COST: u32 = 300;
 #[async_trait]
 pub trait MessageBuilder {
     type Input: Send;
+    const TX_TYPE: TransactionType;
     const COMPUTE_UNIT_LIMIT: u32;
     const NUM_SIGNATURES: u16 = 1;
     #[cfg(test)]
@@ -91,10 +92,7 @@ pub trait MessageBuilder {
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction>;
 
     async fn build_message(args: MessageArguments<Self::Input>) -> DataAnchorClientResult<Message> {
-        let set_price = args
-            .fee_strategy
-            .set_compute_unit_price(&args.client, &Self::mutable_accounts(&args))
-            .await?;
+        let set_price = args.fee.set_compute_unit_price();
 
         // This limit is chosen empirically
         let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(
@@ -121,6 +119,8 @@ pub trait MessageBuilder {
         use solana_sdk::transaction::Transaction;
         use utils::{close_blober, initialize_blober, new_tokio, setup_environment};
 
+        use crate::FeeStrategy;
+
         let program_id = data_anchor_blober::id();
 
         let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
@@ -146,12 +146,21 @@ pub trait MessageBuilder {
 
                 let input = Self::generate_arbitrary_input(u, payer.pubkey(), blober).unwrap();
 
+                let fee = FeeStrategy::default()
+                    .convert_fee_strategy_to_fixed(
+                        &rpc_client,
+                        &[blober, payer.pubkey()],
+                        Self::TX_TYPE,
+                    )
+                    .await
+                    .unwrap();
+
                 let args = MessageArguments::new(
                     program_id,
                     blober,
                     &payer,
                     rpc_client.clone(),
-                    FeeStrategy::default(),
+                    fee,
                     input,
                 );
 

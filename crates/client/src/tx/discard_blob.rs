@@ -2,10 +2,14 @@ use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
 use data_anchor_blober::instruction::DiscardBlob;
 use solana_sdk::instruction::Instruction;
 
-use crate::tx::{MessageArguments, MessageBuilder};
+use crate::{
+    TransactionType,
+    tx::{MessageArguments, MessageBuilder},
+};
 
 impl MessageBuilder for DiscardBlob {
     type Input = Pubkey;
+    const TX_TYPE: TransactionType = TransactionType::DiscardBlob;
     const COMPUTE_UNIT_LIMIT: u32 = 40_000;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {

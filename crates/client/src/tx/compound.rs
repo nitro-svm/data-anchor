@@ -1,7 +1,10 @@
 use data_anchor_blober::instruction::{DeclareBlob, FinalizeBlob, InsertChunk};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
-use crate::tx::{MessageArguments, MessageBuilder};
+use crate::{
+    TransactionType,
+    tx::{MessageArguments, MessageBuilder},
+};
 
 pub struct Compound {
     declare: DeclareBlob,
@@ -57,6 +60,7 @@ impl From<&Compound> for <FinalizeBlob as MessageBuilder>::Input {
 
 impl MessageBuilder for Compound {
     type Input = Self;
+    const TX_TYPE: TransactionType = TransactionType::Compound;
     const COMPUTE_UNIT_LIMIT: u32 = DeclareBlob::COMPUTE_UNIT_LIMIT
         + InsertChunk::COMPUTE_UNIT_LIMIT
         + FinalizeBlob::COMPUTE_UNIT_LIMIT;
