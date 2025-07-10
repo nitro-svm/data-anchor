@@ -261,7 +261,7 @@ apply-devnet: (initialize-workspace "devnet")
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
+    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/devnet)
 
     tofu apply -var="release_id=${RELEASE}"
 
@@ -273,7 +273,7 @@ apply-mainnet: (initialize-workspace "mainnet")
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
+    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/mainnet)
 
     tofu apply \
         -var="program_id=8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc" \
