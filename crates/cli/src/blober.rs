@@ -120,7 +120,7 @@ impl BloberSubCommand {
                 client
                     .initialize_blober(
                         FeeStrategy::BasedOnRecentFees(Priority::Medium),
-                        namespace,
+                        namespace.to_owned().into(),
                         None,
                     )
                     .await?;

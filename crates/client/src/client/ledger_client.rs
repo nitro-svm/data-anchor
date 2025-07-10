@@ -60,6 +60,9 @@ pub enum ChainError {
     /// Failed to close blober: {0}
     #[error("Failed to close blober: {0}")]
     CloseBlober(OutcomeError),
+    /// Missing blober namespace
+    #[error("Missing blober namespace. Namespace is required for creating a blober account.")]
+    MissingBloberNamespace,
 }
 
 impl DataAnchorClient {

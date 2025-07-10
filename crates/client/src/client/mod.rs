@@ -128,10 +128,10 @@ impl DataAnchorClient {
     pub async fn initialize_blober(
         &self,
         fee_strategy: FeeStrategy,
-        namespace: &str,
+        identifier: BloberIdentifier,
         timeout: Option<Duration>,
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
-        let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let fee_strategy = self
             .convert_fee_strategy_to_fixed(
@@ -148,7 +148,13 @@ impl DataAnchorClient {
             &self.payer,
             self.rpc_client.clone(),
             fee_strategy,
-            (namespace.to_owned(), blober),
+            (
+                identifier
+                    .namespace()
+                    .ok_or(ChainError::MissingBloberNamespace)?
+                    .to_owned(),
+                blober,
+            ),
         ))
         .await
         .expect("infallible with a fixed fee strategy");
