@@ -5,7 +5,7 @@
 use std::{fmt::Debug, sync::Arc};
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::{clock::Slot, slot_hashes::SlotHashes};
+use solana_sdk::{clock::Slot, hash::Hash, slot_hashes::SlotHashes};
 use thiserror::Error;
 
 use crate::{accounts_delta_hash::inclusion::InclusionProof, debug::NoPrettyPrint};
@@ -50,8 +50,8 @@ pub enum SlotHashError {
     )]
     SlotHashMismatch {
         slot: Slot,
-        expected: solana_sdk::hash::Hash,
-        found: Option<solana_sdk::hash::Hash>,
+        expected: Hash,
+        found: Option<Hash>,
     },
     #[error("The computed accounts delta hash does not match the provided value")]
     AccountsDeltaHashMismatch,
@@ -74,8 +74,8 @@ impl SlotHashProof {
     pub fn verify(
         &self,
         slot: Slot,
-        bank_hash: solana_sdk::hash::Hash,
-        accounts_delta_hash: solana_sdk::hash::Hash,
+        bank_hash: Hash,
+        accounts_delta_hash: Hash,
     ) -> Result<(), SlotHashError> {
         if self.slot_hashes_inclusion_proof.account_pubkey != solana_sdk::sysvar::slot_hashes::ID {
             return Err(SlotHashError::ProofNotForSlotHashes);
@@ -102,7 +102,7 @@ impl SlotHashProof {
     }
 
     /// Attempts to deserialize the stored account data and extracts the bankhash for a specific slot.
-    pub fn hash(&self, slot: Slot) -> Option<solana_sdk::hash::Hash> {
+    pub fn hash(&self, slot: Slot) -> Option<Hash> {
         self.deserialize_account_data().ok()?.get(&slot).copied()
     }
 }
@@ -128,7 +128,7 @@ mod tests {
         arbtest(|u| {
             let mut slot_hashes = u
                 .arbitrary_iter::<(u64, [u8; 32])>()?
-                .map(|tup| Ok((tup?.0, solana_sdk::hash::Hash::new_from_array(tup?.1))))
+                .map(|tup| Ok((tup?.0, Hash::new_from_array(tup?.1))))
                 .collect::<Result<HashSet<_>, _>>()?
                 .into_iter()
                 .collect::<Vec<_>>();

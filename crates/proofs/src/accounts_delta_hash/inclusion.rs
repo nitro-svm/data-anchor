@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use solana_sdk::{
     account::{Account, ReadableAccount},
-    hash::Hash,
+    hash::{Hash, Hasher},
     pubkey::Pubkey,
 };
 
@@ -87,15 +87,15 @@ impl InclusionProof {
     /// Verifies that an account is present in the given accounts_delta_hash,
     /// and additionally verifies that the account contents match the given account.
     /// This can be used to prove the exact state of an account at a particular slot.
-    pub fn verify(&self, accounts_delta_hash: solana_sdk::hash::Hash) -> bool {
+    pub fn verify(&self, accounts_delta_hash: Hash) -> bool {
         let hash = self.hash();
         hash == accounts_delta_hash
     }
 
-    fn hash(&self) -> solana_sdk::hash::Hash {
+    fn hash(&self) -> Hash {
         let mut current_hash = hash_account(&self.account_data, &self.account_pubkey);
         for level in &self.levels {
-            let mut hasher = solana_sdk::hash::Hasher::default();
+            let mut hasher = Hasher::default();
             // [0..current]
             for sibling in level.siblings.iter().take(level.index) {
                 hasher.hash(sibling.as_ref());

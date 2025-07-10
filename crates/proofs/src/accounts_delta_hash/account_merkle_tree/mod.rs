@@ -6,18 +6,18 @@ mod tree;
 pub use builder::AccountMerkleTreeBuilder;
 pub use hash_tree::hash_tree;
 pub use solana_accounts_db::{MERKLE_FANOUT, hash_account};
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey};
 pub use tree::{AccountMerkleTree, AccountsDeltaHashProof};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Leaf {
-    Partial(solana_sdk::hash::Hash),
+    Partial(Hash),
     Full(Account),
 }
 
 impl Leaf {
     /// Returns the stored hash or hashes the stored account data with the given pubkey.
-    pub fn hash(&self, pubkey: &Pubkey) -> solana_sdk::hash::Hash {
+    pub fn hash(&self, pubkey: &Pubkey) -> Hash {
         match self {
             Leaf::Partial(hash) => *hash,
             Leaf::Full(account) => hash_account(account, pubkey),
@@ -32,7 +32,11 @@ mod tests {
     use arbtest::arbtest;
     use itertools::Itertools;
     use solana_accounts_db::accounts_db::AccountsDb;
-    use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey};
+    use solana_sdk::{
+        account::Account,
+        hash::{Hash, Hasher},
+        pubkey::Pubkey,
+    };
 
     use crate::accounts_delta_hash::{
         AccountsDeltaHashProof, Leaf,
@@ -237,7 +241,7 @@ mod tests {
             let excluded: ArbKeypair = u.arbitrary()?;
             let excluded = excluded.pubkey();
 
-            let accounts_delta_hash = solana_sdk::hash::Hasher::default().result();
+            let accounts_delta_hash = Hasher::default().result();
             let tree = AccountMerkleTree::builder([excluded].into_iter().collect()).build();
 
             let proof = tree.prove_exclusion(excluded);

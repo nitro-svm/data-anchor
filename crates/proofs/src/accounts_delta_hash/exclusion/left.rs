@@ -1,7 +1,7 @@
 //! Exclusion proof of an account that would be to the left of the leftmost leaf in the tree.
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{hash::Hash, pubkey::Pubkey};
 use thiserror::Error;
 
 use crate::accounts_delta_hash::inclusion::InclusionProof;
@@ -28,10 +28,7 @@ pub enum ExclusionLeftProofError {
 
 impl ExclusionLeftProof {
     /// Verifies that an account is not present in the accounts_delta_hash.
-    pub fn verify(
-        &self,
-        accounts_delta_hash: solana_sdk::hash::Hash,
-    ) -> Result<(), ExclusionLeftProofError> {
+    pub fn verify(&self, accounts_delta_hash: Hash) -> Result<(), ExclusionLeftProofError> {
         if self.leftmost.levels.iter().any(|level| level.index != 0) {
             // If any of the indices in the path for the leftmost leaf are non-zero, then it's
             // not actually the leftmost leaf.
@@ -79,7 +76,7 @@ mod tests {
                 leftmost = u.arbitrary()?;
                 unmodified = false;
             } else if u.ratio(1, 10)? {
-                accounts_delta_hash = solana_sdk::hash::Hash::new_from_array(u.arbitrary()?);
+                accounts_delta_hash = Hash::new_from_array(u.arbitrary()?);
                 unmodified = false;
             }
 

@@ -222,7 +222,7 @@ mod tests {
             )],
             Some(&payer.pubkey()),
             &[&payer],
-            solana_sdk::hash::Hash::default(),
+            Hash::default(),
         );
         let (response_tx, mut response_rx) = mpsc::unbounded_channel();
         transaction_sender_tx

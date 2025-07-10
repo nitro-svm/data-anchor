@@ -1,7 +1,7 @@
 //! Exclusion proof of an account that would be somewhere in the middle of the tree.
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{hash::Hash, pubkey::Pubkey};
 use thiserror::Error;
 
 use crate::accounts_delta_hash::{account_merkle_tree::MERKLE_FANOUT, inclusion::InclusionProof};
@@ -33,10 +33,7 @@ pub enum ExclusionInnerProofError {
 
 impl ExclusionInnerProof {
     /// Verifies that an account is not present in the accounts_delta_hash.
-    pub fn verify(
-        &self,
-        accounts_delta_hash: solana_sdk::hash::Hash,
-    ) -> Result<(), ExclusionInnerProofError> {
+    pub fn verify(&self, accounts_delta_hash: Hash) -> Result<(), ExclusionInnerProofError> {
         if self.left.levels.len() != self.right.levels.len() {
             // The paths must have equal length, otherwise they came from different trees.
             return Err(ExclusionInnerProofError::PathLengthMismatch);
@@ -126,7 +123,7 @@ mod tests {
                 right = u.arbitrary()?;
                 unmodified = false;
             } else if u.ratio(1, 10)? {
-                accounts_delta_hash = solana_sdk::hash::Hash::new_from_array(u.arbitrary()?);
+                accounts_delta_hash = Hash::new_from_array(u.arbitrary()?);
                 unmodified = false;
             }
 

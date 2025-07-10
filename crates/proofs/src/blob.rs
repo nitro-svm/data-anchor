@@ -4,7 +4,7 @@ use std::{cmp::min, fmt::Debug};
 
 use data_anchor_blober::{CHUNK_SIZE, compute_blob_digest};
 use serde::{Deserialize, Serialize};
-use solana_sdk::hash::HASH_BYTES;
+use solana_sdk::hash::{HASH_BYTES, Hash};
 use thiserror::Error;
 
 /// A proof that a specific blob has been uploaded to the blober program. The proof consists of two
@@ -22,10 +22,7 @@ impl Debug for BlobProof {
     #[cfg_attr(test, mutants::skip)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Proof")
-            .field(
-                "digest",
-                &solana_sdk::hash::Hash::new_from_array(self.digest),
-            )
+            .field("digest", &Hash::new_from_array(self.digest))
             .field("chunk_order", &self.chunk_order)
             .finish()
     }

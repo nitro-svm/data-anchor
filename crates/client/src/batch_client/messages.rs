@@ -1,4 +1,4 @@
-use solana_sdk::{clock::Slot, signature::Signature, transaction::Transaction};
+use solana_sdk::{clock::Slot, hash::Hash, signature::Signature, transaction::Transaction};
 use tokio::sync::mpsc;
 use tracing::Span;
 
@@ -7,7 +7,7 @@ use super::transaction::TransactionStatus;
 /// Info about the current height of the blockchain.
 #[derive(Clone, Debug, Copy, PartialEq, Default)]
 pub struct BlockMessage {
-    pub blockhash: solana_sdk::hash::Hash,
+    pub blockhash: Hash,
     pub last_valid_block_height: u64,
     pub block_height: u64,
 }

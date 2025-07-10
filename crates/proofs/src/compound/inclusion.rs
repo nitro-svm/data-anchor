@@ -5,7 +5,11 @@ use std::fmt::Debug;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use solana_sdk::{clock::Slot, hash::HASH_BYTES, pubkey::Pubkey};
+use solana_sdk::{
+    clock::Slot,
+    hash::{HASH_BYTES, Hash},
+    pubkey::Pubkey,
+};
 use thiserror::Error;
 
 use crate::{
@@ -82,17 +86,14 @@ pub enum CompoundInclusionProofError {
     #[error(
         "The proof is for a different blockhash than the one provided, expected {expected:?}, found {found:?}"
     )]
-    BlockHashMismatch {
-        expected: solana_sdk::hash::Hash,
-        found: solana_sdk::hash::Hash,
-    },
+    BlockHashMismatch { expected: Hash, found: Hash },
     #[error(
         "Blob {index} does not match the provided hash, expected {expected:?}, found {found:?}"
     )]
     BlobHashMismatch {
         index: usize,
-        expected: solana_sdk::hash::Hash,
-        found: solana_sdk::hash::Hash,
+        expected: Hash,
+        found: Hash,
     },
     #[error(
         "Blob {index} does not match the provided blob size, expected {expected}, found {found}"
@@ -135,7 +136,7 @@ impl CompoundInclusionProof {
     pub fn verify(
         &self,
         blober: Pubkey,
-        blockhash: solana_sdk::hash::Hash,
+        blockhash: Hash,
         blobs: &[ProofBlob<impl AsRef<[u8]>>],
     ) -> Result<(), CompoundInclusionProofError> {
         if blobs.len() != self.blob_proofs.len() {
@@ -200,8 +201,8 @@ impl CompoundInclusionProof {
             if blob_account_digest != blob_proof.digest {
                 return Err(CompoundInclusionProofError::BlobHashMismatch {
                     index,
-                    expected: solana_sdk::hash::Hash::new_from_array(blob_proof.digest),
-                    found: solana_sdk::hash::Hash::new_from_array(blob_account_digest),
+                    expected: Hash::new_from_array(blob_proof.digest),
+                    found: Hash::new_from_array(blob_account_digest),
                 });
             }
 
@@ -435,7 +436,7 @@ mod tests {
 
             let slot_hashes = u
                 .arbitrary_iter::<(u64, [u8; 32])>()?
-                .map(|tup| Ok((tup?.0, solana_sdk::hash::Hash::new_from_array(tup?.1))))
+                .map(|tup| Ok((tup?.0, Hash::new_from_array(tup?.1))))
                 // Include the hash that's being proven.
                 .chain([Ok((proven_slot, proven_hash))].into_iter())
                 .collect::<Result<HashSet<_>, _>>()?

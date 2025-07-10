@@ -4,7 +4,7 @@ use solana_accounts_db::{
     accounts_db::AccountsDb,
     accounts_hash::{AccountHash, AccountsHasher},
 };
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_sdk::{account::Account, hash::Hash, pubkey::Pubkey};
 
 use crate::accounts_delta_hash::{
     AccountMerkleTree,
@@ -26,7 +26,7 @@ pub struct TestAccounts {
     /// This is verified to be equal to the root of the merkle tree.
     ///
     /// Created using Solana's [`solana_accounts_db::accounts_hash::AccountsHasher`].
-    pub accounts_delta_hash: solana_sdk::hash::Hash,
+    pub accounts_delta_hash: Hash,
 }
 
 /// Generates a set of accounts and the merkle tree that proves their inclusion in the accounts_delta_hash.

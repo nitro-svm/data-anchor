@@ -498,7 +498,7 @@ mod tests {
             )],
             Some(&payer.pubkey()),
             &[&payer],
-            solana_sdk::hash::Hash::default(),
+            Hash::default(),
         );
         let confirmer_tx = transaction_confirmer_tx.downgrade();
         let ControlFlow::Continue(Some(messages)) = get_transaction_statuses(
@@ -559,7 +559,7 @@ mod tests {
             )],
             Some(&payer.pubkey()),
             &[&payer],
-            solana_sdk::hash::Hash::default(),
+            Hash::default(),
         );
         let ControlFlow::Continue(None) = get_transaction_statuses(
             &rpc_client,
@@ -703,7 +703,7 @@ mod tests {
             )],
             Some(&payer.pubkey()),
             &[&payer],
-            solana_sdk::hash::Hash::default(),
+            Hash::default(),
         );
         let (response_tx, mut response_rx) = mpsc::unbounded_channel();
         transaction_confirmer_tx
@@ -749,7 +749,7 @@ mod tests {
                     )],
                     Some(&payer.pubkey()),
                     &[&payer],
-                    solana_sdk::hash::Hash::default(),
+                    Hash::default(),
                 );
                 (
                     transaction.clone(),

@@ -1,7 +1,7 @@
 //! Exclusion proof of an account that would be to the right of the rightmost leaf in the tree.
 
 use serde::{Deserialize, Serialize};
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{hash::Hash, pubkey::Pubkey};
 use thiserror::Error;
 
 use crate::accounts_delta_hash::inclusion::InclusionProof;
@@ -28,10 +28,7 @@ pub enum ExclusionRightProofError {
 
 impl ExclusionRightProof {
     /// Verifies that an account is not present in the accounts_delta_hash.
-    pub fn verify(
-        &self,
-        accounts_delta_hash: solana_sdk::hash::Hash,
-    ) -> Result<(), ExclusionRightProofError> {
+    pub fn verify(&self, accounts_delta_hash: Hash) -> Result<(), ExclusionRightProofError> {
         if &self.excluded <= self.rightmost.pubkey() {
             // The excluded account must be to the right of the rightmost leaf.
             return Err(ExclusionRightProofError::ExcludedNotRightmost);
@@ -87,7 +84,7 @@ mod tests {
                 rightmost_index = Some(u.choose_index(accounts.len())?);
                 unmodified = rightmost_index == prev_index;
             } else if u.ratio(1, 10)? {
-                accounts_delta_hash = solana_sdk::hash::Hash::new_from_array(u.arbitrary()?);
+                accounts_delta_hash = Hash::new_from_array(u.arbitrary()?);
                 unmodified = false;
             }
 

@@ -1,6 +1,7 @@
 //! Exclusion proof for when no accounts were changed in the block.
 
 use serde::{Deserialize, Serialize};
+use solana_sdk::hash::{Hash, Hasher};
 use thiserror::Error;
 
 /// The simplest proof possible, which proves that there are no accounts in the accounts_delta_hash.
@@ -16,12 +17,9 @@ pub enum ExclusionEmptyProofError {
 
 impl ExclusionEmptyProof {
     /// Verifies that the accounts_delta_hash is for the empty set of accounts.
-    pub fn verify(
-        &self,
-        accounts_delta_hash: solana_sdk::hash::Hash,
-    ) -> Result<(), ExclusionEmptyProofError> {
+    pub fn verify(&self, accounts_delta_hash: Hash) -> Result<(), ExclusionEmptyProofError> {
         // If there are no accounts that were updated, Solana defaults to an empty hash.
-        if accounts_delta_hash != solana_sdk::hash::Hasher::default().result() {
+        if accounts_delta_hash != Hasher::default().result() {
             return Err(ExclusionEmptyProofError::RootMismatch);
         }
         Ok(())

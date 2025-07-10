@@ -1,13 +1,15 @@
+use solana_sdk::hash::{Hash, Hasher};
+
 use crate::accounts_delta_hash::MERKLE_FANOUT;
 
 /// Creates a Merkle tree from a list of hashes.
 ///
 /// # Arguments
 /// - `hashes` - The list of hashes to create the tree from. Must not be empty.
-pub fn hash_tree(hashes: Vec<solana_sdk::hash::Hash>) -> Vec<Vec<solana_sdk::hash::Hash>> {
+pub fn hash_tree(hashes: Vec<Hash>) -> Vec<Vec<Hash>> {
     if hashes.is_empty() {
         // This is how an empty tree is defined in Solana.
-        return vec![vec![solana_sdk::hash::Hasher::default().result()]];
+        return vec![vec![Hasher::default().result()]];
     }
 
     // Here we get a tree with only one level - the leaves.
@@ -23,7 +25,7 @@ pub fn hash_tree(hashes: Vec<solana_sdk::hash::Hash>) -> Vec<Vec<solana_sdk::has
             // At most 16 hashes in a group.
             .chunks(MERKLE_FANOUT)
             .map(|group| {
-                let mut hasher = solana_sdk::hash::Hasher::default();
+                let mut hasher = Hasher::default();
                 // Create a hash of siblings.
                 for hash in group {
                     hasher.hash(hash.as_ref());
@@ -53,7 +55,7 @@ pub fn hash_tree(hashes: Vec<solana_sdk::hash::Hash>) -> Vec<Vec<solana_sdk::has
 
 // Extracted to a function to skip mutation testing on this function, it just causes timeouts.
 #[cfg_attr(test, mutants::skip)]
-fn single_hash_remains(current_hashes: &[solana_sdk::hash::Hash]) -> bool {
+fn single_hash_remains(current_hashes: &[Hash]) -> bool {
     current_hashes.len() == 1
 }
 
@@ -68,10 +70,7 @@ mod tests {
     fn hash_tree_empty_returns_default_hash() {
         let leaves = Vec::new();
         let levels = hash_tree(leaves.clone());
-        assert_eq!(
-            levels,
-            vec![vec![solana_sdk::hash::Hasher::default().result()]]
-        );
+        assert_eq!(levels, vec![vec![Hasher::default().result()]]);
     }
 
     #[test]
@@ -100,7 +99,7 @@ mod tests {
     #[test]
     fn hash_tree_three_levels() {
         arbtest(|u| {
-            let leaves: Vec<solana_sdk::hash::Hash> = u
+            let leaves: Vec<Hash> = u
                 .arbitrary::<[[u8; 32]; MERKLE_FANOUT + 1]>()?
                 .into_iter()
                 .map(|x| x.into())
@@ -122,7 +121,7 @@ mod tests {
     #[test]
     fn hash_tree_four_levels() {
         arbtest(|u| {
-            let leaves: Vec<solana_sdk::hash::Hash> = u
+            let leaves: Vec<Hash> = u
                 .arbitrary::<[[u8; 32]; MERKLE_FANOUT * MERKLE_FANOUT + 1]>()?
                 .into_iter()
                 .map(|x| x.into())
