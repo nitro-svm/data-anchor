@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-use std::sync::Arc;
+use std::{path::PathBuf, str::FromStr, sync::Arc};
 
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
@@ -97,6 +97,26 @@ impl Cli {
             .error(ErrorKind::MissingRequiredArgument, msg)
             .exit()
     }
+
+    fn payer_keypair(&self, config: &Config) -> String {
+        if let Some(payer) = &self.payer {
+            return payer.to_owned();
+        }
+
+        let Ok(path_to_config) = PathBuf::from_str(&self.config_file);
+
+        let Some(directory) = path_to_config.parent() else {
+            Self::exit_with_missing_arg("Failed to get the parent directory of the config file")
+        };
+
+        let path = directory.join(&config.keypair_path);
+
+        let Some(path_str) = path.to_str() else {
+            Self::exit_with_missing_arg("Failed to convert the keypair path to a string")
+        };
+
+        path_str.to_owned()
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -133,7 +153,7 @@ impl Options {
         trace!("Parsing options");
         let args = Cli::parse();
         let config = Config::load(&args.config_file).unwrap();
-        let payer_path = args.payer.as_ref().unwrap_or(&config.keypair_path);
+        let payer_path = args.payer_keypair(&config);
         let payer = Arc::new(Keypair::read_from_file(payer_path).unwrap());
         trace!("Parsed options: {args:?} {config:?} {payer:?}");
 

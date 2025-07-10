@@ -280,3 +280,9 @@ apply-mainnet: (initialize-workspace "mainnet")
         -var="rpc_url=https://hana-o8f2gi-fast-mainnet.helius-rpc.com" \
         -var="yellowstone_url=https://laserstream-mainnet-ewr.helius-rpc.com" \
         -var="release_id=${RELEASE}"
+
+# Run local e2e tests
+[confirm('This will run all the indexer components and run CLI commands against it. Are you sure you want to continue [y/n]?')]
+[group('test')]
+run-e2e:
+    ./scripts/run-e2e.sh

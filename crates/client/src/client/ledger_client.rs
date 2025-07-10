@@ -251,7 +251,6 @@ impl DataAnchorClient {
                 let instructions = relevant_instructions_map.get(blob).expect(
                     "This should never happen since we at least have the finalize instruction",
                 );
-                println!("total {}", instructions.len());
 
                 if let Ok(blob_data) = get_blob_data_from_instructions(instructions, blober, *blob)
                 {
