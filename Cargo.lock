@@ -2390,7 +2390,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "bytesize",
  "chrono",
@@ -2414,7 +2414,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-api"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -2438,7 +2438,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-client"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anchor-lang",
  "arbitrary",
@@ -2471,7 +2471,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-indexer"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "agave-geyser-plugin-interface",
  "anchor-lang",
@@ -2515,7 +2515,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-proofs"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anchor-lang",
  "arbitrary",

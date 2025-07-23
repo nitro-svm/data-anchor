@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-proofs-v0.3.1...data-anchor-proofs-v0.4.0) - 2025-07-10
+
+### Other
+
+- Nicer imports of `Hash` ([#262](https://github.com/nitro-svm/data-anchor/pull/262))
+
 ## [0.3.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-proofs-v0.3.0...data-anchor-proofs-v0.3.1) - 2025-07-01
 
 ### Other

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.3.1...data-anchor-client-v0.4.0) - 2025-07-10
+
+### Added
+
+- Add balance and account existance checks for on-chain commands ([#261](https://github.com/nitro-svm/data-anchor/pull/261))
+- Improve PDA management and outputs ([#241](https://github.com/nitro-svm/data-anchor/pull/241))
+- Improve client README.md ([#237](https://github.com/nitro-svm/data-anchor/pull/237))
+- Improve client and CLI ergonomics ([#235](https://github.com/nitro-svm/data-anchor/pull/235))
+- Improve CLI integration ([#234](https://github.com/nitro-svm/data-anchor/pull/234))
+
+### Fixed
+
+- Add full e2e test and squash discovered bugs ([#257](https://github.com/nitro-svm/data-anchor/pull/257))
+- Add user-agent for client calls to pass WAF protection ([#255](https://github.com/nitro-svm/data-anchor/pull/255))
+- Serialize blober identifier in parent struct and streamline identifier on CLI level ([#244](https://github.com/nitro-svm/data-anchor/pull/244))
+- Explictly set max supported transaction version ([#238](https://github.com/nitro-svm/data-anchor/pull/238))
+
+### Other
+
+- Nicer imports of `Hash` ([#262](https://github.com/nitro-svm/data-anchor/pull/262))
+- Also use `BloberIdentifier` on initialization ([#260](https://github.com/nitro-svm/data-anchor/pull/260))
+- Remove unused `use_helius_fee` param ([#256](https://github.com/nitro-svm/data-anchor/pull/256))
+- Fix typo in error message ([#233](https://github.com/nitro-svm/data-anchor/pull/233))
+- Use `HttpClient` instead of `WsClient` ([#232](https://github.com/nitro-svm/data-anchor/pull/232))
+- Simplify API params on indexer RPC ([#228](https://github.com/nitro-svm/data-anchor/pull/228))
+
 ## [0.3.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.3.0...data-anchor-client-v0.3.1) - 2025-07-01
 
 ### Added

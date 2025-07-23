@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.3.1...data-anchor-v0.4.0) - 2025-07-10
+
+### Added
+
+- Add balance and account existance checks for on-chain commands ([#261](https://github.com/nitro-svm/data-anchor/pull/261))
+- Improve PDA management and outputs ([#241](https://github.com/nitro-svm/data-anchor/pull/241))
+- Add blober PDA pubkey to command output ([#239](https://github.com/nitro-svm/data-anchor/pull/239))
+- Improve CLI README.md ([#236](https://github.com/nitro-svm/data-anchor/pull/236))
+- Improve client and CLI ergonomics ([#235](https://github.com/nitro-svm/data-anchor/pull/235))
+- Improve CLI integration ([#234](https://github.com/nitro-svm/data-anchor/pull/234))
+
+### Fixed
+
+- Add full e2e test and squash discovered bugs ([#257](https://github.com/nitro-svm/data-anchor/pull/257))
+- Serialize blober identifier in parent struct and streamline identifier on CLI level ([#244](https://github.com/nitro-svm/data-anchor/pull/244))
+
+### Other
+
+- Also use `BloberIdentifier` on initialization ([#260](https://github.com/nitro-svm/data-anchor/pull/260))
+- Simplify API params on indexer RPC ([#228](https://github.com/nitro-svm/data-anchor/pull/228))
+
 ## [0.3.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.2.0...data-anchor-v0.3.0) - 2025-06-26
 
 ### Added

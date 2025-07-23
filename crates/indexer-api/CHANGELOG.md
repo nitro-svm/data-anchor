@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-api-v0.3.1...data-anchor-api-v0.4.0) - 2025-07-10
+
+### Added
+
+- Separate RPC into standalone binary ([#245](https://github.com/nitro-svm/data-anchor/pull/245))
+- Improve PDA management and outputs ([#241](https://github.com/nitro-svm/data-anchor/pull/241))
+- Improve CLI integration ([#234](https://github.com/nitro-svm/data-anchor/pull/234))
+
+### Fixed
+
+- Don't run insert network query if no networks found ([#230](https://github.com/nitro-svm/data-anchor/pull/230))
+
+### Other
+
+- Update indexer API docs ([#231](https://github.com/nitro-svm/data-anchor/pull/231))
+- Simplify API params on indexer RPC ([#228](https://github.com/nitro-svm/data-anchor/pull/228))
+
 ## [0.3.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-api-v0.3.0...data-anchor-api-v0.3.1) - 2025-07-01
 
 ### Added
