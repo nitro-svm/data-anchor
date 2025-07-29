@@ -8,7 +8,9 @@ use std::{collections::BTreeMap, fmt::Debug, sync::Arc};
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use data_anchor_blober::{U32_SIZE_BYTES, hash_blob, merge_hashes, state::blober::Blober};
 use serde::{Deserialize, Serialize};
-use solana_sdk::{clock::Slot, hash::HASH_BYTES, pubkey::Pubkey};
+use solana_clock::Slot;
+use solana_hash::HASH_BYTES;
+use solana_pubkey::Pubkey;
 use thiserror::Error;
 
 use crate::{compound::ProofBlob, debug::NoPrettyPrint};
@@ -32,7 +34,7 @@ pub enum BloberAccountStateError {
     BlobSizeMismatch { expected: usize, found: usize },
 }
 
-type BloberAccountStateResult<T = ()> = Result<T, BloberAccountStateError>;
+pub type BloberAccountStateResult<T = ()> = Result<T, BloberAccountStateError>;
 
 /// An account whose state was hashed using the blober program.
 ///
@@ -147,12 +149,15 @@ impl BloberAccountStateProof {
 
     pub fn calculate_hash(&self) -> [u8; HASH_BYTES] {
         merge_all_hashes(
-            std::iter::once(self.initial_hash)
-                .chain(self.uploads.values().flatten().map(|blob| blob.hash_blob())),
+            std::iter::once(self.initial_hash).chain(self.blobs().map(|blob| blob.hash_blob())),
         )
     }
 
-    pub fn verify(&self, blober_account_data: &[u8]) -> Result<(), BloberAccountStateError> {
+    pub fn hash_blobs(&self) -> [u8; HASH_BYTES] {
+        merge_all_hashes(self.blobs().map(|blob| blob.hash_blob()))
+    }
+
+    pub fn verify(&self, blober_account_data: &[u8]) -> BloberAccountStateResult {
         if &blober_account_data[..8] != Blober::DISCRIMINATOR {
             return Err(BloberAccountStateError::DiscriminatorMismatch);
         }
@@ -186,6 +191,16 @@ impl BloberAccountStateProof {
     }
 }
 
+pub fn get_blober_hash(blober_account_data: &[u8]) -> BloberAccountStateResult<[u8; HASH_BYTES]> {
+    if &blober_account_data[..8] != Blober::DISCRIMINATOR {
+        return Err(BloberAccountStateError::DiscriminatorMismatch);
+    }
+
+    let state = Blober::try_from_slice(&blober_account_data[8..]).map_err(Arc::new)?;
+
+    Ok(state.hash)
+}
+
 pub fn merge_all_hashes(hashes: impl Iterator<Item = [u8; HASH_BYTES]>) -> [u8; HASH_BYTES] {
     hashes
         .reduce(|acc, hash| merge_hashes(&acc, &hash))
@@ -197,7 +212,7 @@ mod tests {
     use anchor_lang::AnchorSerialize;
     use arbtest::arbtest;
     use data_anchor_blober::initial_hash;
-    use solana_sdk::signer::Signer;
+    use solana_signer::Signer;
 
     use super::*;
     use crate::testing::ArbKeypair;

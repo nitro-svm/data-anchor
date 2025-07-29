@@ -27,7 +27,7 @@ lint-programs:
 
 # Run lint and formatting checks for the entire project
 [group('lint')]
-lint: lint-programs fmt-justfile fmt-tofu
+lint: lint-programs fmt-justfile fmt-tofu build-prover
     cargo +nightly fmt -- --check
     cargo clippy --all-targets --all-features
     zepter
@@ -53,7 +53,7 @@ lint-programs-fix:
 
 # Fix lint and formatting issues in the entire project
 [group('lint')]
-lint-fix: lint-programs-fix fmt-justfile-fix fmt-tofu-fix
+lint-fix: lint-programs-fix fmt-justfile-fix fmt-tofu-fix build-prover
     cargo +nightly fmt
     cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
     zepter
@@ -123,6 +123,11 @@ pre-push: lint-fix test-all sqlx-prepare
 [working-directory('programs')]
 build-programs:
     anchor build --no-idl
+
+# Build the prover script
+[group('build')]
+build-prover:
+    cargo build --release -p data-anchor-prover
 
 # Build the entire project
 [group('build')]

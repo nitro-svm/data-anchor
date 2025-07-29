@@ -131,6 +131,10 @@ pub trait IndexerRpc {
         blob_address: PubkeyFromStr,
     ) -> RpcResult<Option<CompoundInclusionProof>>;
 
+    /// Request building a succinct ZK Groth16 proof for a given blober and slot.
+    #[method(name = "checkpoint_proof")]
+    async fn checkpoint_proof(&self, blober: PubkeyFromStr, slot: u64) -> RpcResult<()>;
+
     /// Listen to blob finalization events from specified blobers. This will return a stream of
     /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is
     /// shut down.

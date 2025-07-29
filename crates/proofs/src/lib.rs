@@ -15,12 +15,11 @@ pub(crate) mod testing {
     use std::{cmp::max, hash::Hash, ops::Deref};
 
     use arbitrary::{Arbitrary, Unstructured};
-    use solana_sdk::{
-        account::Account,
-        clock::Epoch,
-        signature::{Keypair, Signer},
-        signer::SeedDerivable,
-    };
+    use solana_account::Account;
+    use solana_clock::Epoch;
+    use solana_keypair::Keypair;
+    use solana_seed_derivable::SeedDerivable;
+    use solana_signer::Signer;
 
     /// An arbitrary keypair, since we can't implement [`arbitrary::Arbitrary`] for
     /// [`solana_sdk::signature::Keypair`] or [`solana_sdk::pubkey::Pubkey`].

@@ -1,0 +1,29 @@
+[package]
+name = "data-anchor-prover-script"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+# External dependencies
+arbitrary = { workspace = true, features = ["derive"] }
+bytesize = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
+rand = { workspace = true }
+sp1-sdk = { workspace = true }
+
+# Solana & Agave
+anchor-lang = { workspace = true }
+solana-pubkey = { workspace = true }
+
+# Locals
+data-anchor-blober = { workspace = true }
+data-anchor-proofs = { workspace = true }
+data-anchor-prover = { workspace = true }
+
+[build-dependencies]
+sp1-build = { workspace = true }

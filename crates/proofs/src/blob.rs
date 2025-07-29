@@ -2,9 +2,10 @@
 
 use std::{cmp::min, fmt::Debug};
 
+use anchor_lang::solana_program::hash;
 use data_anchor_blober::{CHUNK_SIZE, compute_blob_digest};
 use serde::{Deserialize, Serialize};
-use solana_sdk::hash::{HASH_BYTES, Hash};
+use solana_hash::{HASH_BYTES, Hash};
 use thiserror::Error;
 
 /// A proof that a specific blob has been uploaded to the blober program. The proof consists of two
@@ -51,6 +52,15 @@ impl BlobProof {
             digest,
             chunk_order,
         }
+    }
+
+    pub fn hash_proof(&self) -> [u8; HASH_BYTES] {
+        let order_bytes: Vec<_> = self
+            .chunk_order
+            .iter()
+            .flat_map(|&i| i.to_le_bytes())
+            .collect();
+        hash::hashv(&[&self.digest, &order_bytes]).to_bytes()
     }
 
     /// Verifies that the given blob matches the proof.

@@ -1,0 +1,19 @@
+[package]
+name = "data-anchor-prover"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+# External dependencies
+sp1-sdk = { workspace = true }
+
+# Locals
+data-anchor-proofs = { workspace = true }
+
+[build-dependencies]
+sp1-build = { workspace = true }

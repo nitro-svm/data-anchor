@@ -3,14 +3,19 @@
 
 use std::fmt::Debug;
 
+use data_anchor_blober::hash_blob;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use solana_sdk::{hash::Hash, pubkey::Pubkey};
+use solana_hash::{HASH_BYTES, Hash};
+use solana_pubkey::Pubkey;
 use thiserror::Error;
 
 use crate::{
     blob::{BlobProof, BlobProofError},
-    blober_account_state::{self, BloberAccountStateProof},
+    blober_account_state::{
+        self, BloberAccountStateError, BloberAccountStateProof, BloberAccountStateResult,
+        get_blober_hash, merge_all_hashes,
+    },
 };
 
 /// A proof that a specific Solana block contains blobs, and that there are no other blobs in the block.
@@ -26,14 +31,14 @@ use crate::{
 /// invoked, as well as the blobs of data which were published.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct CompoundInclusionProof {
-    blob_proofs: Vec<BlobProof>,
-    blober_pubkey: Pubkey,
-    blober_account_state_proof: BloberAccountStateProof,
+    pub blob_proofs: Vec<BlobProof>,
+    pub blober_pubkey: Pubkey,
+    pub blober_account_state_proof: BloberAccountStateProof,
 }
 
 /// All data relevant for proving a single blob. If the `chunks` field is `None`, the blob itself will
 /// not be checked, but the rest of the proof will still be verified.
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProofBlob<A: AsRef<[u8]> = Vec<u8>> {
     pub blob: Pubkey,
     pub data: Option<A>,
@@ -42,6 +47,10 @@ pub struct ProofBlob<A: AsRef<[u8]> = Vec<u8>> {
 impl ProofBlob<Vec<u8>> {
     pub fn empty(blob: Pubkey) -> Self {
         Self { blob, data: None }
+    }
+
+    pub fn hash_blob(&self) -> [u8; HASH_BYTES] {
+        hash_blob(&self.blob, self.data.as_ref().map_or(&[], AsRef::as_ref))
     }
 }
 
@@ -103,6 +112,71 @@ pub enum CompoundInclusionProofError {
     Blob(#[from] BlobProofError),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VerifyArgs {
+    pub blober: Pubkey,
+    pub blober_state: Vec<u8>,
+    pub blobs: Vec<ProofBlob<Vec<u8>>>,
+}
+
+impl VerifyArgs {
+    pub fn hash_blobs(&self) -> [u8; HASH_BYTES] {
+        merge_all_hashes(self.blobs.iter().map(ProofBlob::hash_blob))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VerifyArgsCommitment {
+    pub blober_hash: [u8; HASH_BYTES],
+}
+
+impl TryFrom<VerifyArgs> for VerifyArgsCommitment {
+    type Error = BloberAccountStateError;
+
+    fn try_from(args: VerifyArgs) -> Result<Self, Self::Error> {
+        Ok(Self {
+            blober_hash: get_blober_hash(&args.blober_state)?,
+        })
+    }
+}
+
+impl TryFrom<&VerifyArgs> for VerifyArgsCommitment {
+    type Error = BloberAccountStateError;
+
+    fn try_from(args: &VerifyArgs) -> Result<Self, Self::Error> {
+        Ok(Self {
+            blober_hash: get_blober_hash(&args.blober_state)?,
+        })
+    }
+}
+
+impl VerifyArgs {
+    pub fn into_commitment(&self) -> BloberAccountStateResult<VerifyArgsCommitment> {
+        VerifyArgsCommitment::try_from(self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompoundInclusionProofCommitment {
+    pub blober_initial_hash: [u8; HASH_BYTES],
+}
+
+impl From<CompoundInclusionProof> for CompoundInclusionProofCommitment {
+    fn from(proof: CompoundInclusionProof) -> Self {
+        Self {
+            blober_initial_hash: proof.blober_account_state_proof.initial_hash,
+        }
+    }
+}
+
+impl From<&CompoundInclusionProof> for CompoundInclusionProofCommitment {
+    fn from(proof: &CompoundInclusionProof) -> Self {
+        Self {
+            blober_initial_hash: proof.blober_account_state_proof.initial_hash,
+        }
+    }
+}
+
 impl CompoundInclusionProof {
     /// Creates an inclusion proof.
     pub fn new(
@@ -115,6 +189,14 @@ impl CompoundInclusionProof {
             blober_pubkey,
             blober_account_state_proof,
         }
+    }
+
+    pub fn into_commitment(&self) -> CompoundInclusionProofCommitment {
+        CompoundInclusionProofCommitment::from(self)
+    }
+
+    pub fn hash_proofs(&self) -> [u8; HASH_BYTES] {
+        merge_all_hashes(self.blob_proofs.iter().map(BlobProof::hash_proof))
     }
 
     /// Verifies that a specific Solana block contains the provided blobs, and that no blobs have been excluded.
@@ -177,7 +259,8 @@ mod tests {
         BLOB_DATA_END, BLOB_DATA_START, CHUNK_SIZE, initial_hash,
         state::{blob::Blob, blober::Blober},
     };
-    use solana_sdk::{clock::Slot, signer::Signer};
+    use solana_clock::Slot;
+    use solana_signer::Signer;
 
     use super::*;
     use crate::testing::{ArbAccount, ArbKeypair};
