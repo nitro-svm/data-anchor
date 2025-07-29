@@ -62,6 +62,10 @@ impl From<Pubkey> for PubkeyFromStr {
 /// The Indexer RPC interface.
 #[rpc(server, client)]
 pub trait IndexerRpc {
+    /// Check the health of the RPC server. Returns an error if the server is not healthy.
+    #[method(name = "health")]
+    async fn health(&self) -> RpcResult<()>;
+
     /// Retrieve a list of blobs for a given slot and blober pubkey. Returns an error if there was a
     /// database or RPC failure, and None if the slot has not been completed yet. If the slot is
     /// completed, an empty list will be returned.
