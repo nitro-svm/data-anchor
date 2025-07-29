@@ -145,14 +145,14 @@ deploy network:
     anchor deploy --provider.cluster {{ network }}
 
 [group('program-utils')]
-init-blober program_id namespace:
-    cargo run -p data-anchor -- -p {{ program_id }} -i ws://localhost:9696 -n {{ namespace }} br i
+init-blober namespace:
+    cargo run -p data-anchor -- -i ws://localhost:9696 -n {{ namespace }} br i
 
 [confirm('This will run benchmarks against a deployed program and will take a while. Are you sure you want to continue [y/n]?')]
 [group('program-utils')]
-run-benchmark program_id indexer_url:
-    @echo "Running benchmark for program ID: {{ program_id }} and indexer URL: {{ indexer_url }} with default config"
-    cargo run --release -p data-anchor -- -p {{ program_id }} -i {{ indexer_url }} -n bench m a ./target/data
+run-benchmark indexer_url:
+    @echo "Running benchmark for indexer URL: {{ indexer_url }} with default config"
+    cargo run --release -p data-anchor -- -i {{ indexer_url }} -n bench m a ./target/data
 
 # Clean the programs directory
 [group('clean')]
@@ -200,8 +200,13 @@ run-yellowstone-consumer url token:
 
 # Run the indexer binary
 [group('indexer')]
-run-indexer rpc-url bucket program-id="CdczmTavZ6HQwSvEgKJtyrQzKYV4MyU6EZ4Gz5KsULoP":
-    cargo run --bin data-anchor-indexer -- -c postgres://postgres:secret@localhost:5432/postgres -g none -r {{ rpc-url }} -s {{ bucket }} -p {{ program-id }}
+run-indexer rpc-url bucket:
+    cargo run --bin data-anchor-indexer -- \
+        -c postgres://postgres:secret@localhost:5432/postgres \
+        -g none \
+        --payer 4cN1XdV1FEbNcj1NdNmDJKMFJZJ7fgbJz3xAUwr4iSt4aHtxbeqDj6wrFeV9J5XWcEJHJ3No3oe3kJGR9Y8CEYQ1 \
+        -r {{ rpc-url }} \
+        -s {{ bucket }}
 
 # Run the indexer RPC server
 [group('indexer')]
@@ -276,7 +281,6 @@ apply-mainnet: (initialize-workspace "mainnet")
     RELEASE=$(git log --pretty=format:'%H' -n 1 origin/mainnet)
 
     tofu apply \
-        -var="program_id=8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc" \
         -var="rpc_url=https://hana-o8f2gi-fast-mainnet.helius-rpc.com" \
         -var="yellowstone_url=https://laserstream-mainnet-ewr.helius-rpc.com" \
         -var="release_id=${RELEASE}"

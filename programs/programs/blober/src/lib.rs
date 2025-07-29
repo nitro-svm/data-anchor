@@ -14,7 +14,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("8xAuVgAygVN2sPXJzycT7AU7c9ZUJkG357HonxdFXjyc");
+declare_id!("anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2");
 
 #[program]
 pub mod blober {

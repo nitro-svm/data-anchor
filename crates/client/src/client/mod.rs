@@ -108,6 +108,7 @@ impl BloberIdentifier {
 pub struct DataAnchorClient {
     #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
+    #[builder(default = data_anchor_blober::id())]
     pub(crate) program_id: Pubkey,
     pub(crate) rpc_client: Arc<RpcClient>,
     pub(crate) batch_client: BatchClient,

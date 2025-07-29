@@ -24,7 +24,6 @@ mod formatting;
 mod indexer;
 
 const NAMESPACE_MISSING_MSG: &str = "Namespace is not set. Please provide a namespace using the --namespace flag or set the DATA_ANCHOR_NAMESPACE environment variable.";
-const PROGRAM_ID_MISSING_MSG: &str = "Program ID is not set. Please provide a program ID using the --program-id flag or set the DATA_ANCHOR_PROGRAM_ID environment variable.";
 const INDEXER_URL_MISSING_MSG: &str = "Indexer URL is not set. Please provide a URL using the --indexer-url flag or set the DATA_ANCHOR_INDEXER_URL environment variable.";
 
 /// The CLI options for the Blober CLI client.
@@ -157,9 +156,7 @@ impl Options {
         let payer = Arc::new(Keypair::read_from_file(payer_path).unwrap());
         trace!("Parsed options: {args:?} {config:?} {payer:?}");
 
-        let Some(program_id) = args.program_id else {
-            Cli::exit_with_missing_arg(PROGRAM_ID_MISSING_MSG);
-        };
+        let program_id = args.program_id.unwrap_or(data_anchor_blober::id());
 
         let blober_pda = if let Some(blober_pda) = args.blober_pda {
             blober_pda.into()
