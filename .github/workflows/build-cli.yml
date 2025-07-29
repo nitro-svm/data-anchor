@@ -3,11 +3,15 @@ name: Release and Generate Public URLs
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "data-anchor-v*.*.*"
 
 permissions:
   id-token: write
   contents: write
+
+env:
+  TF_WORKING_DIR: infrastructure/cli
+  TAG: ${{ replace(github.ref_name, 'data-anchor-', '') }}
 
 jobs:
   release-and-upload:
@@ -36,26 +40,39 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential cmake pkg-config libudev-dev
 
+      - name: Set up env
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          echo "TARGET=$TARGET" >> "$GITHUB_ENV"
+
       - name: Build Binary
         run: |
-          cargo build --release --target ${{ matrix.target }} -p data-anchor
+          cargo build --release --target "$TARGET" -p data-anchor
 
       - name: Prepare Artifact
         shell: bash
         run: |
-          cd target/${{ matrix.target }}/release
-          tar -czvf ../../../data-anchor-${{ github.ref_name }}-${{ matrix.target }}.tar.gz data-anchor
+          cd "target/$TARGET/release"
+          tar -czvf "../../../data-anchor-$TAG-$TARGET.tar.gz" data-anchor
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
-          role-to-assume: arn:aws:iam::313512309396:role/GitHubAction-UploadToS3
+          role-to-assume: ${{ secrets.AWS_INFRA_ROLE }}
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Tofu init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          tofu init
+          BUCKET_NAME=$(tofu output bucket_name)
+          echo "BUCKET_NAME=$BUCKET_NAME" >> "$GITHUB_ENV"
+
       - name: Upload to AWS S3
         run: |
-          aws s3 cp "data-anchor-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" "s3://${{ secrets.AWS_S3_BUCKET }}/data-anchor/${{ github.ref_name }}/" --acl public-read
+          aws s3 cp "data-anchor-$TAG-$TARGET.tar.gz" "s3://$BUCKET_NAME/data-anchor/$TAG/" --acl public-read
 
   update-install-script:
     name: Update and Upload install script
@@ -67,15 +84,22 @@ jobs:
 
       - name: Prepare install-cli.sh for new release
         run: |
-          find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/${{ github.ref_name }}/" {} +
+          find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/$TAG/" {} +
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
-          role-to-assume: arn:aws:iam::313512309396:role/GitHubAction-UploadToS3
+          role-to-assume: ${{ secrets.AWS_INFRA_ROLE }}
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Tofu init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          tofu init
+          BUCKET_NAME=$(tofu output bucket_name)
+          echo "BUCKET_NAME=$BUCKET_NAME" >> "$GITHUB_ENV"
+
       - name: Upload to AWS S3
         run: |
-          aws s3 cp "./scripts/install-cli.sh" "s3://${{ secrets.AWS_S3_BUCKET }}/install.sh" --acl public-read
+          aws s3 cp "./scripts/install-cli.sh" "s3://$BUCKET_NAME/install.sh" --acl public-read
