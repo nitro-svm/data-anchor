@@ -170,10 +170,10 @@ impl IndexerSubCommand {
                 let data = client
                     .get_blobs_by_network(
                         network_name.to_owned(),
-                        TimeRange {
+                        Some(TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),
-                        },
+                        }),
                     )
                     .await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
@@ -187,10 +187,10 @@ impl IndexerSubCommand {
                     .get_blobs_by_namespace_for_payer(
                         namespace.to_owned(),
                         payer_pubkey.to_owned(),
-                        TimeRange {
+                        Some(TimeRange {
                             start: start.to_owned(),
                             end: end.to_owned(),
-                        },
+                        }),
                     )
                     .await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())

@@ -78,7 +78,7 @@ impl DataAnchorClient {
     pub async fn get_blobs_by_network(
         &self,
         network_name: String,
-        time_range: TimeRange,
+        time_range: Option<TimeRange>,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         self.indexer()
             .get_blobs_by_network(network_name.clone(), time_range)
@@ -91,7 +91,7 @@ impl DataAnchorClient {
         &self,
         namespace: String,
         payer_pubkey: Option<Pubkey>,
-        time_range: TimeRange,
+        time_range: Option<TimeRange>,
     ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
         self.indexer()
             .get_blobs_by_namespace_for_payer(

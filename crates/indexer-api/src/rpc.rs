@@ -107,7 +107,7 @@ pub trait IndexerRpc {
     async fn get_blobs_by_network(
         &self,
         network_name: String,
-        time_range: TimeRange,
+        time_range: Option<TimeRange>,
     ) -> RpcResult<Vec<Vec<u8>>>;
 
     /// Retrieve a list of blobs for a given namespace and time range. Returns an error if there
@@ -117,7 +117,7 @@ pub trait IndexerRpc {
         &self,
         namespace: String,
         payer: Option<PubkeyFromStr>,
-        time_range: TimeRange,
+        time_range: Option<TimeRange>,
     ) -> RpcResult<Vec<Vec<u8>>>;
 
     /// Retrieve a list of payers for a given network name. Returns an error if there was a
