@@ -1,4 +1,4 @@
-use data_anchor_api::{CompoundProof, IndexerRpcClient, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, TimeRange};
 use solana_sdk::{clock::Slot, pubkey::Pubkey, signer::Signer};
 
 use super::BloberIdentifier;
@@ -105,7 +105,7 @@ impl DataAnchorClient {
         &self,
         slot: u64,
         identifier: BloberIdentifier,
-    ) -> DataAnchorClientResult<Option<CompoundProof>> {
+    ) -> DataAnchorClientResult<Option<CompoundInclusionProof>> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         self.indexer()
@@ -118,7 +118,7 @@ impl DataAnchorClient {
     pub async fn get_proof_for_blob(
         &self,
         blob: Pubkey,
-    ) -> DataAnchorClientResult<Option<CompoundProof>> {
+    ) -> DataAnchorClientResult<Option<CompoundInclusionProof>> {
         self.indexer()
             .get_proof_for_blob(blob.into())
             .await

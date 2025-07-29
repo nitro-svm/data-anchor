@@ -3,11 +3,13 @@ use anchor_lang::{prelude::*, solana_program::hash};
 use crate::merge_hashes;
 
 #[account]
-#[derive(InitSpace)]
+#[derive(Debug, InitSpace, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Blober {
     pub hash: [u8; hash::HASH_BYTES],
     pub slot: u64,
     pub caller: Pubkey,
+    #[max_len(100)]
+    pub namespace: String,
 }
 
 impl Blober {
@@ -15,11 +17,7 @@ impl Blober {
         assert!(slot_num > 0);
         assert!(slot_num >= self.slot);
 
-        if slot_num > self.slot {
-            self.hash = *hash;
-            self.slot = slot_num;
-        } else {
-            self.hash = merge_hashes(&self.hash, hash);
-        }
+        self.slot = slot_num;
+        self.hash = merge_hashes(&self.hash, hash);
     }
 }

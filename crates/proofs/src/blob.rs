@@ -14,7 +14,7 @@ use thiserror::Error;
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct BlobProof {
     /// The SHA-256 hash of the blob.
-    pub digest: [u8; 32],
+    pub digest: [u8; HASH_BYTES],
     pub chunk_order: Vec<u16>,
 }
 
@@ -40,6 +40,8 @@ pub enum BlobProofError {
     },
 }
 
+pub type BlobProofResult<T = ()> = Result<T, BlobProofError>;
+
 impl BlobProof {
     /// Creates a new proof for the given blob. The blob must be at least one byte in size.
     pub fn new<A: AsRef<[u8]>>(chunks: &[(u16, A)]) -> Self {
@@ -52,21 +54,20 @@ impl BlobProof {
     }
 
     /// Verifies that the given blob matches the proof.
-    pub fn verify(&self, blob: &[u8]) -> Result<(), BlobProofError> {
-        let chunk_size = CHUNK_SIZE as usize;
+    pub fn verify(&self, blob: &[u8]) -> BlobProofResult {
         let chunks = self
             .chunk_order
             .iter()
             .map(|&i| {
-                let start_offset = i as usize * chunk_size;
-                let end_offset = min(start_offset + chunk_size, blob.len());
+                let start_offset = i as usize * CHUNK_SIZE as usize;
+                let end_offset = min(start_offset + CHUNK_SIZE as usize, blob.len());
 
                 match blob.get(start_offset..end_offset) {
                     Some(chunk) => Ok((i, chunk)),
                     None => Err(BlobProofError::InvalidStructure),
                 }
             })
-            .collect::<Result<Vec<_>, BlobProofError>>()?;
+            .collect::<BlobProofResult<Vec<_>>>()?;
 
         let digest = compute_blob_digest(&chunks);
 

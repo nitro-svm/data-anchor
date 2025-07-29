@@ -9,7 +9,10 @@ pub mod state;
 #[cfg(test)]
 mod tests;
 
-use anchor_lang::{prelude::*, solana_program::hash};
+use anchor_lang::{
+    prelude::*,
+    solana_program::hash::{self, HASH_BYTES},
+};
 pub use constants::*;
 pub use instructions::*;
 pub use state::*;
@@ -46,12 +49,16 @@ pub mod blober {
 }
 
 /// Hashes a single chunk on top of the previous hash.
-pub fn hash_leaf(previous_hash: [u8; 32], chunk_index: u16, chunk_data: &[u8]) -> [u8; 32] {
+pub fn hash_leaf(
+    previous_hash: [u8; HASH_BYTES],
+    chunk_index: u16,
+    chunk_data: &[u8],
+) -> [u8; HASH_BYTES] {
     hash::hashv(&[&previous_hash, &chunk_index.to_le_bytes(), chunk_data]).to_bytes()
 }
 
 /// Computes a blob digest of all the chunks of a blob.
-pub fn compute_blob_digest<A: AsRef<[u8]>>(chunks: &[(u16, A)]) -> [u8; 32] {
+pub fn compute_blob_digest<A: AsRef<[u8]>>(chunks: &[(u16, A)]) -> [u8; HASH_BYTES] {
     chunks
         .iter()
         .fold(initial_hash(), |hash, (chunk_index, chunk_data)| {
@@ -86,12 +93,12 @@ pub fn find_blober_address(program_id: Pubkey, payer: Pubkey, namespace: &str) -
 }
 
 /// Computes the hashed state of a blob account.
-pub fn hash_blob(key: &Pubkey, data: &[u8]) -> [u8; 32] {
+pub fn hash_blob(key: &Pubkey, data: &[u8]) -> [u8; HASH_BYTES] {
     hash::hashv(&[key.as_ref(), data]).to_bytes()
 }
 
 /// Merges two hashes into a single one. Used when there are multiple blobs to finalize in the same
 /// slot.
-pub fn merge_hashes(current: &[u8; 32], new: &[u8; 32]) -> [u8; 32] {
+pub fn merge_hashes(current: &[u8; HASH_BYTES], new: &[u8; HASH_BYTES]) -> [u8; HASH_BYTES] {
     hash::hashv(&[current, new]).to_bytes()
 }

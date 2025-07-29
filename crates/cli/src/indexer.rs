@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{CompoundProof, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
@@ -91,7 +91,7 @@ pub enum IndexerCommandOutput {
     /// The blobs for the given slot.
     Blobs(Vec<Vec<u8>>),
     /// The compound proof for the given slot.
-    Proofs(Box<Option<CompoundProof>>),
+    Proofs(Box<Option<CompoundInclusionProof>>),
 }
 
 impl std::fmt::Display for IndexerCommandOutput {

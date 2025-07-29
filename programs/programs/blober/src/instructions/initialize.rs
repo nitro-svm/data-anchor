@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, Discriminator};
 
-use crate::{state::blober::Blober, SEED};
+use crate::{initial_hash, state::blober::Blober, SEED};
 
 #[derive(Accounts)]
 #[instruction(namespace: String)]
@@ -26,10 +26,12 @@ pub struct Initialize<'info> {
 
 pub fn initialize_handler(
     ctx: Context<Initialize>,
-    _namespace: String,
+    namespace: String,
     trusted: Pubkey,
 ) -> Result<()> {
     ctx.accounts.blober.caller = trusted;
+    ctx.accounts.blober.namespace = namespace;
+    ctx.accounts.blober.hash = initial_hash();
     Ok(())
 }
 

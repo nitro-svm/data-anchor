@@ -51,9 +51,11 @@ pub const BLOB_SLOT_TOTAL_DELAY_LIMIT: u64 = 15 * 60 * 2;
 #[constant]
 pub const BLOB_ACCOUNT_DATA_OFFSET: u8 = Blob::DISCRIMINATOR.len() as u8;
 
+pub const U32_SIZE_BYTES: u8 = core::mem::size_of::<u32>() as u8;
+
 /// The size of the relevant data for a blob account.
 #[constant]
-pub const BLOB_ACCOUNT_DATA_LEN: u8 = hash::HASH_BYTES as u8 + core::mem::size_of::<u32>() as u8;
+pub const BLOB_ACCOUNT_DATA_LEN: u8 = hash::HASH_BYTES as u8 + U32_SIZE_BYTES;
 
 /// The start of the blob data in the account data.
 pub const BLOB_DATA_START: usize = BLOB_ACCOUNT_DATA_OFFSET as usize;

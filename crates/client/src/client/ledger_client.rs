@@ -74,6 +74,9 @@ pub enum ChainError {
         "Payer has insufficient balance to pay for the transaction: required {0}, available {1}"
     )]
     InsufficientBalance(u64, u64),
+    /// Could not calculate cost
+    #[error("Could not calculate cost")]
+    CouldNotCalculateCost,
 }
 
 impl DataAnchorClient {

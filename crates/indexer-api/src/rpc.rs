@@ -1,14 +1,13 @@
 use std::collections::HashSet;
 
 use chrono::{DateTime, Utc};
+use data_anchor_proofs::compound::CompoundInclusionProof;
 use jsonrpsee::{
     core::{RpcResult, SubscriptionResult},
     proc_macros::rpc,
 };
 use serde::{Deserialize, Serialize};
 use solana_sdk::{clock::Slot, pubkey::Pubkey};
-
-use crate::CompoundProof;
 
 /// A data structure representing a blober's information, including the blober's pubkey, the
 /// payer's pubkey, and the network of the blober.
@@ -118,8 +117,11 @@ pub trait IndexerRpc {
     /// Retrieve a proof for a given slot and blober pubkey. Returns an error if there was a
     /// database or RPC failure, and None if the slot has not been completed yet.
     #[method(name = "get_proof")]
-    async fn get_proof(&self, blober: PubkeyFromStr, slot: u64)
-    -> RpcResult<Option<CompoundProof>>;
+    async fn get_proof(
+        &self,
+        blober: PubkeyFromStr,
+        slot: u64,
+    ) -> RpcResult<Option<CompoundInclusionProof>>;
 
     /// Retrieve a compound proof that covers a particular blob. Returns an error if there was a
     /// database or RPC failure, and None if the blob does not exist.
@@ -127,7 +129,7 @@ pub trait IndexerRpc {
     async fn get_proof_for_blob(
         &self,
         blob_address: PubkeyFromStr,
-    ) -> RpcResult<Option<CompoundProof>>;
+    ) -> RpcResult<Option<CompoundInclusionProof>>;
 
     /// Listen to blob finalization events from specified blobers. This will return a stream of
     /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is

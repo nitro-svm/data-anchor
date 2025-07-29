@@ -127,6 +127,10 @@ impl DataAnchorClient {
         self.payer.clone()
     }
 
+    fn in_mock_env(&self) -> bool {
+        self.rpc_client.url().starts_with("MockSender")
+    }
+
     async fn check_account_exists(&self, account: Pubkey) -> DataAnchorClientResult<bool> {
         Ok(self
             .rpc_client
@@ -135,18 +139,15 @@ impl DataAnchorClient {
             .map(|res| res.value.is_some())?)
     }
 
-    async fn require_balance(&self, cost: u64) -> DataAnchorClientResult {
-        if self.rpc_client.url().starts_with("MockSender") {
-            // In tests, we assume the payer has enough balance.
-            return Ok(());
-        }
+    async fn require_balance(&self, cost: Lamports) -> DataAnchorClientResult {
         let balance = self
             .rpc_client
             .get_balance_with_commitment(&self.payer.pubkey(), CommitmentConfig::confirmed())
             .await
             .map(|r| r.value)?;
-        if balance < cost {
-            return Err(ChainError::InsufficientBalance(balance, cost).into());
+        let cost_u64 = cost.into_inner() as u64;
+        if balance < cost_u64 {
+            return Err(ChainError::InsufficientBalance(balance, cost_u64).into());
         }
         Ok(())
     }
@@ -160,7 +161,8 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
-        if self.check_account_exists(blober).await? {
+        let in_mock_env = self.in_mock_env();
+        if !in_mock_env && self.check_account_exists(blober).await? {
             return Err(
                 ChainError::AccountExists(format!("Blober PDA with address {blober}")).into(),
             );
@@ -175,8 +177,13 @@ impl DataAnchorClient {
             .in_current_span()
             .await?;
 
-        let cost = (fee.total_fee().0 + fee.rent().0) as u64;
-        self.require_balance(cost).await?;
+        if !in_mock_env {
+            let cost = fee
+                .total_fee()
+                .checked_add(fee.rent())
+                .ok_or_else(|| ChainError::CouldNotCalculateCost)?;
+            self.require_balance(cost).await?;
+        }
 
         let msg = Initialize::build_message(MessageArguments::new(
             self.program_id,
@@ -214,7 +221,8 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
-        if !self.check_account_exists(blober).await? {
+        let in_mock_env = self.in_mock_env();
+        if !in_mock_env && !self.check_account_exists(blober).await? {
             return Err(ChainError::AccountDoesNotExist(format!(
                 "Blober PDA with address {blober}"
             ))
@@ -230,7 +238,9 @@ impl DataAnchorClient {
             .in_current_span()
             .await?;
 
-        self.require_balance(fee.total_fee().0 as u64).await?;
+        if !in_mock_env {
+            self.require_balance(fee.total_fee()).await?;
+        }
 
         let msg = Close::build_message(MessageArguments::new(
             self.program_id,
@@ -277,7 +287,8 @@ impl DataAnchorClient {
             blob_data.len(),
         );
 
-        if self.check_account_exists(blob).await? {
+        let in_mock_env = self.in_mock_env();
+        if !in_mock_env && self.check_account_exists(blob).await? {
             return Err(ChainError::AccountExists(format!("Blob PDA with address {blob}")).into());
         }
 
@@ -285,8 +296,13 @@ impl DataAnchorClient {
             .estimate_fees(blob_data.len(), blober, fee_strategy)
             .await?;
 
-        self.require_balance((fee.total_fee().0 + fee.rent().0) as u64)
-            .await?;
+        if !in_mock_env {
+            let cost = fee
+                .total_fee()
+                .checked_add(fee.rent())
+                .ok_or_else(|| ChainError::CouldNotCalculateCost)?;
+            self.require_balance(cost).await?;
+        }
 
         let upload_messages = self
             .generate_messages(blob, timestamp, blob_data, fee_strategy, blober)
@@ -316,7 +332,8 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
 
-        if !self.check_account_exists(blob).await? {
+        let in_mock_env = self.in_mock_env();
+        if !in_mock_env && !self.check_account_exists(blob).await? {
             return Err(
                 ChainError::AccountDoesNotExist(format!("Blob PDA with address {blob}")).into(),
             );
@@ -331,7 +348,9 @@ impl DataAnchorClient {
             .in_current_span()
             .await?;
 
-        self.require_balance(fee.total_fee().0 as u64).await?;
+        if !in_mock_env {
+            self.require_balance(fee.total_fee()).await?;
+        }
 
         let msg = DiscardBlob::build_message(MessageArguments::new(
             self.program_id,

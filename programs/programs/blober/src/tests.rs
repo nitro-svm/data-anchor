@@ -1,6 +1,6 @@
 use anchor_lang::{
     prelude::{AccountInfo, Pubkey},
-    solana_program::{self, instruction::Instruction},
+    solana_program::{self, hash::HASH_BYTES, instruction::Instruction},
     AccountDeserialize, InstructionData, ToAccountMetas,
 };
 use rand::{prelude::SliceRandom, thread_rng};
@@ -13,7 +13,7 @@ use solana_sdk::{
 
 use crate::{
     accounts, compute_blob_digest, find_blob_address, find_blober_address, hash_blob, id,
-    instruction, merge_hashes,
+    initial_hash, instruction, merge_hashes,
     state::{blob::Blob, blober::Blober},
     try_entry, CHUNK_SIZE,
 };
@@ -77,7 +77,7 @@ async fn upload_blob(
     banks_client: &mut BanksClient,
     timestamp: u64,
     blober: Pubkey,
-) -> (Pubkey, [u8; 32]) {
+) -> (Pubkey, [u8; HASH_BYTES]) {
     let chunks = data
         .chunks(CHUNK_SIZE as usize)
         .enumerate()
@@ -408,13 +408,16 @@ async fn hash_single_account() {
     let blober =
         Blober::try_deserialize(&mut &blober.data[..]).expect("failed to deserialize blober");
 
-    let expected_hash = hash_blob(
-        &blob,
-        &[
-            blob_digest.as_ref(),
-            (random_data.len() as u32).to_le_bytes().as_ref(),
-        ]
-        .concat(),
+    let expected_hash = merge_hashes(
+        &initial_hash(),
+        &hash_blob(
+            &blob,
+            &[
+                blob_digest.as_ref(),
+                (random_data.len() as u32).to_le_bytes().as_ref(),
+            ]
+            .concat(),
+        ),
     );
 
     assert_eq!(blober.hash, expected_hash.as_ref());
@@ -549,7 +552,7 @@ async fn hash_two_accounts() {
             ]
             .concat(),
         );
-        merge_hashes(&first_hash, &second_hash)
+        merge_hashes(&merge_hashes(&initial_hash(), &first_hash), &second_hash)
     };
 
     assert_eq!(blober.hash, expected_digest.as_ref());
@@ -726,7 +729,7 @@ async fn hash_three_accounts() {
             ]
             .concat(),
         );
-        let first_merged = merge_hashes(&first_hash, &second_hash);
+        let first_merged = merge_hashes(&merge_hashes(&initial_hash(), &first_hash), &second_hash);
         merge_hashes(&first_merged, &third_hash)
     };
 
@@ -815,13 +818,16 @@ async fn hash_single_account_in_two_slots() {
     let blober_1 =
         Blober::try_deserialize(&mut &blober_1.data[..]).expect("failed to deserialize blober");
 
-    let expected_digest = hash_blob(
-        &blob,
-        &[
-            digest.as_ref(),
-            (source_data.len() as u32).to_le_bytes().as_ref(),
-        ]
-        .concat(),
+    let expected_digest = merge_hashes(
+        &initial_hash(),
+        &hash_blob(
+            &blob,
+            &[
+                digest.as_ref(),
+                (source_data.len() as u32).to_le_bytes().as_ref(),
+            ]
+            .concat(),
+        ),
     );
 
     assert_eq!(blober_1.hash, expected_digest.as_ref());
