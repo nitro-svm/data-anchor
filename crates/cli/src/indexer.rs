@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{CompoundInclusionProof, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, ProofData, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
@@ -68,6 +68,9 @@ pub enum IndexerSubCommand {
     /// Get compound proof for a given slot.
     #[command(visible_alias = "p", alias = "proofs")]
     Proof(SlotArgs),
+    /// Request proof checkpoint generation for a given slot.
+    #[command(visible_alias = "cp")]
+    CheckpointProof(SlotArgs),
 }
 
 #[derive(Debug, Clone, Args)]
@@ -92,6 +95,8 @@ pub enum IndexerCommandOutput {
     Blobs(Vec<Vec<u8>>),
     /// The compound proof for the given slot.
     Proofs(Box<Option<CompoundInclusionProof>>),
+    /// The Groth16 proof data for the given slot.
+    ZKProofs(Box<ProofData>),
 }
 
 impl std::fmt::Display for IndexerCommandOutput {
@@ -106,6 +111,9 @@ impl std::fmt::Display for IndexerCommandOutput {
             }
             IndexerCommandOutput::Proofs(proof) => {
                 write!(f, "Proofs: {proof:?}")
+            }
+            IndexerCommandOutput::ZKProofs(proof) => {
+                write!(f, "ZK Proofs: {proof:?}")
             }
         }
     }
@@ -194,6 +202,10 @@ impl IndexerSubCommand {
             IndexerSubCommand::ProofForBlob { blob } => {
                 let proof = client.get_proof_for_blob(blob.to_owned()).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
+            }
+            IndexerSubCommand::CheckpointProof(SlotArgs { slot }) => {
+                let proof = client.checkpoint_proof(*slot, blober_pda.into()).await?;
+                Ok(IndexerCommandOutput::ZKProofs(Box::new(proof)).into())
             }
         }
     }

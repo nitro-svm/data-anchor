@@ -116,6 +116,11 @@ impl CommandOutput {
                     writer.serialize(compound_proof)?;
                     Ok(String::from_utf8(writer.into_inner()?)?)
                 }
+                IndexerCommandOutput::ZKProofs(proof_data) => {
+                    let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
+                    writer.serialize(proof_data)?;
+                    Ok(String::from_utf8(writer.into_inner()?)?)
+                }
             },
             CommandOutput::Benchmark(output) => match output {
                 BenchmarkCommandOutput::DataPath(path_buf) => {
@@ -169,6 +174,7 @@ impl CommandOutput {
                 IndexerCommandOutput::Proofs(compound_proof) => {
                     serde_json::to_string(compound_proof)
                 }
+                IndexerCommandOutput::ZKProofs(proof_data) => serde_json::to_string(proof_data),
             },
             CommandOutput::Benchmark(output) => serde_json::to_string(output),
         };
@@ -213,6 +219,9 @@ impl CommandOutput {
                 }
                 IndexerCommandOutput::Proofs(compound_proof) => {
                     serde_json::to_string_pretty(compound_proof)
+                }
+                IndexerCommandOutput::ZKProofs(proof_data) => {
+                    serde_json::to_string_pretty(proof_data)
                 }
             },
             CommandOutput::Benchmark(output) => serde_json::to_string_pretty(output),

@@ -2,15 +2,23 @@ use std::{sync::Arc, time::Duration};
 
 use anchor_lang::{Discriminator, Space};
 use bon::Builder;
+use data_anchor_api::ProofData;
 use data_anchor_blober::{
-    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
-    instruction::{Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk},
+    CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, PROOF_PUBLIC_VALUES_SIZE,
+    find_blob_address, find_blober_address, find_checkpoint_address,
+    instruction::{
+        Close, CreateCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
+    },
     state::blober::Blober,
 };
 use jsonrpsee::http_client::HttpClient;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
-    commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Keypair, signer::Signer,
+    clock::Slot,
+    commitment_config::CommitmentConfig,
+    pubkey::{PUBKEY_BYTES, Pubkey},
+    signature::Keypair,
+    signer::Signer,
 };
 use tracing::{Instrument, Span, info_span};
 
@@ -376,6 +384,96 @@ impl DataAnchorClient {
             .map_err(ChainError::DiscardBlob)?,
             blob,
         ))
+    }
+
+    /// Creates or updates a blober [`data_anchor_blober::state::checkpoint::Checkpoint`] with the provided proof data.
+    pub async fn create_checkpoint(
+        &self,
+        fee_strategy: FeeStrategy,
+        identifier: BloberIdentifier,
+        slot: Slot,
+        proof_data: ProofData,
+        timeout: Option<Duration>,
+    ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
+        let groth16_proof = proof_data
+            .proof
+            .try_into()
+            .map_err(|_| ChainError::InvalidGroth16Proof)?;
+        let public_values: [u8; PROOF_PUBLIC_VALUES_SIZE] = proof_data
+            .public_values
+            .try_into()
+            .map_err(|_| ChainError::InvalidPublicValues)?;
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
+
+        let commited_blober = Pubkey::new_from_array(
+            public_values[..PUBKEY_BYTES]
+                .try_into()
+                .map_err(|_| ChainError::InvalidPublicValues)?,
+        );
+
+        if blober != commited_blober {
+            return Err(ChainError::ProofBloberMismatch(blober, commited_blober).into());
+        }
+
+        let checkpoint = find_checkpoint_address(self.program_id, blober);
+
+        let fee = fee_strategy
+            .convert_fee_strategy_to_fixed(
+                &self.rpc_client,
+                &[checkpoint, self.payer.pubkey()],
+                TransactionType::CloseBlober,
+            )
+            .in_current_span()
+            .await?;
+
+        if !self.in_mock_env() {
+            self.require_balance(fee.total_fee()).await?;
+        }
+
+        let msg = CreateCheckpoint::build_message(MessageArguments::new(
+            self.program_id,
+            checkpoint,
+            &self.payer,
+            self.rpc_client.clone(),
+            fee,
+            (
+                blober,
+                groth16_proof,
+                public_values,
+                proof_data.verification_key,
+                slot,
+            ),
+        ))
+        .in_current_span()
+        .await
+        .expect("infallible with a fixed fee strategy");
+
+        let span = info_span!(parent: Span::current(), "create_checkpoint");
+
+        Ok((
+            check_outcomes(
+                self.batch_client
+                    .send(vec![(TransactionType::CreateCheckpoint, msg)], timeout)
+                    .instrument(span)
+                    .await,
+            )
+            .map_err(ChainError::CreateCheckpoint)?,
+            checkpoint,
+        ))
+    }
+
+    /// Helper function to request a proof be generated for a given blober and slot and immediately posted to the ledger.
+    pub async fn generate_proof_and_create_checkpoint(
+        &self,
+        fee_strategy: FeeStrategy,
+        identifier: BloberIdentifier,
+        slot: Slot,
+        timeout: Option<Duration>,
+    ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
+        let proof_data = self.checkpoint_proof(slot, identifier.clone()).await?;
+
+        self.create_checkpoint(fee_strategy, identifier, slot, proof_data, timeout)
+            .await
     }
 
     /// Estimates fees for uploading a blob of the size `blob_size` with the given `priority`.

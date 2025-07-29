@@ -9,6 +9,17 @@ use solana_sdk::{
 };
 use solana_transaction_status::InnerInstructions;
 
+use crate::PubkeyFromStr;
+
+/// A blober PDA with an associated namespace.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BloberWithNamespace {
+    /// The blober's public key.
+    pub address: PubkeyFromStr,
+    /// The namespace associated with the blober.
+    pub namespace: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionedTransactionWithInnerInstructions {
     pub transaction: VersionedTransaction,
@@ -298,6 +309,12 @@ pub enum LedgerDataBlobError {
     /// Multiple finalize instructions found
     #[error("Multiple finalize instructions found")]
     MultipleFinalizes,
+    /// Checkpoint account not owned by the program
+    #[error("Blob account not owned by the program")]
+    AccountNotOwnedByProgram,
+    /// Invalid checkpoint account
+    #[error("Invalid checkpoint account")]
+    InvalidCheckpointAccount,
 }
 
 /// Extracts the blob data from the relevant instructions.

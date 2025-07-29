@@ -41,9 +41,31 @@ pub fn create_checkpoint_handler(
 ) -> Result<()> {
     let public_value_blober = bincode::deserialize::<Pubkey>(&public_values[..PUBKEY_BYTES])
         .map_err(|_| error!(ErrorCode::InvalidPublicValue))?;
+
     if public_value_blober != blober {
         return Err(error!(ErrorCode::InvalidPublicValue));
     }
+
+    if ctx.accounts.checkpoint.slot != 0 {
+        let public_value_initial_hash = bincode::deserialize::<[u8; 32]>(
+            &public_values[PUBKEY_BYTES..PROOF_PUBLIC_VALUES_SIZE - PUBKEY_BYTES],
+        )
+        .map_err(|_| error!(ErrorCode::InvalidPublicValue))?;
+
+        let public_value_final_hash = bincode::deserialize::<[u8; 32]>(
+            &ctx.accounts.checkpoint.public_values[PROOF_PUBLIC_VALUES_SIZE - PUBKEY_BYTES..],
+        )
+        .map_err(|_| error!(ErrorCode::InvalidPublicValue))?;
+
+        if public_value_initial_hash != public_value_final_hash {
+            return Err(error!(ErrorCode::ProofHashMismatch));
+        }
+
+        if ctx.accounts.checkpoint.slot >= slot {
+            return Err(error!(ErrorCode::SlotTooLow));
+        }
+    }
+
     ctx.accounts
         .checkpoint
         .store(proof, public_values, verification_key, slot);

@@ -1,4 +1,4 @@
-use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, ProofData, TimeRange};
 use solana_sdk::{clock::Slot, pubkey::Pubkey, signer::Signer};
 
 use super::BloberIdentifier;
@@ -27,6 +27,9 @@ pub enum IndexerError {
     /// Failed to read proof for blob {0} via indexer client: {1}
     #[error("Failed to read proof for blob {0} via indexer client: {1}")]
     ProofForBlob(String, String),
+    /// Failed to read compound proof for slot {0} via indexer client: {1}
+    #[error("Failed to read checkpoint proof for blober {0} and slot {1} via indexer client: {2}")]
+    ZKProof(String, u64, String),
 }
 
 impl DataAnchorClient {
@@ -123,5 +126,19 @@ impl DataAnchorClient {
             .get_proof_for_blob(blob.into())
             .await
             .map_err(|e| IndexerError::ProofForBlob(blob.to_string(), e.to_string()).into())
+    }
+
+    /// Requests ZK proof generation on the indexer for a given blober and slot.
+    pub async fn checkpoint_proof(
+        &self,
+        slot: Slot,
+        identifier: BloberIdentifier,
+    ) -> DataAnchorClientResult<ProofData> {
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
+
+        self.indexer()
+            .checkpoint_proof(blober.into(), slot)
+            .await
+            .map_err(|e| IndexerError::ZKProof(blober.to_string(), slot, e.to_string()).into())
     }
 }

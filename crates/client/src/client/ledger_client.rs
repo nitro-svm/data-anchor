@@ -2,11 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use data_anchor_api::{
-    LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
+    BloberWithNamespace, LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
     extract_relevant_instructions, get_account_at_index, get_blob_data_from_instructions,
 };
 use data_anchor_blober::{
-    BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, state::blober::Blober,
+    BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, checkpoint::Checkpoint,
+    find_checkpoint_address, state::blober::Blober,
 };
 use futures::StreamExt;
 use solana_account_decoder_client_types::UiAccountEncoding;
@@ -77,6 +78,18 @@ pub enum ChainError {
     /// Could not calculate cost
     #[error("Could not calculate cost")]
     CouldNotCalculateCost,
+    /// Invalid Groth16 proof
+    #[error("Invalid Groth16 proof")]
+    InvalidGroth16Proof,
+    /// Invalid public values
+    #[error("Invalid public values")]
+    InvalidPublicValues,
+    /// Failed to create checkpoint: {0}
+    #[error("Failed to create checkpoint: {0}")]
+    CreateCheckpoint(OutcomeError),
+    /// Provided proof commitment does not match the blober's address
+    #[error("Provided proof commitment does not match the blober's address expected {0}, got {1}")]
+    ProofBloberMismatch(Pubkey, Pubkey),
 }
 
 impl DataAnchorClient {
@@ -357,7 +370,7 @@ impl DataAnchorClient {
     }
 
     /// Lists all blober accounts owned by the payer.
-    pub async fn list_blobers(&self) -> DataAnchorClientResult<Vec<Pubkey>> {
+    pub async fn list_blobers(&self) -> DataAnchorClientResult<Vec<BloberWithNamespace>> {
         let blobers = self
             .rpc_client
             .get_program_accounts_with_config(
@@ -382,8 +395,52 @@ impl DataAnchorClient {
                 let state = account.data.get(Blober::DISCRIMINATOR.len()..)?;
                 let blober_state = Blober::try_from_slice(state).ok()?;
 
-                (blober_state.caller == self.payer.pubkey()).then_some(pubkey)
+                (blober_state.caller == self.payer.pubkey()).then_some(BloberWithNamespace {
+                    address: pubkey.into(),
+                    namespace: blober_state.namespace,
+                })
             })
             .collect())
+    }
+
+    /// Retrieves the checkpoint containing the Groth16 proof for a given blober account.
+    pub async fn get_checkpoint(
+        &self,
+        blober: Pubkey,
+    ) -> DataAnchorClientResult<Option<Checkpoint>> {
+        let checkpoint_address = find_checkpoint_address(self.program_id, blober);
+        let account = self
+            .rpc_client
+            .get_account_with_config(
+                &checkpoint_address,
+                RpcAccountInfoConfig {
+                    encoding: Some(UiAccountEncoding::Base64),
+                    commitment: Some(self.rpc_client.commitment()),
+                    ..Default::default()
+                },
+            )
+            .await?;
+
+        let Some(account) = account.value else {
+            return Ok(None);
+        };
+
+        if account.owner != self.program_id {
+            return Err(LedgerDataBlobError::AccountNotOwnedByProgram.into());
+        }
+
+        if account.data.get(..Checkpoint::DISCRIMINATOR.len()) != Some(Checkpoint::DISCRIMINATOR) {
+            return Err(LedgerDataBlobError::InvalidCheckpointAccount.into());
+        }
+
+        let state = account
+            .data
+            .get(Checkpoint::DISCRIMINATOR.len()..)
+            .ok_or(LedgerDataBlobError::InvalidCheckpointAccount)?;
+
+        let checkpoint = Checkpoint::try_from_slice(state)
+            .map_err(|_| LedgerDataBlobError::InvalidCheckpointAccount)?;
+
+        Ok(Some(checkpoint))
     }
 }

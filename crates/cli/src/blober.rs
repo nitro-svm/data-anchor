@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
-use data_anchor_api::PubkeyFromStr;
+use data_anchor_api::BloberWithNamespace;
 use data_anchor_client::{
-    BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
+    BloberIdentifier, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
+    Priority,
 };
 use serde::{Serialize, ser::SerializeStruct};
 use solana_sdk::pubkey::Pubkey;
@@ -11,7 +12,7 @@ use tracing::{info, instrument};
 
 use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};
 
-#[derive(Debug, Clone, Copy, Parser, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Parser, Serialize, PartialEq, Eq)]
 pub enum BloberSubCommand {
     /// Initialize the given blober account.
     #[command(visible_alias = "i")]
@@ -25,6 +26,16 @@ pub enum BloberSubCommand {
     /// Get all the PDA addresses for the given program ID.
     #[command(visible_alias = "l")]
     List,
+    /// Create an on-chain checkpoint for the given blober account.
+    #[command(visible_alias = "cp")]
+    CreateCheckpoint {
+        /// The path to the file containing the proof data.
+        #[arg(short, long)]
+        proof_data_path: PathBuf,
+        /// The slot for which the checkpoint is being created.
+        #[arg(short, long)]
+        slot: u64,
+    },
 }
 
 #[derive(Debug)]
@@ -33,7 +44,7 @@ pub struct BloberCommandOutput {
     action: BloberSubCommand,
     program_id: Pubkey,
     payer: Pubkey,
-    blobers: Vec<PubkeyFromStr>,
+    blobers: Vec<BloberWithNamespace>,
 }
 
 impl Serialize for BloberCommandOutput {
@@ -59,7 +70,7 @@ impl Serialize for BloberCommandOutput {
 
 impl std::fmt::Display for BloberCommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.action {
+        match &self.action {
             BloberSubCommand::List => {
                 write!(
                     f,
@@ -67,7 +78,10 @@ impl std::fmt::Display for BloberCommandOutput {
                     self.payer,
                     self.blobers
                         .iter()
-                        .map(|pubkey| pubkey.0.to_string())
+                        .map(|BloberWithNamespace { address, namespace }| format!(
+                            "Pubkey: {}, Namespace: {namespace}",
+                            address.0
+                        ))
                         .collect::<Vec<String>>()
                         .join("\n")
                 )
@@ -138,17 +152,38 @@ impl BloberSubCommand {
                 // No action needed for address command, just return the output.
             }
             BloberSubCommand::List => {
-                blobers = client
-                    .list_blobers()
-                    .await?
-                    .into_iter()
-                    .map(PubkeyFromStr)
-                    .collect();
+                blobers = client.list_blobers().await?;
+            }
+            BloberSubCommand::CreateCheckpoint {
+                proof_data_path,
+                slot,
+            } => {
+                let file_data = tokio::fs::read_to_string(proof_data_path)
+                    .await
+                    .unwrap_or_else(|_| panic!("failed to read file at {proof_data_path:?}"));
+                let proof_data = serde_json::from_str(&file_data).map_err(|e| {
+                    DataAnchorClientError::InvalidData(format!(
+                        "Could not deserialize proof data from file: {e:?}"
+                    ))
+                })?;
+                info!(
+                    "Creating checkpoint for blober account with namespace: {}",
+                    identifier.namespace().unwrap_or("unknown")
+                );
+                client
+                    .create_checkpoint(
+                        FeeStrategy::BasedOnRecentFees(Priority::Medium),
+                        identifier.clone(),
+                        *slot,
+                        proof_data,
+                        None,
+                    )
+                    .await?;
             }
         }
         Ok(BloberCommandOutput {
             identifier,
-            action: *self,
+            action: self.clone(),
             program_id,
             payer,
             blobers,

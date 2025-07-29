@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use data_anchor_api::LedgerDataBlobError;
 use data_anchor_blober::instruction::{
-    Close, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
+    Close, CreateCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
 use solana_rpc_client_api::client_error::Error;
 use solana_sdk::commitment_config::ParseCommitmentLevelError;
@@ -44,6 +44,9 @@ pub enum DataAnchorClientError {
     /// Ledger data blob error: {0}
     #[error("Ledger data blob error: {0}")]
     LedgerDataBlob(#[from] LedgerDataBlobError),
+    /// Invalid data: {0}
+    #[error("Invalid data: {0}")]
+    InvalidData(String),
 }
 
 /// Result returned when interacting with the Blober client.
@@ -66,6 +69,7 @@ pub enum TransactionType {
     Compound,
     CompoundDeclare,
     CompoundFinalize,
+    CreateCheckpoint,
     DeclareBlob,
     DiscardBlob,
     FinalizeBlob,
@@ -80,6 +84,7 @@ impl Display for TransactionType {
             TransactionType::Compound => write!(f, "CompoundUpload"),
             TransactionType::CompoundDeclare => write!(f, "CompoundDeclare"),
             TransactionType::CompoundFinalize => write!(f, "CompoundFinalize"),
+            TransactionType::CreateCheckpoint => write!(f, "CreateCheckpoint"),
             TransactionType::DeclareBlob => write!(f, "DeclareBlob"),
             TransactionType::DiscardBlob => write!(f, "DiscardBlob"),
             TransactionType::FinalizeBlob => write!(f, "FinalizeBlob"),
@@ -97,6 +102,7 @@ impl TransactionType {
             TransactionType::Compound => Compound::NUM_SIGNATURES,
             TransactionType::CompoundDeclare => CompoundDeclare::NUM_SIGNATURES,
             TransactionType::CompoundFinalize => CompoundFinalize::NUM_SIGNATURES,
+            TransactionType::CreateCheckpoint => CreateCheckpoint::NUM_SIGNATURES,
             TransactionType::DeclareBlob => DeclareBlob::NUM_SIGNATURES,
             TransactionType::DiscardBlob => DiscardBlob::NUM_SIGNATURES,
             TransactionType::FinalizeBlob => FinalizeBlob::NUM_SIGNATURES,
@@ -112,6 +118,7 @@ impl TransactionType {
             TransactionType::Compound => Compound::COMPUTE_UNIT_LIMIT,
             TransactionType::CompoundDeclare => CompoundDeclare::COMPUTE_UNIT_LIMIT,
             TransactionType::CompoundFinalize => CompoundFinalize::COMPUTE_UNIT_LIMIT,
+            TransactionType::CreateCheckpoint => CreateCheckpoint::COMPUTE_UNIT_LIMIT,
             TransactionType::DeclareBlob => DeclareBlob::COMPUTE_UNIT_LIMIT,
             TransactionType::DiscardBlob => DiscardBlob::COMPUTE_UNIT_LIMIT,
             TransactionType::FinalizeBlob => FinalizeBlob::COMPUTE_UNIT_LIMIT,
