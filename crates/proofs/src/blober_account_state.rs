@@ -147,6 +147,13 @@ impl BloberAccountStateProof {
         self.uploads.values().flat_map(|blobs| blobs.iter())
     }
 
+    pub fn target_slot(&self) -> Slot {
+        self.uploads
+            .last_key_value()
+            .map(|(slot, _)| *slot)
+            .unwrap_or(self.initial_slot)
+    }
+
     pub fn calculate_hash(&self) -> [u8; HASH_BYTES] {
         merge_all_hashes(
             std::iter::once(self.initial_hash).chain(self.blobs().map(|blob| blob.hash_blob())),

@@ -12,7 +12,7 @@ use data_anchor_proofs::{
     blober_account_state::{BlobAccount, BloberAccountStateProof, merge_all_hashes},
     compound::{CompoundInclusionProof, ProofBlob, VerifyArgs},
 };
-use data_anchor_prover::generate_proof;
+use data_anchor_prover::run_client;
 use rand::{RngCore, rngs::OsRng};
 use solana_pubkey::Pubkey;
 use sp1_sdk::utils;
@@ -167,7 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::parse();
 
     let (public_values, report) =
-        generate_proof(compound_inclusion_proof, args, config.prove, config.verify)?;
+        run_client(compound_inclusion_proof, args, config.prove, config.verify)?;
 
     let size = ByteSize(public_values.as_slice().len() as u64);
     println!(

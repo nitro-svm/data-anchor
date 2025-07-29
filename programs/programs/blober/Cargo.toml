@@ -22,13 +22,13 @@ idl-build = [ "anchor-lang/idl-build" ]
 
 [dependencies]
 # External dependencies from crates.io
+bincode = { workspace = true }
 hex = { workspace = true }
 
-# Solana & Agave
-anchor-lang = { workspace = true }
+anchor-lang = { workspace = true, features = ["init-if-needed"] }
 
 [dev-dependencies]
-# External dependencies from crates.io
+# External dependencies from crates.io# Solana & Agave
 futures = { workspace = true }
 rand = { workspace = true }
 tokio = { workspace = true }

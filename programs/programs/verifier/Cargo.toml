@@ -14,15 +14,21 @@ name = "data_anchor_verifier"
 
 [features]
 default = []
-cpi = [ "no-entrypoint" ]
-no-entrypoint = []
-no-idl = []
-no-log-ix-name = []
-idl-build = [ "anchor-lang/idl-build" ]
+cpi = [ "data-anchor-blober/cpi", "no-entrypoint" ]
+no-entrypoint = [ "data-anchor-blober/no-entrypoint" ]
+no-idl = [ "data-anchor-blober/no-idl" ]
+no-log-ix-name = [ "data-anchor-blober/no-log-ix-name" ]
+idl-build = [ "anchor-lang/idl-build", "data-anchor-blober/idl-build" ]
 
 [dependencies]
+# External dependencies from crates.io
+bincode = { workspace = true }
+
 # Solana & Agave
 anchor-lang = { workspace = true }
 
 # SP1
 sp1-solana = { workspace = true }
+
+# Locals
+data-anchor-blober = { workspace = true, features = ["no-entrypoint"] }

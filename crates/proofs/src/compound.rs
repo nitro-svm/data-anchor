@@ -195,6 +195,10 @@ impl CompoundInclusionProof {
         CompoundInclusionProofCommitment::from(self)
     }
 
+    pub fn target_slot(&self) -> u64 {
+        self.blober_account_state_proof.target_slot()
+    }
+
     pub fn hash_proofs(&self) -> [u8; HASH_BYTES] {
         merge_all_hashes(self.blob_proofs.iter().map(BlobProof::hash_proof))
     }

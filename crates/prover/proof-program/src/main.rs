@@ -16,6 +16,7 @@ fn main() {
 
     // Commit to inputs
     println!("cycle-tracker-report-start: commit");
+    sp1_zkvm::io::commit(&proof.blober_pubkey);
     sp1_zkvm::io::commit(&proof.into_commitment());
     sp1_zkvm::io::commit(&args.into_commitment().unwrap());
     println!("cycle-tracker-report-end: commit");

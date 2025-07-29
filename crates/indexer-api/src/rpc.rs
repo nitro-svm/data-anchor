@@ -58,6 +58,17 @@ impl From<Pubkey> for PubkeyFromStr {
     }
 }
 
+/// Data structure to hold the proof data
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProofData {
+    /// The Groth16 proof bytes
+    pub proof: Vec<u8>,
+    /// The public values from the proof
+    pub public_values: Vec<u8>,
+    /// The verification key bytes in hex encoding with a leading "0x"
+    pub verification_key: String,
+}
+
 /// The Indexer RPC interface.
 #[rpc(server, client)]
 pub trait IndexerRpc {
@@ -133,7 +144,7 @@ pub trait IndexerRpc {
 
     /// Request building a succinct ZK Groth16 proof for a given blober and slot.
     #[method(name = "checkpoint_proof")]
-    async fn checkpoint_proof(&self, blober: PubkeyFromStr, slot: u64) -> RpcResult<()>;
+    async fn checkpoint_proof(&self, blober: PubkeyFromStr, slot: u64) -> RpcResult<ProofData>;
 
     /// Listen to blob finalization events from specified blobers. This will return a stream of
     /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is

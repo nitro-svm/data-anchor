@@ -2,26 +2,31 @@
 // Allow unexpected_cfgs because anchor macros add cfgs which are not in the original code
 
 use anchor_lang::prelude::*;
+use data_anchor_blober::checkpoint::Checkpoint;
 use sp1_solana::{verify_proof, GROTH16_VK_4_0_0_RC3_BYTES};
 
 declare_id!("oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi");
 
 #[program]
-pub mod sp1_anchor_verifier {
+pub mod data_anchor_verifier {
+    use anchor_lang::solana_program::pubkey::PUBKEY_BYTES;
+
     use super::*;
 
-    pub fn verify(_ctx: Context<Verify>, instruction_data: Vec<u8>) -> Result<()> {
-        // Deserialize the InstructionData
-        let idata = InstructionData::try_from_slice(&instruction_data)
-            .map_err(|_| error!(SP1Error::InvalidInstructionData))?;
+    pub fn verify(ctx: Context<Verify>, blober: Pubkey) -> Result<()> {
+        let public_value_blober =
+            bincode::deserialize::<Pubkey>(&ctx.accounts.checkpoint.public_values[..PUBKEY_BYTES])
+                .map_err(|_| error!(SP1Error::InvalidPublicValue))?;
 
-        let vk = GROTH16_VK_4_0_0_RC3_BYTES;
+        if public_value_blober != blober {
+            return Err(error!(SP1Error::BloberMismatch));
+        }
 
         verify_proof(
-            &idata.groth16_proof.proof,
-            &idata.groth16_proof.sp1_public_inputs,
-            &idata.vkey_hash,
-            vk,
+            &ctx.accounts.checkpoint.proof,
+            &ctx.accounts.checkpoint.public_values,
+            &ctx.accounts.checkpoint.verification_key,
+            GROTH16_VK_4_0_0_RC3_BYTES,
         )
         .map_err(|_| error!(SP1Error::ProofVerificationFailed))?;
 
@@ -30,27 +35,29 @@ pub mod sp1_anchor_verifier {
 }
 
 #[derive(Accounts)]
+#[instruction(blober: Pubkey)]
 pub struct Verify<'info> {
+    #[account(
+        seeds = [
+            data_anchor_blober::SEED,
+            data_anchor_blober::CHECKPOINT_SEED,
+            blober.as_ref()
+        ],
+        seeds::program = data_anchor_blober::ID,
+        bump
+    )]
+    pub checkpoint: Account<'info, Checkpoint>,
+
     #[account(mut)]
     pub payer: Signer<'info>,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct SP1Groth16Proof {
-    pub proof: Vec<u8>,
-    pub sp1_public_inputs: Vec<u8>,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct InstructionData {
-    pub groth16_proof: SP1Groth16Proof,
-    pub vkey_hash: String,
-}
-
 #[error_code]
 pub enum SP1Error {
-    #[msg("Invalid instruction data.")]
-    InvalidInstructionData,
     #[msg("Proof verification failed.")]
     ProofVerificationFailed,
+    #[msg("Invalid public value")]
+    InvalidPublicValue,
+    #[msg("Blober missmatch in public values")]
+    BloberMismatch,
 }

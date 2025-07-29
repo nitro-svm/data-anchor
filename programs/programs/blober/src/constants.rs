@@ -6,6 +6,10 @@ use crate::blob::Blob;
 #[constant]
 pub const SEED: &[u8] = b"blobs";
 
+/// The seed used to derive the PDA address of each checkpoint.
+#[constant]
+pub const CHECKPOINT_SEED: &[u8] = b"checkpoint";
+
 /// The maximum number of chunks a blob can occupy.
 #[constant]
 pub const MAX_CHUNKS: u16 = 2048;
@@ -66,3 +70,12 @@ pub const BLOB_DATA_END: usize = BLOB_DATA_START + BLOB_ACCOUNT_DATA_LEN as usiz
 pub fn initial_hash() -> [u8; hash::HASH_BYTES] {
     hash::Hasher::default().result().to_bytes()
 }
+
+/// The size of a Groth16 proof in bytes.
+pub const GROTH16_PROOF_SIZE: usize = 260;
+
+/// The size of a proof public values in bytes.
+pub const PROOF_PUBLIC_VALUES_SIZE: usize = 96;
+
+/// The size of a proof verification key in bytes.
+pub const PROOF_VERIFICATION_KEY_SIZE: usize = 32 + 2;

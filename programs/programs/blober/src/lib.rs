@@ -46,6 +46,17 @@ pub mod blober {
     pub fn close(ctx: Context<Close>) -> Result<()> {
         close_handler(ctx)
     }
+
+    pub fn create_checkpoint(
+        ctx: Context<CreateCheckpoint>,
+        blober: Pubkey,
+        proof: [u8; GROTH16_PROOF_SIZE],
+        public_values: [u8; PROOF_PUBLIC_VALUES_SIZE],
+        verification_key: String,
+        slot: u64,
+    ) -> Result<()> {
+        create_checkpoint_handler(ctx, blober, proof, public_values, verification_key, slot)
+    }
 }
 
 /// Hashes a single chunk on top of the previous hash.
@@ -90,6 +101,11 @@ pub fn find_blob_address(
 /// Retrieves the PDA address of a blober account to store digests and finalize blobs.
 pub fn find_blober_address(program_id: Pubkey, payer: Pubkey, namespace: &str) -> Pubkey {
     Pubkey::find_program_address(&[SEED, payer.as_ref(), namespace.as_bytes()], &program_id).0
+}
+
+/// Retrieves the PDA address of a checkpoint account to store proofs and public values.
+pub fn find_checkpoint_address(program_id: Pubkey, blober: Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[SEED, CHECKPOINT_SEED, blober.as_ref()], &program_id).0
 }
 
 /// Computes the hashed state of a blob account.

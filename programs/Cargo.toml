@@ -13,6 +13,7 @@ repository = "https://github.com/nitro-svm/data-anchor"
 
 [workspace.dependencies]
 # External dependencies from crates.io
+bincode = "1.3.3"
 futures = "0.3.31"
 hex = "0.4.3"
 rand = "0.8.5"
@@ -29,6 +30,9 @@ anchor-lang = "=0.31.1"
 
 # SP1
 sp1-solana = { git = "https://github.com/succinctlabs/sp1-solana" }
+
+# Locals
+data-anchor-blober = { path = "./programs/blober", version = "0.1.7" }
 
 [profile.release]
 overflow-checks = true
