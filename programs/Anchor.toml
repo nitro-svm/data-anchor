@@ -7,12 +7,15 @@ skip-lint = false
 
 [programs.devnet]
 data-anchor-blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
+data-anchor-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
 
 [programs.localnet]
 data-anchor-blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
+data-anchor-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
 
 [programs.mainnet]
 data-anchor-blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
+data-anchor-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,0 +1,28 @@
+[package]
+name = "data-anchor-verifier"
+description = "The on-chain verifier for verifying blober proofs."
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "data_anchor_verifier"
+
+[features]
+default = []
+cpi = [ "no-entrypoint" ]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = [ "anchor-lang/idl-build" ]
+
+[dependencies]
+# Solana & Agave
+anchor-lang = { workspace = true }
+
+# SP1
+sp1-solana = { workspace = true }
