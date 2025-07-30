@@ -7,8 +7,8 @@ members = [
   "crates/indexer-api",
   "crates/proofs",
   "crates/prover",
-  "crates/prover/proof-program",
   "crates/prover-script",
+  "crates/prover/programs/*",
 ]
 exclude = ["programs"]
 
@@ -52,6 +52,7 @@ schemars = "0.8.21"
 serde = { version = "1.0.216", default-features = false }
 serde_json = { version = "1.0.134", default-features = false }
 sp1-build = "5.0.8"
+sp1-derive = "5.0.8"
 sp1-sdk = "5.0.8"
 sp1-zkvm = "5.0.8"
 sqlx = "0.8.3"
@@ -103,6 +104,7 @@ data-anchor-blober = { path = "programs/programs/blober", version = "0.1.7", fea
   "no-entrypoint",
 ] }
 data-anchor-prover = { path = "crates/prover" }
+data-anchor-prover-core = { path = "crates/prover/programs/core" }
 
 [patch.crates-io]
 getrandom_v0_1 = { package = "getrandom", git = "https://github.com/nitro-svm/getrandom", branch = "0.1-zkvm" }

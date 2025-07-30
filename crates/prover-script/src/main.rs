@@ -12,7 +12,7 @@ use data_anchor_proofs::{
     blober_account_state::{BlobAccount, BloberAccountStateProof, merge_all_hashes},
     compound::{CompoundInclusionProof, ProofBlob, VerifyArgs},
 };
-use data_anchor_prover::run_client;
+use data_anchor_prover::{DATA_CORRECTNESS_ELF, DAWN_SLA_ELF, run_client};
 use rand::{RngCore, rngs::OsRng};
 use solana_pubkey::Pubkey;
 use sp1_sdk::utils;
@@ -166,17 +166,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = Config::parse();
 
-    let (public_values, report) =
-        run_client(compound_inclusion_proof, args, config.prove, config.verify)?;
+    for (elf, name) in [
+        (DATA_CORRECTNESS_ELF, "DATA_CORRECTNESS"),
+        (DAWN_SLA_ELF, "DAWN_SLA"),
+    ] {
+        println!("Running script for {name}");
 
-    let size = ByteSize(public_values.as_slice().len() as u64);
-    println!(
-        "{slots},{blob_proof_count},{},{},{size},{},{}",
-        report.cycle_tracker.get("read").unwrap_or(&0),
-        report.cycle_tracker.get("verify").unwrap_or(&0),
-        report.cycle_tracker.values().sum::<u64>(),
-        report.gas.unwrap_or_default(),
-    );
+        let (public_values, report) = run_client(
+            &compound_inclusion_proof,
+            &args,
+            elf,
+            config.prove,
+            config.verify,
+        )?;
+
+        let size = ByteSize(public_values.as_slice().len() as u64);
+        println!(
+            "{slots},{blob_proof_count},{},{size},{},{}",
+            report
+                .cycle_tracker
+                .iter()
+                .map(|(k, v)| format!("{k}:{v}"))
+                .collect::<Vec<_>>()
+                .join(","),
+            report.cycle_tracker.values().sum::<u64>(),
+            report.gas.unwrap_or_default(),
+        );
+    }
 
     Ok(())
 }

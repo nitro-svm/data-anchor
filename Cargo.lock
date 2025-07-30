@@ -2335,6 +2335,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "data-anchor-data-correctness"
+version = "0.4.0"
+dependencies = [
+ "data-anchor-prover-core",
+ "sp1-zkvm 5.0.8",
+]
+
+[[package]]
+name = "data-anchor-dawn-sla"
+version = "0.4.0"
+dependencies = [
+ "data-anchor-prover-core",
+ "sp1-zkvm 5.0.8",
+]
+
+[[package]]
 name = "data-anchor-indexer"
 version = "0.4.0"
 dependencies = [
@@ -2379,14 +2395,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "data-anchor-proof-program"
-version = "0.4.0"
-dependencies = [
- "data-anchor-proofs",
- "sp1-zkvm 5.0.8",
-]
-
-[[package]]
 name = "data-anchor-proofs"
 version = "0.4.0"
 dependencies = [
@@ -2426,6 +2434,15 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "data-anchor-prover-core"
+version = "0.4.0"
+dependencies = [
+ "data-anchor-proofs",
+ "sp1-derive",
+ "sp1-zkvm 5.0.8",
 ]
 
 [[package]]

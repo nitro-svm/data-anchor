@@ -1,5 +1,5 @@
 [package]
-name = "data-anchor-proof-program"
+name = "data-anchor-dawn-sla"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
@@ -13,4 +13,4 @@ publish = false
 sp1-zkvm = { workspace = true }
 
 # Locals
-data-anchor-proofs = { workspace = true }
+data-anchor-prover-core = { workspace = true }
