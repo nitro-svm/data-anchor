@@ -70,9 +70,9 @@ pub enum ChainError {
     /// Account does not exist: {0}
     #[error("Account does not exist: {0}")]
     AccountDoesNotExist(String),
-    /// Payer has insufficient balance to pay for the transaction: required {0}, available {1}
+    /// Payer has insufficient balance to pay for the transaction: required {0} lamports, available {1} lamports
     #[error(
-        "Payer has insufficient balance to pay for the transaction: required {0}, available {1}"
+        "Payer has insufficient balance to pay for the transaction: required {0} lamports, available {1} lamports"
     )]
     InsufficientBalance(u64, u64),
     /// Could not calculate cost

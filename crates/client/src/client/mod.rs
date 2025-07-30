@@ -155,7 +155,7 @@ impl DataAnchorClient {
             .map(|r| r.value)?;
         let cost_u64 = cost.into_inner() as u64;
         if balance < cost_u64 {
-            return Err(ChainError::InsufficientBalance(balance, cost_u64).into());
+            return Err(ChainError::InsufficientBalance(cost_u64, balance).into());
         }
         Ok(())
     }
