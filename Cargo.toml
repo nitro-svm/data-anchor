@@ -102,7 +102,7 @@ data-anchor-proofs = { path = "crates/proofs", version = "0.4.0" }
 data-anchor-blober = { path = "programs/programs/blober", version = "0.1.7", features = [
   "no-entrypoint",
 ] }
-data-anchor-prover = { path = "crates/prover", version = "0.4.0" }
+data-anchor-prover = { path = "crates/prover" }
 
 [patch.crates-io]
 getrandom_v0_1 = { package = "getrandom", git = "https://github.com/nitro-svm/getrandom", branch = "0.1-zkvm" }

@@ -11,7 +11,6 @@ permissions:
 
 env:
   TF_WORKING_DIR: infrastructure/cli
-  TAG: ${{ replace(github.ref_name, 'data-anchor-', '') }}
 
 jobs:
   release-and-upload:
@@ -43,7 +42,11 @@ jobs:
       - name: Set up env
         env:
           TARGET: ${{ matrix.target }}
+          GITHUB_REF: ${{ github.ref }}
         run: |
+          TAG=$GITHUB_REF
+          TAG=${TAG#data-anchor-} 
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
           echo "TARGET=$TARGET" >> "$GITHUB_ENV"
 
       - name: Build Binary
@@ -83,7 +86,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Prepare install-cli.sh for new release
+        env:
+          GITHUB_REF: ${{ github.ref }}
         run: |
+          TAG=$GITHUB_REF
+          TAG=${TAG#data-anchor-} 
           find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/$TAG/" {} +
 
       - name: Configure AWS credentials
