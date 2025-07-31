@@ -287,6 +287,33 @@ mod tests {
     }
 
     #[test]
+    fn inclusion_construction_no_changes() {
+        let slot = 1;
+        let blober = Pubkey::new_unique();
+        let blober_account_state_proof =
+            BloberAccountStateProof::new(initial_hash(), slot, Default::default());
+        let compound_inclusion_proof =
+            CompoundInclusionProof::new(Vec::new(), blober, blober_account_state_proof);
+        let blober_state = Blober {
+            caller: Pubkey::new_unique(),
+            namespace: "test".to_string(),
+            hash: initial_hash(),
+            slot: 1,
+        };
+        let state_bytes = [
+            Blober::DISCRIMINATOR,
+            blober_state.try_to_vec().unwrap().as_ref(),
+        ]
+        .concat();
+        let uploads: Vec<ProofBlob<Vec<u8>>> = Vec::new();
+        let verification = compound_inclusion_proof.verify(blober, &state_bytes, &uploads);
+        assert!(
+            verification.is_ok(),
+            "Expected verification to succeed, but it failed: {verification:?}",
+        );
+    }
+
+    #[test]
     fn inclusion_construction_single_blob() {
         arbtest(|u| {
             // ------------------------- Blob -------------------------
@@ -353,7 +380,7 @@ mod tests {
                 unmodified = false;
             }
 
-            let blober_account_state_proof = blober_account_state::BloberAccountStateProof::new(
+            let blober_account_state_proof = BloberAccountStateProof::new(
                 initial_hash(),
                 slot,
                 [(slot + 1, source_accounts.clone())].into_iter().collect(),
