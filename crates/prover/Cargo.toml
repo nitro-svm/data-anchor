@@ -11,6 +11,7 @@ publish = false
 [dependencies]
 # External dependencies
 anyhow = { workspace = true }
+jsonrpsee = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true }
@@ -20,5 +21,12 @@ sp1-sdk = { workspace = true }
 data-anchor-api = { workspace = true }
 data-anchor-proofs = { workspace = true }
 
+[dev-dependencies]
+# Locals
+data-anchor-prover = { workspace = true, features = ["jsonrpsee"] }
+
 [build-dependencies]
 sp1-build = { workspace = true }
+
+[features]
+jsonrpsee = [ "dep:jsonrpsee" ]

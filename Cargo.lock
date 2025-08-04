@@ -2429,6 +2429,8 @@ dependencies = [
  "anyhow",
  "data-anchor-api",
  "data-anchor-proofs",
+ "data-anchor-prover",
+ "jsonrpsee",
  "sp1-build",
  "sp1-sdk",
  "thiserror 2.0.12",

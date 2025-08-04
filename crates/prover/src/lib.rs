@@ -25,6 +25,17 @@ pub enum ProofGenerationError {
 
 pub type ProofGenerationResult<T = ()> = Result<T, ProofGenerationError>;
 
+#[cfg(feature = "jsonrpsee")]
+impl From<ProofGenerationError> for jsonrpsee::types::ErrorObjectOwned {
+    fn from(e: ProofGenerationError) -> Self {
+        Self::owned(
+            jsonrpsee::types::ErrorCode::InternalError.code(),
+            e.to_string(),
+            None::<()>,
+        )
+    }
+}
+
 /// Read the prover inputs needed for the data correctness proof and return the [`SP1Stdin`]
 /// instance.
 pub fn setup_prover_input(
