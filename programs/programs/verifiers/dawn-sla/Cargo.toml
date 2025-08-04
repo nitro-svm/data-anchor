@@ -1,0 +1,34 @@
+[package]
+name = "data-anchor-dawn-sla-verifier"
+description = "The on-chain verifier for verifying Dawn SLA and blober proofs."
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "data_anchor_dawn_sla_verifier"
+
+[features]
+default = []
+cpi = [ "data-anchor-blober/cpi", "no-entrypoint" ]
+no-entrypoint = [ "data-anchor-blober/no-entrypoint" ]
+no-idl = [ "data-anchor-blober/no-idl" ]
+no-log-ix-name = [ "data-anchor-blober/no-log-ix-name" ]
+idl-build = [ "anchor-lang/idl-build", "data-anchor-blober/idl-build" ]
+
+[dependencies]
+# External dependencies from crates.io
+bincode = { workspace = true }
+
+# Solana & Agave
+anchor-lang = { workspace = true }
+
+# SP1
+sp1-solana = { workspace = true }
+
+# Locals
+data-anchor-blober = { workspace = true, features = ["no-entrypoint", "cpi"] }

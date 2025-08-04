@@ -10,6 +10,10 @@ pub const SEED: &[u8] = b"blobs";
 #[constant]
 pub const CHECKPOINT_SEED: &[u8] = b"checkpoint";
 
+/// The seed used to derive the PDA address of each checkpoint's config.
+#[constant]
+pub const CHECKPOINT_CONFIG_SEED: &[u8] = b"config";
+
 /// The maximum number of chunks a blob can occupy.
 #[constant]
 pub const MAX_CHUNKS: u16 = 2048;
@@ -75,7 +79,7 @@ pub fn initial_hash() -> [u8; hash::HASH_BYTES] {
 pub const GROTH16_PROOF_SIZE: usize = 260;
 
 /// The size of a proof public values in bytes.
-pub const PROOF_PUBLIC_VALUES_SIZE: usize = 96;
+pub const PROOF_PUBLIC_VALUES_MAX_SIZE: usize = 104;
 
 /// The size of a proof verification key in bytes.
 pub const PROOF_VERIFICATION_KEY_SIZE: usize = 32 + 2;

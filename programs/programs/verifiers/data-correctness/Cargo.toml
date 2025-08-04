@@ -1,5 +1,5 @@
 [package]
-name = "data-anchor-verifier"
+name = "data-anchor-data-correctness-verifier"
 description = "The on-chain verifier for verifying blober proofs."
 version = { workspace = true }
 edition = { workspace = true }
@@ -10,7 +10,7 @@ publish = false
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "data_anchor_verifier"
+name = "data_anchor_data_correctness_verifier"
 
 [features]
 default = []
@@ -21,14 +21,8 @@ no-log-ix-name = [ "data-anchor-blober/no-log-ix-name" ]
 idl-build = [ "anchor-lang/idl-build", "data-anchor-blober/idl-build" ]
 
 [dependencies]
-# External dependencies from crates.io
-bincode = { workspace = true }
-
 # Solana & Agave
 anchor-lang = { workspace = true }
 
-# SP1
-sp1-solana = { workspace = true }
-
 # Locals
-data-anchor-blober = { workspace = true, features = ["no-entrypoint"] }
+data-anchor-blober = { workspace = true, features = ["no-entrypoint", "cpi"] }

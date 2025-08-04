@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use data_anchor_api::LedgerDataBlobError;
 use data_anchor_blober::instruction::{
-    Close, CreateCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
+    Close, ConfigureCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
 use solana_rpc_client_api::client_error::Error;
 use solana_sdk::commitment_config::ParseCommitmentLevelError;
@@ -69,7 +69,7 @@ pub enum TransactionType {
     Compound,
     CompoundDeclare,
     CompoundFinalize,
-    CreateCheckpoint,
+    ConfigureCheckpoint,
     DeclareBlob,
     DiscardBlob,
     FinalizeBlob,
@@ -84,7 +84,7 @@ impl Display for TransactionType {
             TransactionType::Compound => write!(f, "CompoundUpload"),
             TransactionType::CompoundDeclare => write!(f, "CompoundDeclare"),
             TransactionType::CompoundFinalize => write!(f, "CompoundFinalize"),
-            TransactionType::CreateCheckpoint => write!(f, "CreateCheckpoint"),
+            TransactionType::ConfigureCheckpoint => write!(f, "CreateCheckpoint"),
             TransactionType::DeclareBlob => write!(f, "DeclareBlob"),
             TransactionType::DiscardBlob => write!(f, "DiscardBlob"),
             TransactionType::FinalizeBlob => write!(f, "FinalizeBlob"),
@@ -102,7 +102,7 @@ impl TransactionType {
             TransactionType::Compound => Compound::NUM_SIGNATURES,
             TransactionType::CompoundDeclare => CompoundDeclare::NUM_SIGNATURES,
             TransactionType::CompoundFinalize => CompoundFinalize::NUM_SIGNATURES,
-            TransactionType::CreateCheckpoint => CreateCheckpoint::NUM_SIGNATURES,
+            TransactionType::ConfigureCheckpoint => ConfigureCheckpoint::NUM_SIGNATURES,
             TransactionType::DeclareBlob => DeclareBlob::NUM_SIGNATURES,
             TransactionType::DiscardBlob => DiscardBlob::NUM_SIGNATURES,
             TransactionType::FinalizeBlob => FinalizeBlob::NUM_SIGNATURES,
@@ -118,7 +118,7 @@ impl TransactionType {
             TransactionType::Compound => Compound::COMPUTE_UNIT_LIMIT,
             TransactionType::CompoundDeclare => CompoundDeclare::COMPUTE_UNIT_LIMIT,
             TransactionType::CompoundFinalize => CompoundFinalize::COMPUTE_UNIT_LIMIT,
-            TransactionType::CreateCheckpoint => CreateCheckpoint::COMPUTE_UNIT_LIMIT,
+            TransactionType::ConfigureCheckpoint => ConfigureCheckpoint::COMPUTE_UNIT_LIMIT,
             TransactionType::DeclareBlob => DeclareBlob::COMPUTE_UNIT_LIMIT,
             TransactionType::DiscardBlob => DiscardBlob::COMPUTE_UNIT_LIMIT,
             TransactionType::FinalizeBlob => FinalizeBlob::COMPUTE_UNIT_LIMIT,

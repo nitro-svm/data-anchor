@@ -78,15 +78,9 @@ pub enum ChainError {
     /// Could not calculate cost
     #[error("Could not calculate cost")]
     CouldNotCalculateCost,
-    /// Invalid Groth16 proof
-    #[error("Invalid Groth16 proof")]
-    InvalidGroth16Proof,
-    /// Invalid public values
-    #[error("Invalid public values")]
-    InvalidPublicValues,
-    /// Failed to create checkpoint: {0}
-    #[error("Failed to create checkpoint: {0}")]
-    CreateCheckpoint(OutcomeError),
+    /// Failed to configure checkpoint: {0}
+    #[error("Failed to configure checkpoint: {0}")]
+    ConfigureCheckpoint(OutcomeError),
     /// Provided proof commitment does not match the blober's address
     #[error("Provided proof commitment does not match the blober's address expected {0}, got {1}")]
     ProofBloberMismatch(Pubkey, Pubkey),

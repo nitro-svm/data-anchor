@@ -1,10 +1,9 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use clap::Parser;
 use data_anchor_api::BloberWithNamespace;
 use data_anchor_client::{
-    BloberIdentifier, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
-    Priority,
+    BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
 use serde::{Serialize, ser::SerializeStruct};
 use solana_sdk::pubkey::Pubkey;
@@ -28,13 +27,10 @@ pub enum BloberSubCommand {
     List,
     /// Create an on-chain checkpoint for the given blober account.
     #[command(visible_alias = "cp")]
-    CreateCheckpoint {
-        /// The path to the file containing the proof data.
+    ConfigureCheckpoint {
+        /// The authority that can create the checkpoint for the given blober.
         #[arg(short, long)]
-        proof_data_path: PathBuf,
-        /// The slot for which the checkpoint is being created.
-        #[arg(short, long)]
-        slot: u64,
+        authority: Pubkey,
     },
 }
 
@@ -154,28 +150,16 @@ impl BloberSubCommand {
             BloberSubCommand::List => {
                 blobers = client.list_blobers().await?;
             }
-            BloberSubCommand::CreateCheckpoint {
-                proof_data_path,
-                slot,
-            } => {
-                let file_data = tokio::fs::read_to_string(proof_data_path)
-                    .await
-                    .unwrap_or_else(|_| panic!("failed to read file at {proof_data_path:?}"));
-                let proof_data = serde_json::from_str(&file_data).map_err(|e| {
-                    DataAnchorClientError::InvalidData(format!(
-                        "Could not deserialize proof data from file: {e:?}"
-                    ))
-                })?;
+            BloberSubCommand::ConfigureCheckpoint { authority } => {
                 info!(
-                    "Creating checkpoint for blober account with namespace: {}",
+                    "Configuring checkpoint for blober account with namespace: {}",
                     identifier.namespace().unwrap_or("unknown")
                 );
                 client
-                    .create_checkpoint(
+                    .configure_checkpoint(
                         FeeStrategy::BasedOnRecentFees(Priority::Medium),
                         identifier.clone(),
-                        *slot,
-                        proof_data,
+                        *authority,
                         None,
                     )
                     .await?;

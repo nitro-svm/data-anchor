@@ -1,12 +1,8 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{clock::Slot, pubkey::PUBKEY_BYTES},
-    Discriminator,
-};
+use anchor_lang::{prelude::*, solana_program::clock::Slot};
 
 use crate::{
-    error::ErrorCode, state::checkpoint::Checkpoint, CHECKPOINT_SEED, GROTH16_PROOF_SIZE,
-    PROOF_PUBLIC_VALUES_SIZE, SEED,
+    checkpoint::CheckpointConfig, error::ErrorCode, state::checkpoint::Checkpoint,
+    CHECKPOINT_CONFIG_SEED, CHECKPOINT_SEED, GROTH16_PROOF_SIZE, SEED,
 };
 
 #[derive(Accounts)]
@@ -25,6 +21,28 @@ pub struct CreateCheckpoint<'info> {
     )]
     pub checkpoint: Account<'info, Checkpoint>,
 
+    #[account(
+        seeds = [
+            SEED,
+            CHECKPOINT_SEED,
+            CHECKPOINT_CONFIG_SEED,
+            blober.as_ref(),
+        ],
+        bump,
+    )]
+    pub checkpoint_config: Account<'info, CheckpointConfig>,
+
+    #[account(
+        seeds = [
+            SEED,
+            CHECKPOINT_SEED,
+            blober.as_ref(),
+        ],
+        seeds::program = checkpoint_config.authority,
+        bump,
+    )]
+    pub pda_signer: Signer<'info>,
+
     #[account(mut)]
     pub payer: Signer<'info>,
 
@@ -35,44 +53,38 @@ pub fn create_checkpoint_handler(
     ctx: Context<CreateCheckpoint>,
     blober: Pubkey,
     proof: [u8; GROTH16_PROOF_SIZE],
-    public_values: [u8; PROOF_PUBLIC_VALUES_SIZE],
+    public_values: Vec<u8>,
     verification_key: String,
     slot: Slot,
 ) -> Result<()> {
-    let public_value_blober = bincode::deserialize::<Pubkey>(&public_values[..PUBKEY_BYTES])
-        .map_err(|_| error!(ErrorCode::InvalidPublicValue))?;
+    let new_checkpoint = Checkpoint::new(proof, public_values, verification_key, slot)?;
+
+    let public_value_blober = new_checkpoint.blober()?;
 
     if public_value_blober != blober {
-        return Err(error!(ErrorCode::InvalidPublicValue));
+        return Err(error!(ErrorCode::BloberMismatch));
     }
 
-    if ctx.accounts.checkpoint.slot != 0 {
-        let public_value_initial_hash = bincode::deserialize::<[u8; 32]>(
-            &public_values[PUBKEY_BYTES..PROOF_PUBLIC_VALUES_SIZE - PUBKEY_BYTES],
-        )
-        .map_err(|_| error!(ErrorCode::InvalidPublicValue))?;
-
-        let public_value_final_hash = bincode::deserialize::<[u8; 32]>(
-            &ctx.accounts.checkpoint.public_values[PROOF_PUBLIC_VALUES_SIZE - PUBKEY_BYTES..],
-        )
-        .map_err(|_| error!(ErrorCode::InvalidPublicValue))?;
-
-        if public_value_initial_hash != public_value_final_hash {
-            return Err(error!(ErrorCode::ProofHashMismatch));
-        }
-
-        if ctx.accounts.checkpoint.slot >= slot {
-            return Err(error!(ErrorCode::SlotTooLow));
-        }
+    if ctx.accounts.checkpoint.slot == 0 {
+        return ctx.accounts.checkpoint.store(new_checkpoint);
     }
 
-    ctx.accounts
-        .checkpoint
-        .store(proof, public_values, verification_key, slot);
-    Ok(())
+    if public_value_blober != ctx.accounts.checkpoint.blober()? {
+        return Err(error!(ErrorCode::BloberMismatch));
+    }
+
+    if ctx.accounts.checkpoint.slot >= slot {
+        return Err(error!(ErrorCode::SlotTooLow));
+    }
+
+    if new_checkpoint.initial_hash()? != ctx.accounts.checkpoint.final_hash()? {
+        return Err(error!(ErrorCode::ProofHashMismatch));
+    }
+
+    ctx.accounts.checkpoint.store(new_checkpoint)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "sp1"))]
 mod tests {
     use anchor_lang::{
         prelude::{AccountMeta, Pubkey},
@@ -84,12 +96,16 @@ mod tests {
     #[test]
     fn test_first_account_is_the_checkpoint() {
         let checkpoint = Pubkey::new_unique();
+        let checkpoint_config = Pubkey::new_unique();
+        let pda_signer = Pubkey::new_unique();
         let payer = Pubkey::new_unique();
         let system_program = Pubkey::new_unique();
 
         let account = CreateCheckpoint {
             checkpoint,
+            checkpoint_config,
             payer,
+            pda_signer,
             system_program,
         };
 

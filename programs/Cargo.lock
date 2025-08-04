@@ -1446,11 +1446,20 @@ dependencies = [
  "solana-rpc-client",
  "solana-sdk",
  "solana-test-validator",
+ "sp1-solana",
  "tokio",
 ]
 
 [[package]]
-name = "data-anchor-verifier"
+name = "data-anchor-data-correctness-verifier"
+version = "0.1.7"
+dependencies = [
+ "anchor-lang",
+ "data-anchor-blober",
+]
+
+[[package]]
+name = "data-anchor-dawn-sla-verifier"
 version = "0.1.7"
 dependencies = [
  "anchor-lang",

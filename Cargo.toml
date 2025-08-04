@@ -100,7 +100,7 @@ data-anchor-api = { path = "crates/indexer-api", version = "0.4.0" }
 data-anchor-client = { path = "crates/client", version = "0.4.0" }
 data-anchor-indexer = { path = "crates/indexer" }
 data-anchor-proofs = { path = "crates/proofs", version = "0.4.0" }
-data-anchor-blober = { path = "programs/programs/blober", version = "0.1.7", features = [
+data-anchor-blober = { path = "programs/programs/blober", version = "0.1.7", default-features = false, features = [
   "no-entrypoint",
 ] }
 data-anchor-prover = { path = "crates/prover" }

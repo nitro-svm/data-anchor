@@ -7,15 +7,18 @@ skip-lint = false
 
 [programs.devnet]
 data-anchor-blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
-data-anchor-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
+data-anchor-data-correctness-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
+data-anchor-dawn-sla-verifier = "A4Ks3ivLsBVvysaf6BMTNjdcvig1Ti8cSkoMBqYDdsGF"
 
 [programs.localnet]
 data-anchor-blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
-data-anchor-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
+data-anchor-data-correctness-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
+data-anchor-dawn-sla-verifier = "A4Ks3ivLsBVvysaf6BMTNjdcvig1Ti8cSkoMBqYDdsGF"
 
 [programs.mainnet]
 data-anchor-blober = "anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2"
-data-anchor-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
+data-anchor-data-correctness-verifier = "oGbL1FPtd7Uix2cwjViMiUciz7UJ2U3gqnxZypXsXQi"
+data-anchor-dawn-sla-verifier = "A4Ks3ivLsBVvysaf6BMTNjdcvig1Ti8cSkoMBqYDdsGF"
 
 [registry]
 url = "https://api.apr.dev"

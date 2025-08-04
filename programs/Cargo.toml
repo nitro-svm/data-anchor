@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/blober", "programs/verifier"]
+members = ["programs/blober", "programs/verifiers/*"]
 resolver = "2"
 
 [workspace.package]

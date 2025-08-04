@@ -47,11 +47,19 @@ pub mod blober {
         close_handler(ctx)
     }
 
+    pub fn configure_checkpoint(
+        ctx: Context<ConfigureCheckpoint>,
+        authority: Pubkey,
+    ) -> Result<()> {
+        configure_checkpoint_handler(ctx, authority)
+    }
+
+    #[cfg(feature = "sp1")]
     pub fn create_checkpoint(
         ctx: Context<CreateCheckpoint>,
         blober: Pubkey,
         proof: [u8; GROTH16_PROOF_SIZE],
-        public_values: [u8; PROOF_PUBLIC_VALUES_SIZE],
+        public_values: Vec<u8>,
         verification_key: String,
         slot: u64,
     ) -> Result<()> {
@@ -105,6 +113,26 @@ pub fn find_blober_address(program_id: Pubkey, payer: Pubkey, namespace: &str) -
 
 /// Retrieves the PDA address of a checkpoint account to store proofs and public values.
 pub fn find_checkpoint_address(program_id: Pubkey, blober: Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[SEED, CHECKPOINT_SEED, blober.as_ref()], &program_id).0
+}
+
+/// Retrieves the PDA address of a checkpoint configuration account to store authority and other
+pub fn find_checkpoint_config_address(program_id: Pubkey, blober: Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            SEED,
+            CHECKPOINT_SEED,
+            CHECKPOINT_CONFIG_SEED,
+            blober.as_ref(),
+        ],
+        &program_id,
+    )
+    .0
+}
+
+/// Retrieves the PDA address of a checkpoint PDA signer account to sign the checkoint modifying
+/// instruction.
+pub fn find_checkpoint_signer_address(program_id: Pubkey, blober: Pubkey) -> Pubkey {
     Pubkey::find_program_address(&[SEED, CHECKPOINT_SEED, blober.as_ref()], &program_id).0
 }
 

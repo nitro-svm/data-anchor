@@ -13,8 +13,9 @@ crate-type = ["cdylib", "lib"]
 name = "data_anchor_blober"
 
 [features]
-default = []
+default = [ "sp1" ]
 cpi = [ "no-entrypoint" ]
+sp1 = [ "dep:sp1-solana" ]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
@@ -26,6 +27,9 @@ bincode = { workspace = true }
 hex = { workspace = true }
 
 anchor-lang = { workspace = true, features = ["init-if-needed"] }
+
+# SP1
+sp1-solana = { workspace = true, optional = true }
 
 [dev-dependencies]
 # External dependencies from crates.io# Solana & Agave
