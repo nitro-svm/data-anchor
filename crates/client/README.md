@@ -117,7 +117,7 @@ fetching it back from the ledger:
 use std::{sync::Arc, time::Duration};
 use data_anchor_client::{DataAnchorClient, FeeStrategy};
 use solana_cli_config::Config;
-use solana_sdk::signature::Keypair;
+use solana_keypair::Keypair;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

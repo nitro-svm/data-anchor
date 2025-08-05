@@ -5,6 +5,7 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
+use anchor_lang::solana_program::message::Message;
 use data_anchor_api::RelevantInstructionWithAccounts;
 use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
@@ -12,7 +13,6 @@ use data_anchor_blober::{
 };
 use jsonrpsee::http_client::HttpClient;
 use solana_pubkey::Pubkey;
-use solana_sdk::message::Message;
 use solana_signer::Signer;
 use tracing::{Instrument, Span, info_span};
 

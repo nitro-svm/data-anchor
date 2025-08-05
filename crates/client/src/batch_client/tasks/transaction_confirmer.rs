@@ -312,7 +312,10 @@ pub async fn get_next_batch_for_confirmation(
 mod tests {
     use std::{mem, sync::Mutex};
 
-    use anchor_lang::{prelude::Pubkey, solana_program::instruction::InstructionError};
+    use anchor_lang::{
+        prelude::Pubkey,
+        solana_program::{self, hash::Hash, instruction::InstructionError},
+    };
     use async_trait::async_trait;
     use solana_client::{
         client_error::ClientError,
@@ -321,10 +324,10 @@ mod tests {
         rpc_response::{Response, RpcResponseContext},
         rpc_sender::{RpcSender, RpcTransportStats},
     };
+    use solana_commitment_config::CommitmentConfig;
     use solana_keypair::Keypair;
     use solana_rpc_client::mock_sender::MockSender;
     use solana_rpc_client_api::client_error::Result as SolanaResult;
-    use solana_sdk::{commitment_config::CommitmentConfig, hash::Hash};
     use solana_signer::Signer;
     use solana_transaction::Transaction;
     use solana_transaction_status::{
@@ -491,9 +494,9 @@ mod tests {
         let (response_tx, mut response_rx) = mpsc::unbounded_channel();
 
         let transaction = Transaction::new_signed_with_payer(
-            &[solana_sdk::system_instruction::transfer(
+            &[solana_program::system_instruction::transfer(
                 &payer.pubkey(),
-                &solana_sdk::system_program::id(),
+                &solana_program::system_program::id(),
                 1,
             )],
             Some(&payer.pubkey()),
@@ -552,9 +555,9 @@ mod tests {
         let (response_tx, mut response_rx) = mpsc::unbounded_channel();
 
         let transaction = Transaction::new_signed_with_payer(
-            &[solana_sdk::system_instruction::transfer(
+            &[solana_program::system_instruction::transfer(
                 &payer.pubkey(),
-                &solana_sdk::system_program::id(),
+                &solana_program::system_program::id(),
                 1,
             )],
             Some(&payer.pubkey()),
@@ -696,9 +699,9 @@ mod tests {
 
         // Queue a transaction for confirmation.
         let transaction = Transaction::new_signed_with_payer(
-            &[solana_sdk::system_instruction::transfer(
+            &[solana_program::system_instruction::transfer(
                 &payer.pubkey(),
-                &solana_sdk::system_program::id(),
+                &solana_program::system_program::id(),
                 1,
             )],
             Some(&payer.pubkey()),
@@ -742,9 +745,9 @@ mod tests {
         let transactions = (0..9)
             .map(|index| {
                 let transaction = Transaction::new_signed_with_payer(
-                    &[solana_sdk::system_instruction::transfer(
+                    &[solana_program::system_instruction::transfer(
                         &payer.pubkey(),
-                        &solana_sdk::system_program::id(),
+                        &solana_program::system_program::id(),
                         1 + index as u64,
                     )],
                     Some(&payer.pubkey()),

@@ -70,7 +70,7 @@ pub(crate) mod testing {
         }
     }
 
-    /// An arbitrary account, since we can't implement [`arbitrary::Arbitrary`] for [`solana_sdk::account::Account`].
+    /// An arbitrary account, since we can't implement [`arbitrary::Arbitrary`] for [`solana_account::Account`].
     #[derive(Debug, Arbitrary, Clone, PartialEq, Eq, Hash)]
     pub struct ArbAccount {
         pub lamports: u64,

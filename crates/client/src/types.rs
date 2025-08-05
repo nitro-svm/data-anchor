@@ -4,8 +4,8 @@ use data_anchor_api::LedgerDataBlobError;
 use data_anchor_blober::instruction::{
     Close, ConfigureCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
+use solana_commitment_config::ParseCommitmentLevelError;
 use solana_rpc_client_api::client_error::Error;
-use solana_sdk::commitment_config::ParseCommitmentLevelError;
 use thiserror::Error;
 
 use crate::{

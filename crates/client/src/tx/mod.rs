@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use anchor_lang::{
+    prelude::Pubkey,
+    solana_program::{instruction::Instruction, message::Message},
+};
 use async_trait::async_trait;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_compute_budget_interface::ComputeBudgetInstruction;
 use solana_keypair::Keypair;
-use solana_pubkey::Pubkey;
-use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction, instruction::Instruction, message::Message,
-};
 use solana_signer::Signer;
 
 use crate::{DataAnchorClientResult, Fee, TransactionType};
@@ -77,8 +78,8 @@ where
     }
 }
 
-/// The constant price of the [`solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price`]
-/// and [`solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit`] instructions.
+/// The constant price of the [`solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_price`]
+/// and [`solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_limit`] instructions.
 pub const SET_PRICE_AND_CU_LIMIT_COST: u32 = 300;
 
 #[async_trait]
@@ -208,9 +209,9 @@ mod utils {
     };
     use data_anchor_blober::find_blober_address;
     use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_commitment_config::CommitmentConfig;
     use solana_keypair::Keypair;
     use solana_pubkey::Pubkey;
-    use solana_sdk::commitment_config::CommitmentConfig;
     use solana_signer::Signer;
     use solana_test_validator::TestValidatorGenesis;
     use solana_transaction::Transaction;

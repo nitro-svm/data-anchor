@@ -1,5 +1,5 @@
-use anchor_lang::prelude::Rent;
-use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
+use anchor_lang::{prelude::Rent, solana_program::instruction::Instruction};
+use solana_compute_budget_interface::ComputeBudgetInstruction;
 
 use super::{Lamports, MicroLamports};
 

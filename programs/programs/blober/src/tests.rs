@@ -1,12 +1,11 @@
 use anchor_lang::{
     prelude::{AccountInfo, Pubkey},
-    solana_program::{self, hash::HASH_BYTES, instruction::Instruction},
+    solana_program::{self, clock::Clock, hash::HASH_BYTES, instruction::Instruction},
     AccountDeserialize, InstructionData, ToAccountMetas,
 };
 use rand::{prelude::SliceRandom, thread_rng};
 use solana_program_test::*;
 use solana_sdk::{
-    clock::Clock,
     signature::{Keypair, Signer},
     transaction::Transaction,
 };

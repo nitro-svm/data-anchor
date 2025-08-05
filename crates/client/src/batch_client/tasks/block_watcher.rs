@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use solana_clock::DEFAULT_MS_PER_SLOT;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::clock::DEFAULT_MS_PER_SLOT;
 use tokio::{
     sync::watch,
     task::JoinHandle,
@@ -69,6 +69,7 @@ pub fn spawn_block_watcher(
 mod tests {
     use std::cmp::min;
 
+    use anchor_lang::solana_program::hash::Hash;
     use async_trait::async_trait;
     use solana_client::{
         rpc_client::RpcClientConfig,
@@ -76,9 +77,9 @@ mod tests {
         rpc_response::{Response, RpcBlockhash, RpcResponseContext},
         rpc_sender::{RpcSender, RpcTransportStats},
     };
+    use solana_epoch_info::EpochInfo;
     use solana_rpc_client::mock_sender::MockSender;
     use solana_rpc_client_api::client_error::Result as SolanaResult;
-    use solana_sdk::{epoch_info::EpochInfo, hash::Hash};
     use tokio::time::Instant;
     use tracing::Level;
 

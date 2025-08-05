@@ -3,7 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use jsonrpsee::{http_client::HttpClientBuilder, ws_client::HeaderMap};
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::commitment_config::CommitmentConfig;
+use solana_commitment_config::CommitmentConfig;
 
 use crate::{
     BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
@@ -70,7 +70,8 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
     ///
     /// use data_anchor_client::{DataAnchorClient};
     /// use solana_cli_config::Config;
-    /// use solana_sdk::{pubkey::Pubkey, signature::Keypair};
+    /// use solana_pubkey::Pubkey;
+    /// use solana_keypair::Keypair;
     ///
     /// let payer = Arc::new(Keypair::new());
     /// let program_id = Pubkey::new_unique();

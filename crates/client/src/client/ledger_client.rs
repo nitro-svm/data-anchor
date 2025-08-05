@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_lang::{AnchorDeserialize, Discriminator, solana_program::message::VersionedMessage};
 use data_anchor_api::{
     BloberWithNamespace, LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
     extract_relevant_instructions, get_account_at_index, get_blob_data_from_instructions,
@@ -19,7 +19,7 @@ use solana_client::{
 };
 use solana_pubkey::Pubkey;
 use solana_rpc_client_api::client_error::Error;
-use solana_sdk::{message::VersionedMessage, signature::Signature};
+use solana_signature::Signature;
 use solana_signer::Signer;
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 

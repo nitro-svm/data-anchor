@@ -1,6 +1,7 @@
-use anchor_lang::{InstructionData, ToAccountMetas, prelude::Pubkey};
+use anchor_lang::{
+    InstructionData, ToAccountMetas, prelude::Pubkey, solana_program::instruction::Instruction,
+};
 use data_anchor_blober::instruction::FinalizeBlob;
-use solana_sdk::instruction::Instruction;
 
 use crate::{
     TransactionType,

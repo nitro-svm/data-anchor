@@ -1,6 +1,7 @@
 use solana_client::client_error::ClientError as Error;
 use solana_clock::Slot;
-use solana_sdk::{commitment_config::CommitmentConfig, signature::Signature};
+use solana_commitment_config::CommitmentConfig;
+use solana_signature::Signature;
 use solana_transaction_error::TransactionError;
 use solana_transaction_status::TransactionStatus as SolanaTransactionStatus;
 

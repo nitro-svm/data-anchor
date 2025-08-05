@@ -4,9 +4,10 @@ use solana_client::{
     client_error::ClientError as Error, rpc_client::SerializableTransaction,
     rpc_config::RpcSendTransactionConfig,
 };
+use solana_commitment_config::CommitmentLevel;
 use solana_keypair::Keypair;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{commitment_config::CommitmentLevel, signature::Signature};
+use solana_signature::Signature;
 use solana_transaction::Transaction;
 use tokio::{
     sync::{mpsc, watch},
@@ -166,8 +167,10 @@ async fn send_transaction(
 
 #[cfg(test)]
 mod tests {
-    use anchor_lang::prelude::Pubkey;
-    use solana_sdk::hash::Hash;
+    use anchor_lang::{
+        prelude::Pubkey,
+        solana_program::{self, hash::Hash},
+    };
     use solana_signer::Signer;
     use tokio::time::{Duration, Instant, sleep_until};
     use tracing::{Level, Span};
@@ -215,9 +218,9 @@ mod tests {
 
         // Send a transaction.
         let transaction = Transaction::new_signed_with_payer(
-            &[solana_sdk::system_instruction::transfer(
+            &[solana_program::system_instruction::transfer(
                 &payer.pubkey(),
-                &solana_sdk::system_program::id(),
+                &solana_program::system_program::id(),
                 1,
             )],
             Some(&payer.pubkey()),
