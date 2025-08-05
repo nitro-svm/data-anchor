@@ -2,10 +2,9 @@
 
 use std::{cmp::min, fmt::Debug};
 
-use anchor_lang::solana_program::hash;
+use anchor_lang::solana_program::hash::{self, HASH_BYTES, Hash};
 use data_anchor_blober::{CHUNK_SIZE, compute_blob_digest};
 use serde::{Deserialize, Serialize};
-use solana_hash::{HASH_BYTES, Hash};
 use thiserror::Error;
 
 /// A proof that a specific blob has been uploaded to the blober program. The proof consists of two

@@ -1,5 +1,4 @@
-use anchor_lang::solana_program::hash::Hash;
-use solana_clock::Slot;
+use anchor_lang::solana_program::{clock::Slot, hash::Hash};
 use solana_signature::Signature;
 use solana_transaction::Transaction;
 use tokio::sync::mpsc;

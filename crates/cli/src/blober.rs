@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
+use anchor_lang::prelude::Pubkey;
 use clap::Parser;
 use data_anchor_api::BloberWithNamespace;
 use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
 use serde::{Serialize, ser::SerializeStruct};
-use solana_pubkey::Pubkey;
 use tracing::{info, instrument};
 
 use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};

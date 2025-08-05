@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use anchor_lang::prelude::Pubkey;
 use chrono::{DateTime, Utc};
 use data_anchor_proofs::compound::CompoundInclusionProof;
 use jsonrpsee::{
@@ -7,7 +8,6 @@ use jsonrpsee::{
     proc_macros::rpc,
 };
 use serde::{Deserialize, Serialize};
-use solana_pubkey::Pubkey;
 
 /// A data structure representing a blober's information, including the blober's pubkey, the
 /// payer's pubkey, and the network of the blober.
@@ -163,8 +163,8 @@ pub trait IndexerRpc {
 pub mod pubkey_with_str {
     use std::str::FromStr;
 
+    use anchor_lang::prelude::Pubkey;
     use serde::{Deserialize, Deserializer, de};
-    use solana_pubkey::Pubkey;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Pubkey, D::Error>
     where

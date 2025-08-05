@@ -1,6 +1,5 @@
+use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
 use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, ProofData, TimeRange};
-use solana_clock::Slot;
-use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 
 use super::BloberIdentifier;

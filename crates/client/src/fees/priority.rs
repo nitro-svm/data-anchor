@@ -1,9 +1,9 @@
+use anchor_lang::prelude::Pubkey;
 use clap::ValueEnum;
 use itertools::Itertools;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_pubkey::Pubkey;
 
 use crate::{DataAnchorClientResult, MicroLamports};
 

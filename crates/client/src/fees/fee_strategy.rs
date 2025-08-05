@@ -1,5 +1,5 @@
+use anchor_lang::prelude::Pubkey;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_pubkey::Pubkey;
 use tracing::Instrument;
 
 use super::Lamports;

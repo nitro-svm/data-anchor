@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
+use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
 use clap::Parser;
 use data_anchor_api::pubkey_with_str;
 use data_anchor_client::{
@@ -7,8 +8,6 @@ use data_anchor_client::{
 };
 use itertools::Itertools;
 use serde::Serialize;
-use solana_clock::Slot;
-use solana_pubkey::Pubkey;
 use solana_signature::Signature;
 use tokio::io::AsyncReadExt;
 use tracing::instrument;

@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use anchor_lang::{Discriminator, Space};
+use anchor_lang::{Discriminator, Space, prelude::Pubkey};
 use bon::Builder;
 use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
@@ -13,7 +13,6 @@ use data_anchor_blober::{
 use jsonrpsee::http_client::HttpClient;
 use solana_commitment_config::CommitmentConfig;
 use solana_keypair::Keypair;
-use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_signer::Signer;
 use tracing::{Instrument, Span, info_span};

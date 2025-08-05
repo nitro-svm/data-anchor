@@ -3,7 +3,10 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anchor_lang::solana_program::hash::Hash;
+use anchor_lang::{
+    prelude::Pubkey,
+    solana_program::{clock::DEFAULT_MS_PER_SLOT, hash::Hash},
+};
 use async_trait::async_trait;
 use data_anchor_blober::find_blober_address;
 use itertools::Itertools;
@@ -13,12 +16,10 @@ use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_response::{RpcBlockhash, RpcResponseContext},
 };
-use solana_clock::DEFAULT_MS_PER_SLOT;
 use solana_commitment_config::CommitmentConfig;
 use solana_epoch_info::EpochInfo;
 use solana_keypair::Keypair;
 use solana_native_token::LAMPORTS_PER_SOL;
-use solana_pubkey::Pubkey;
 use solana_rpc_client::{
     mock_sender::MockSender,
     rpc_client::RpcClientConfig,

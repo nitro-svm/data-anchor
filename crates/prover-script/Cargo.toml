@@ -18,7 +18,6 @@ sp1-sdk = { workspace = true }
 
 # Solana & Agave
 anchor-lang = { workspace = true }
-solana-pubkey = { workspace = true }
 
 # Locals
 data-anchor-blober = { workspace = true }

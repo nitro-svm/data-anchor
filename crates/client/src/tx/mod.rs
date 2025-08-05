@@ -205,13 +205,13 @@ mod utils {
 
     use anchor_lang::{
         InstructionData, ToAccountMetas,
+        prelude::Pubkey,
         solana_program::{instruction::Instruction, system_program},
     };
     use data_anchor_blober::find_blober_address;
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_commitment_config::CommitmentConfig;
     use solana_keypair::Keypair;
-    use solana_pubkey::Pubkey;
     use solana_signer::Signer;
     use solana_test_validator::TestValidatorGenesis;
     use solana_transaction::Transaction;

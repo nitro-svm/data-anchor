@@ -2,6 +2,7 @@
 
 use std::{path::PathBuf, str::FromStr, sync::Arc};
 
+use anchor_lang::prelude::Pubkey;
 use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
@@ -11,7 +12,6 @@ use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
 use solana_keypair::Keypair;
-use solana_pubkey::Pubkey;
 use solana_signer::{EncodableKey, Signer};
 use tracing::trace;
 

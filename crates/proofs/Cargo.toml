@@ -19,21 +19,19 @@ tracing = { workspace = true, features = ["attributes"] }
 
 # Solana & Agave
 anchor-lang = { workspace = true }
-solana-account = { workspace = true }
-solana-clock = { workspace = true }
-solana-hash = { workspace = true }
-solana-keypair = { workspace = true }
-solana-pubkey = { workspace = true }
-solana-seed-derivable = { workspace = true }
-solana-signer = { workspace = true }
 
 # Locals
 data-anchor-blober = { workspace = true }
 
 [dev-dependencies]
 # External dependencies from crates.io
-risc0-zkvm = { workspace = true }
 arbitrary = { workspace = true, features = ["derive"] }
 arbtest = { workspace = true }
 mutants = { workspace = true }
 serde_json = { workspace = true }
+
+# Solana & Agave
+solana-account = { workspace = true }
+solana-keypair = { workspace = true }
+solana-seed-derivable = { workspace = true }
+solana-signer = { workspace = true }

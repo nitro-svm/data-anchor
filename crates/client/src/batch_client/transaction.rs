@@ -1,5 +1,5 @@
+use anchor_lang::solana_program::clock::Slot;
 use solana_client::client_error::ClientError as Error;
-use solana_clock::Slot;
 use solana_commitment_config::CommitmentConfig;
 use solana_signature::Signature;
 use solana_transaction_error::TransactionError;

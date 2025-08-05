@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use solana_clock::DEFAULT_MS_PER_SLOT;
+use anchor_lang::solana_program::clock::DEFAULT_MS_PER_SLOT;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use tokio::{
     sync::watch,

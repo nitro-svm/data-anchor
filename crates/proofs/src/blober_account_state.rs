@@ -5,12 +5,13 @@
 
 use std::{collections::BTreeMap, fmt::Debug, sync::Arc};
 
-use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_lang::{
+    AnchorDeserialize, Discriminator,
+    prelude::Pubkey,
+    solana_program::{clock::Slot, hash::HASH_BYTES},
+};
 use data_anchor_blober::{U32_SIZE_BYTES, hash_blob, merge_hashes, state::blober::Blober};
 use serde::{Deserialize, Serialize};
-use solana_clock::Slot;
-use solana_hash::HASH_BYTES;
-use solana_pubkey::Pubkey;
 use thiserror::Error;
 
 use crate::{compound::ProofBlob, debug::NoPrettyPrint};

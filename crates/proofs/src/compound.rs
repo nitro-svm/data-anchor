@@ -3,11 +3,13 @@
 
 use std::fmt::Debug;
 
+use anchor_lang::{
+    prelude::Pubkey,
+    solana_program::hash::{HASH_BYTES, Hash},
+};
 use data_anchor_blober::hash_blob;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use solana_hash::{HASH_BYTES, Hash};
-use solana_pubkey::Pubkey;
 use thiserror::Error;
 
 use crate::{
@@ -256,14 +258,13 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use anchor_lang::{AnchorSerialize, Discriminator};
+    use anchor_lang::{AnchorSerialize, Discriminator, solana_program::clock::Slot};
     use arbtest::arbtest;
     use blober_account_state::{BlobAccount, merge_all_hashes};
     use data_anchor_blober::{
         BLOB_DATA_END, BLOB_DATA_START, CHUNK_SIZE, initial_hash,
         state::{blob::Blob, blober::Blober},
     };
-    use solana_clock::Slot;
     use solana_signer::Signer;
 
     use super::*;
@@ -279,11 +280,6 @@ mod tests {
         let deserialized_bincode: CompoundInclusionProof =
             bincode::deserialize(&serialized_bincode).unwrap();
         assert_eq!(proof, deserialized_bincode);
-
-        let serialized_risc0_zkvm = risc0_zkvm::serde::to_vec(&proof).unwrap();
-        let deserialized_risc0_zkvm: CompoundInclusionProof =
-            risc0_zkvm::serde::from_slice(&serialized_risc0_zkvm).unwrap();
-        assert_eq!(proof, deserialized_risc0_zkvm);
     }
 
     #[test]

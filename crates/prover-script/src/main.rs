@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use anchor_lang::{AnchorSerialize, Discriminator};
+use anchor_lang::{AnchorSerialize, Discriminator, prelude::Pubkey};
 use bytesize::ByteSize;
 use clap::Parser;
 use data_anchor_blober::{
@@ -14,7 +14,6 @@ use data_anchor_proofs::{
 };
 use data_anchor_prover::{DATA_CORRECTNESS_ELF, DAWN_SLA_ELF, run_client};
 use rand::{RngCore, rngs::OsRng};
-use solana_pubkey::Pubkey;
 use sp1_sdk::utils;
 
 #[derive(Debug, Clone, Parser)]

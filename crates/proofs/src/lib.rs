@@ -14,15 +14,15 @@ mod debug;
 pub(crate) mod testing {
     use std::{cmp::max, hash::Hash, ops::Deref};
 
+    use anchor_lang::solana_program::clock::Epoch;
     use arbitrary::{Arbitrary, Unstructured};
     use solana_account::Account;
-    use solana_clock::Epoch;
     use solana_keypair::Keypair;
     use solana_seed_derivable::SeedDerivable;
     use solana_signer::Signer;
 
     /// An arbitrary keypair, since we can't implement [`arbitrary::Arbitrary`] for
-    /// [`solana_keypair::Keypair`] or [`solana_pubkey::Pubkey`].
+    /// [`solana_keypair::Keypair`] or [`anchor_lang::Pubkey`].
     ///
     /// Mainly used to generate valid pubkeys from arbitrary seeds.
     #[derive(Debug, PartialEq)]

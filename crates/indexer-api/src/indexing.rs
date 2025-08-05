@@ -1,12 +1,12 @@
 use anchor_lang::{
-    AnchorDeserialize, Discriminator, solana_program::instruction::CompiledInstruction,
+    AnchorDeserialize, Discriminator, prelude::Pubkey,
+    solana_program::instruction::CompiledInstruction,
 };
 use data_anchor_blober::{
     BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, instruction::InsertChunk,
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use solana_pubkey::Pubkey;
 use solana_transaction::versioned::VersionedTransaction;
 use solana_transaction_status::InnerInstructions;
 
