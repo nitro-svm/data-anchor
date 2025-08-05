@@ -168,7 +168,8 @@ async fn send_transaction(
 #[cfg(test)]
 mod tests {
     use anchor_lang::prelude::Pubkey;
-    use solana_sdk::{hash::Hash, signer::Signer};
+    use solana_sdk::hash::Hash;
+    use solana_signer::Signer;
     use tokio::time::{Duration, Instant, sleep_until};
     use tracing::{Level, Span};
 

@@ -26,14 +26,15 @@ tracing-subscriber = { workspace = true }
 
 # Solana & Agave
 anchor-lang = { workspace = true }
+solana-account-decoder-client-types = { workspace = true }
 solana-cli-config = { workspace = true }
 solana-client = { workspace = true }
-solana-account-decoder-client-types = { workspace = true }
 solana-keypair = { workspace = true }
 solana-pubkey = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-sdk = { workspace = true }
+solana-signer = { workspace = true }
 solana-transaction-status = { workspace = true }
 
 # Locals

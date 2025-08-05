@@ -1,6 +1,7 @@
 use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, ProofData, TimeRange};
 use solana_pubkey::Pubkey;
-use solana_sdk::{clock::Slot, signer::Signer};
+use solana_sdk::clock::Slot;
+use solana_signer::Signer;
 
 use super::BloberIdentifier;
 use crate::{DataAnchorClient, DataAnchorClientResult};

@@ -12,7 +12,7 @@ use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
 use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
-use solana_sdk::signer::{EncodableKey, Signer};
+use solana_signer::{EncodableKey, Signer};
 use tracing::trace;
 
 mod benchmark;

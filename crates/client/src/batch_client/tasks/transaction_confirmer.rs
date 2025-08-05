@@ -326,8 +326,9 @@ mod tests {
     use solana_rpc_client_api::client_error::Result as SolanaResult;
     use solana_sdk::{
         commitment_config::CommitmentConfig, hash::Hash, instruction::InstructionError,
-        signer::Signer, transaction::Transaction,
+        transaction::Transaction,
     };
+    use solana_signer::Signer;
     use solana_transaction_status::{
         TransactionConfirmationStatus, TransactionStatus as SolanaTransactionStatus,
     };

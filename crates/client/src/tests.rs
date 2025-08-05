@@ -24,8 +24,9 @@ use solana_rpc_client_api::{
 };
 use solana_sdk::{
     clock::DEFAULT_MS_PER_SLOT, commitment_config::CommitmentConfig, epoch_info::EpochInfo,
-    hash::Hash, native_token::LAMPORTS_PER_SOL, signer::Signer,
+    hash::Hash, native_token::LAMPORTS_PER_SOL,
 };
+use solana_signer::Signer;
 use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 

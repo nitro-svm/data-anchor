@@ -19,7 +19,8 @@ use solana_client::{
 };
 use solana_pubkey::Pubkey;
 use solana_rpc_client_api::client_error::Error;
-use solana_sdk::{message::VersionedMessage, signature::Signature, signer::Signer};
+use solana_sdk::{message::VersionedMessage, signature::Signature};
+use solana_signer::Signer;
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 
 use super::BloberIdentifier;

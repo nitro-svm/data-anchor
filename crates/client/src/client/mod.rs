@@ -14,7 +14,8 @@ use jsonrpsee::http_client::HttpClient;
 use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{commitment_config::CommitmentConfig, signer::Signer};
+use solana_sdk::commitment_config::CommitmentConfig;
+use solana_signer::Signer;
 use tracing::{Instrument, Span, info_span};
 
 use crate::{

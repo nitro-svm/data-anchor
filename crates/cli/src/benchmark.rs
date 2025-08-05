@@ -19,7 +19,7 @@ use futures::StreamExt;
 use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
 use serde::Serialize;
-use solana_sdk::signer::Signer;
+use solana_signer::Signer;
 use tracing::{instrument, trace};
 
 use crate::formatting::CommandOutput;
