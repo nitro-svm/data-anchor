@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use solana_client::{client_error::ClientError as Error, nonblocking::rpc_client::RpcClient};
-use solana_sdk::{message::Message, signer::keypair::Keypair, transaction::Transaction};
+use solana_keypair::Keypair;
+use solana_sdk::{message::Message, transaction::Transaction};
 use tokio::{
     sync::mpsc,
     time::{Duration, Instant, sleep, timeout_at},

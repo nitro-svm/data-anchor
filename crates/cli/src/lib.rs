@@ -10,11 +10,9 @@ use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientRes
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
+use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
-use solana_sdk::{
-    signature::Keypair,
-    signer::{EncodableKey, Signer},
-};
+use solana_sdk::signer::{EncodableKey, Signer};
 use tracing::trace;
 
 mod benchmark;

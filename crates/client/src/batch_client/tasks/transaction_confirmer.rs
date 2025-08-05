@@ -321,11 +321,12 @@ mod tests {
         rpc_response::{Response, RpcResponseContext},
         rpc_sender::{RpcSender, RpcTransportStats},
     };
+    use solana_keypair::Keypair;
     use solana_rpc_client::mock_sender::MockSender;
     use solana_rpc_client_api::client_error::Result as SolanaResult;
     use solana_sdk::{
         commitment_config::CommitmentConfig, hash::Hash, instruction::InstructionError,
-        signature::Keypair, signer::Signer, transaction::Transaction,
+        signer::Signer, transaction::Transaction,
     };
     use solana_transaction_status::{
         TransactionConfirmationStatus, TransactionStatus as SolanaTransactionStatus,

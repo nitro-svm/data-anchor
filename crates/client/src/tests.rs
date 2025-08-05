@@ -12,6 +12,7 @@ use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_response::{RpcBlockhash, RpcResponseContext},
 };
+use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
 use solana_rpc_client::{
     mock_sender::MockSender,
@@ -23,7 +24,7 @@ use solana_rpc_client_api::{
 };
 use solana_sdk::{
     clock::DEFAULT_MS_PER_SLOT, commitment_config::CommitmentConfig, epoch_info::EpochInfo,
-    hash::Hash, native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer,
+    hash::Hash, native_token::LAMPORTS_PER_SOL, signer::Signer,
 };
 use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;

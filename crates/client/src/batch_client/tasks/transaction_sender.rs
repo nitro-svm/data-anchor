@@ -4,10 +4,10 @@ use solana_client::{
     client_error::ClientError as Error, rpc_client::SerializableTransaction,
     rpc_config::RpcSendTransactionConfig,
 };
+use solana_keypair::Keypair;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
-    commitment_config::CommitmentLevel, signature::Signature, signer::keypair::Keypair,
-    transaction::Transaction,
+    commitment_config::CommitmentLevel, signature::Signature, transaction::Transaction,
 };
 use tokio::{
     sync::{mpsc, watch},

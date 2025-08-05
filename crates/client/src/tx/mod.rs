@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, instruction::Instruction, message::Message,
-    signature::Keypair, signer::Signer,
+    signer::Signer,
 };
 
 use crate::{DataAnchorClientResult, Fee, TransactionType};
@@ -204,10 +205,11 @@ mod utils {
     use anchor_lang::{InstructionData, ToAccountMetas};
     use data_anchor_blober::find_blober_address;
     use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_keypair::Keypair;
     use solana_pubkey::Pubkey;
     use solana_sdk::{
-        commitment_config::CommitmentConfig, instruction::Instruction, signature::Keypair,
-        signer::Signer, system_program, transaction::Transaction,
+        commitment_config::CommitmentConfig, instruction::Instruction, signer::Signer,
+        system_program, transaction::Transaction,
     };
     use solana_test_validator::TestValidatorGenesis;
 
