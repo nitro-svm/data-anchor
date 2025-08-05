@@ -80,7 +80,7 @@ test-all: test-programs test
 
 # Run full workflow tests on a local network - the local network must be running
 [group('test')]
-test-with-local: (deploy 'localnet')
+test-with-local:
     cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
 
 [confirm('This will run the indexer tests and requires a local database to be running. Are you sure you want to continue [y/n]?')]

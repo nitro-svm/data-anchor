@@ -21,6 +21,7 @@ pub mod data_anchor_data_correctness_verifier {
     ) -> Result<()> {
         let checkpoint = Checkpoint::new(proof, public_values, verification_key, slot)?;
 
+        #[cfg(feature = "sp1")]
         checkpoint.verify_zk_proof()?;
 
         checkpoint.cpi_create_checkpoint(

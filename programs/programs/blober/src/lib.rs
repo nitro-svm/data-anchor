@@ -54,7 +54,6 @@ pub mod blober {
         configure_checkpoint_handler(ctx, authority)
     }
 
-    #[cfg(feature = "sp1")]
     pub fn create_checkpoint(
         ctx: Context<CreateCheckpoint>,
         blober: Pubkey,

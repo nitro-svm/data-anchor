@@ -13,7 +13,8 @@ crate-type = ["cdylib", "lib"]
 name = "data_anchor_data_correctness_verifier"
 
 [features]
-default = []
+default = [ "sp1" ]
+sp1 = [ "data-anchor-blober/sp1" ]
 cpi = [ "data-anchor-blober/cpi", "no-entrypoint" ]
 no-entrypoint = [ "data-anchor-blober/no-entrypoint" ]
 no-idl = [ "data-anchor-blober/no-idl" ]
@@ -25,4 +26,7 @@ idl-build = [ "anchor-lang/idl-build", "data-anchor-blober/idl-build" ]
 anchor-lang = { workspace = true }
 
 # Locals
-data-anchor-blober = { workspace = true, features = ["no-entrypoint", "cpi"] }
+data-anchor-blober = { workspace = true, default-features = false, features = [
+  "no-entrypoint",
+  "cpi",
+] }

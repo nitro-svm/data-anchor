@@ -32,7 +32,7 @@ anchor-lang = "=0.31.1"
 sp1-solana = { git = "https://github.com/succinctlabs/sp1-solana" }
 
 # Locals
-data-anchor-blober = { path = "./programs/blober", version = "0.1.7" }
+data-anchor-blober = { path = "./programs/blober", version = "0.1.7", default-features = false }
 
 [profile.release]
 overflow-checks = true

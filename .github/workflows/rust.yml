@@ -180,14 +180,15 @@ jobs:
 
       - run: just test
 
+      - run: just build-programs
+
       - name: Run full workflow test against local validator
         run: |
           rm -rf ./test-ledger
-          solana-test-validator &
-          solana config set --url "http://localhost:8899" --commitment processed
-          cp ./docker/solana/id.json "$HOME/.config/solana/id.json"
+          solana-test-validator \
+            --bpf-program anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2 ./programs/target/deploy/data_anchor_blober.so \
+            --ledger test-ledger &
           sleep 5
-          solana airdrop 100
           just --yes test-with-local
 
   changes:
