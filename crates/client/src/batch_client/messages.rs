@@ -1,4 +1,5 @@
-use solana_sdk::{clock::Slot, hash::Hash, signature::Signature};
+use solana_clock::Slot;
+use solana_sdk::{hash::Hash, signature::Signature};
 use solana_transaction::Transaction;
 use tokio::sync::mpsc;
 use tracing::Span;
