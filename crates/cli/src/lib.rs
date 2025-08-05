@@ -10,8 +10,8 @@ use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientRes
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
+use solana_pubkey::Pubkey;
 use solana_sdk::{
-    pubkey::Pubkey,
     signature::Keypair,
     signer::{EncodableKey, Signer},
 };

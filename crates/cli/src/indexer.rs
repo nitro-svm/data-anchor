@@ -6,7 +6,7 @@ use data_anchor_api::{CompoundInclusionProof, ProofData, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use tracing::instrument;
 
 use crate::formatting::CommandOutput;

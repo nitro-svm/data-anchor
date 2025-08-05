@@ -24,6 +24,3 @@ solana-pubkey = { workspace = true }
 data-anchor-blober = { workspace = true }
 data-anchor-proofs = { workspace = true }
 data-anchor-prover = { workspace = true }
-
-[build-dependencies]
-sp1-build = { workspace = true }

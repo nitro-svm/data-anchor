@@ -18,6 +18,7 @@ serde = { workspace = true, features = ["alloc", "derive"] }
 
 # Solana & Agave
 anchor-lang = { workspace = true }
+solana-pubkey = { workspace = true }
 solana-sdk = { workspace = true }
 solana-transaction-status = { workspace = true }
 

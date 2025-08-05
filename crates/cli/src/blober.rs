@@ -6,7 +6,7 @@ use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
 use serde::{Serialize, ser::SerializeStruct};
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use tracing::{info, instrument};
 
 use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};

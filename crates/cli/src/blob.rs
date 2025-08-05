@@ -7,7 +7,8 @@ use data_anchor_client::{
 };
 use itertools::Itertools;
 use serde::Serialize;
-use solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature};
+use solana_pubkey::Pubkey;
+use solana_sdk::{clock::Slot, signature::Signature};
 use tokio::io::AsyncReadExt;
 use tracing::instrument;
 

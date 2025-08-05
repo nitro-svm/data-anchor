@@ -17,8 +17,9 @@ use solana_client::{
     },
     rpc_filter::{Memcmp, RpcFilterType},
 };
+use solana_pubkey::Pubkey;
 use solana_rpc_client_api::client_error::Error;
-use solana_sdk::{message::VersionedMessage, pubkey::Pubkey, signature::Signature, signer::Signer};
+use solana_sdk::{message::VersionedMessage, signature::Signature, signer::Signer};
 use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 
 use super::BloberIdentifier;

@@ -11,7 +11,8 @@ use data_anchor_blober::{
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
 };
 use jsonrpsee::http_client::HttpClient;
-use solana_sdk::{message::Message, pubkey::Pubkey, signer::Signer};
+use solana_pubkey::Pubkey;
+use solana_sdk::{message::Message, signer::Signer};
 use tracing::{Instrument, Span, info_span};
 
 use crate::{

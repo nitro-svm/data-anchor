@@ -22,7 +22,7 @@ pub(crate) mod testing {
     use solana_signer::Signer;
 
     /// An arbitrary keypair, since we can't implement [`arbitrary::Arbitrary`] for
-    /// [`solana_sdk::signature::Keypair`] or [`solana_sdk::pubkey::Pubkey`].
+    /// [`solana_keypair::Keypair`] or [`solana_pubkey::Pubkey`].
     ///
     /// Mainly used to generate valid pubkeys from arbitrary seeds.
     #[derive(Debug, PartialEq)]

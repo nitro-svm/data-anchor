@@ -4,9 +4,8 @@ use data_anchor_blober::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use solana_sdk::{
-    instruction::CompiledInstruction, pubkey::Pubkey, transaction::VersionedTransaction,
-};
+use solana_pubkey::Pubkey;
+use solana_sdk::{instruction::CompiledInstruction, transaction::VersionedTransaction};
 use solana_transaction_status::InnerInstructions;
 
 use crate::PubkeyFromStr;
