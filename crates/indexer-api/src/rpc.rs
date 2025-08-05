@@ -8,7 +8,6 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use solana_pubkey::Pubkey;
-use solana_sdk::clock::Slot;
 
 /// A data structure representing a blober's information, including the blober's pubkey, the
 /// payer's pubkey, and the network of the blober.
@@ -153,7 +152,7 @@ pub trait IndexerRpc {
     #[subscription(
         name = "subscribe_blob_finalization" => "listen_subscribe_blob_finalization",
         unsubscribe = "unsubscribe_blob_finalization", 
-        item = (Pubkey, Slot)
+        item = (Pubkey, u64)
     )]
     async fn subscribe_blob_finalization(
         &self,

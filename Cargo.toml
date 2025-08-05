@@ -86,9 +86,12 @@ solana-sdk = "=2.2.1"
 solana-seed-derivable = "=2.2.1"
 solana-signer = "=2.2.1"
 solana-test-validator = "=2.2.1"
+solana-transaction = "=2.2.1"
+solana-transaction-error = "=2.2.1"
 solana-transaction-status = "=2.2.1"
 solana-transaction-status-client-types = "=2.2.1"
 solana_rbpf = "=0.8.4"
+
 anchor-lang = "=0.31.1"
 
 yellowstone-grpc-client = "=6.0.0"

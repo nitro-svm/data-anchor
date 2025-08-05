@@ -6,9 +6,8 @@ use solana_client::{
 };
 use solana_keypair::Keypair;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{
-    commitment_config::CommitmentLevel, signature::Signature, transaction::Transaction,
-};
+use solana_sdk::{commitment_config::CommitmentLevel, signature::Signature};
+use solana_transaction::Transaction;
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,

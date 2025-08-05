@@ -2,7 +2,7 @@ use std::{ops::ControlFlow, option::Option, sync::Arc};
 
 use solana_client::rpc_client::SerializableTransaction;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::transaction::TransactionError;
+use solana_transaction_error::TransactionError;
 use solana_transaction_status::{
     TransactionStatus as SolanaTransactionStatus, UiTransactionEncoding,
 };
@@ -312,7 +312,7 @@ pub async fn get_next_batch_for_confirmation(
 mod tests {
     use std::{mem, sync::Mutex};
 
-    use anchor_lang::prelude::Pubkey;
+    use anchor_lang::{prelude::Pubkey, solana_program::instruction::InstructionError};
     use async_trait::async_trait;
     use solana_client::{
         client_error::ClientError,
@@ -324,11 +324,9 @@ mod tests {
     use solana_keypair::Keypair;
     use solana_rpc_client::mock_sender::MockSender;
     use solana_rpc_client_api::client_error::Result as SolanaResult;
-    use solana_sdk::{
-        commitment_config::CommitmentConfig, hash::Hash, instruction::InstructionError,
-        transaction::Transaction,
-    };
+    use solana_sdk::{commitment_config::CommitmentConfig, hash::Hash};
     use solana_signer::Signer;
+    use solana_transaction::Transaction;
     use solana_transaction_status::{
         TransactionConfirmationStatus, TransactionStatus as SolanaTransactionStatus,
     };

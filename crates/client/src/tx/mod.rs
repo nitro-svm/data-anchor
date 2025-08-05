@@ -119,7 +119,7 @@ pub trait MessageBuilder {
 
     #[cfg(test)]
     fn test_compute_unit_limit() {
-        use solana_sdk::transaction::Transaction;
+        use solana_transaction::Transaction;
         use utils::{close_blober, initialize_blober, new_tokio, setup_environment};
 
         use crate::FeeStrategy;
@@ -202,17 +202,18 @@ pub trait MessageBuilder {
 mod utils {
     use std::{future::Future, sync::Arc};
 
-    use anchor_lang::{InstructionData, ToAccountMetas};
+    use anchor_lang::{
+        InstructionData, ToAccountMetas,
+        solana_program::{instruction::Instruction, system_program},
+    };
     use data_anchor_blober::find_blober_address;
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_keypair::Keypair;
     use solana_pubkey::Pubkey;
-    use solana_sdk::{
-        commitment_config::CommitmentConfig, instruction::Instruction, system_program,
-        transaction::Transaction,
-    };
+    use solana_sdk::commitment_config::CommitmentConfig;
     use solana_signer::Signer;
     use solana_test_validator::TestValidatorGenesis;
+    use solana_transaction::Transaction;
 
     /// For [`arbtest`] we need to have synchronous code inside the test, so we need to block on the futures.
     pub fn new_tokio<F: Future>(future: F) -> F::Output {
