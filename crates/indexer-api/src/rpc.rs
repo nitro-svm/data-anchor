@@ -176,6 +176,83 @@ impl std::fmt::Display for CustomerElf {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[repr(i8)]
+pub enum RequestFailureReason {
+    #[default]
+    Unknown,
+    ProofGenerationFailed,
+    TransactionError,
+    RpcConnection,
+}
+
+impl From<RequestFailureReason> for i16 {
+    fn from(reason: RequestFailureReason) -> Self {
+        match reason {
+            RequestFailureReason::Unknown => -1,
+            RequestFailureReason::ProofGenerationFailed => -2,
+            RequestFailureReason::TransactionError => -3,
+            RequestFailureReason::RpcConnection => -4,
+        }
+    }
+}
+
+impl From<i16> for RequestFailureReason {
+    fn from(reason: i16) -> Self {
+        match reason {
+            -1 => RequestFailureReason::Unknown,
+            -2 => RequestFailureReason::ProofGenerationFailed,
+            -3 => RequestFailureReason::TransactionError,
+            -4 => RequestFailureReason::RpcConnection,
+            #[allow(
+                clippy::panic,
+                reason = "This should never happen as we only use this for reading from the database"
+            )]
+            _ => panic!("Invalid request failure reason: {reason}"),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[repr(i8)]
+pub enum RequestStatus {
+    #[default]
+    Created,
+    Submitted,
+    Completed,
+    Posted,
+    Failed(RequestFailureReason),
+}
+
+impl From<RequestStatus> for i16 {
+    fn from(status: RequestStatus) -> Self {
+        match status {
+            RequestStatus::Created => 0,
+            RequestStatus::Submitted => 1,
+            RequestStatus::Completed => 2,
+            RequestStatus::Posted => 3,
+            RequestStatus::Failed(reason) => reason.into(),
+        }
+    }
+}
+
+impl From<i16> for RequestStatus {
+    fn from(status: i16) -> Self {
+        match status {
+            0 => RequestStatus::Created,
+            1 => RequestStatus::Submitted,
+            2 => RequestStatus::Completed,
+            3 => RequestStatus::Posted,
+            x if x < 0 => RequestStatus::Failed(x.into()),
+            #[allow(
+                clippy::panic,
+                reason = "This should never happen as we only use this for reading from the database"
+            )]
+            _ => panic!("Invalid request status: {status}"),
+        }
+    }
+}
+
 /// The Proof RPC interface.
 #[rpc(server, client)]
 pub trait ProofRpc {
@@ -192,6 +269,11 @@ pub trait ProofRpc {
         slot: u64,
         customer_elf: CustomerElf,
     ) -> RpcResult<String>;
+
+    /// Get a proof request status by its ID. Returns an error if the request does not exist or
+    /// if there was a database or RPC failure.
+    #[method(name = "get_proof_request_status")]
+    async fn get_proof_request_status(&self, request_id: String) -> RpcResult<RequestStatus>;
 }
 
 pub mod pubkey_with_str {

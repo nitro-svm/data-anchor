@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{CompoundInclusionProof, CustomerElf, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, CustomerElf, RequestStatus, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
@@ -78,6 +78,13 @@ pub enum IndexerSubCommand {
         #[arg(long, value_enum)]
         proof_type: CustomerElf,
     },
+    /// Get the status of a proof request.
+    #[command(visible_alias = "prs")]
+    ProofRequestStatus {
+        /// The request ID of the proof request.
+        #[arg(short, long)]
+        request_id: String,
+    },
 }
 
 #[derive(Debug, Clone, Args)]
@@ -104,6 +111,8 @@ pub enum IndexerCommandOutput {
     Proofs(Box<Option<CompoundInclusionProof>>),
     /// The request ID for the ZK proof generation.
     ZKProofs(String),
+    /// The status of a proof request.
+    ProofRequestStatus(String, RequestStatus),
 }
 
 impl std::fmt::Display for IndexerCommandOutput {
@@ -121,6 +130,12 @@ impl std::fmt::Display for IndexerCommandOutput {
             }
             IndexerCommandOutput::ZKProofs(proof) => {
                 write!(f, "ZK Proofs: {proof:?}")
+            }
+            IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
+                write!(
+                    f,
+                    "Proof Request Status: Request ID: {request_id}, Status: {status:?}"
+                )
             }
         }
     }
@@ -215,6 +230,12 @@ impl IndexerSubCommand {
                     .checkpoint_custom_proof(*slot, blober_pda.into(), *proof_type)
                     .await?;
                 Ok(IndexerCommandOutput::ZKProofs(request_id).into())
+            }
+            IndexerSubCommand::ProofRequestStatus { request_id } => {
+                let status = client
+                    .get_proof_request_status(request_id.to_owned())
+                    .await?;
+                Ok(IndexerCommandOutput::ProofRequestStatus(request_id.to_owned(), status).into())
             }
         }
     }

@@ -121,6 +121,12 @@ impl CommandOutput {
                     writer.serialize(proof_data)?;
                     Ok(String::from_utf8(writer.into_inner()?)?)
                 }
+                IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
+                    let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
+                    writer.write_record(["request_id", "status"])?;
+                    writer.write_record(&[request_id.clone(), format!("{status:?}")])?;
+                    Ok(String::from_utf8(writer.into_inner()?)?)
+                }
             },
             CommandOutput::Benchmark(output) => match output {
                 BenchmarkCommandOutput::DataPath(path_buf) => {
@@ -175,6 +181,12 @@ impl CommandOutput {
                     serde_json::to_string(compound_proof)
                 }
                 IndexerCommandOutput::ZKProofs(proof_data) => serde_json::to_string(proof_data),
+                IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
+                    serde_json::to_string(&json!({
+                        "request_id": request_id,
+                        "status": status,
+                    }))
+                }
             },
             CommandOutput::Benchmark(output) => serde_json::to_string(output),
         };
@@ -222,6 +234,12 @@ impl CommandOutput {
                 }
                 IndexerCommandOutput::ZKProofs(proof_data) => {
                     serde_json::to_string_pretty(proof_data)
+                }
+                IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
+                    serde_json::to_string_pretty(&json!({
+                        "request_id": request_id,
+                        "status": status,
+                    }))
                 }
             },
             CommandOutput::Benchmark(output) => serde_json::to_string_pretty(output),
