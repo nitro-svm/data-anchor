@@ -27,13 +27,7 @@ pub mod data_anchor_data_correctness_verifier {
         checkpoint.cpi_create_checkpoint(
             blober,
             ctx.accounts.data_anchor.to_account_info(),
-            data_anchor_blober::cpi::accounts::CreateCheckpoint {
-                checkpoint: ctx.accounts.checkpoint.to_account_info(),
-                checkpoint_config: ctx.accounts.checkpoint_config.to_account_info(),
-                pda_signer: ctx.accounts.pda_signer.to_account_info(),
-                payer: ctx.accounts.payer.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
-            },
+            ctx.accounts.into(),
         )
     }
 }
@@ -81,4 +75,18 @@ pub struct Verify<'info> {
     pub data_anchor: Program<'info, data_anchor_blober::program::Blober>,
 
     pub system_program: Program<'info, System>,
+}
+
+impl<'info> From<&mut Verify<'info>>
+    for data_anchor_blober::cpi::accounts::CreateCheckpoint<'info>
+{
+    fn from(verify: &mut Verify<'info>) -> Self {
+        data_anchor_blober::cpi::accounts::CreateCheckpoint {
+            checkpoint: verify.checkpoint.to_account_info(),
+            checkpoint_config: verify.checkpoint_config.to_account_info(),
+            pda_signer: verify.pda_signer.to_account_info(),
+            payer: verify.payer.to_account_info(),
+            system_program: verify.system_program.to_account_info(),
+        }
+    }
 }

@@ -9,7 +9,7 @@ use crate::{
     BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
     client::{
         DataAnchorClientBuilder,
-        data_anchor_client_builder::{self, IsSet, IsUnset, SetIndexerClient},
+        data_anchor_client_builder::{self, IsSet, IsUnset, SetIndexerClient, SetProofClient},
     },
 };
 
@@ -29,9 +29,10 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
         self,
         indexer_url: &str,
         indexer_api_token: Option<String>,
-    ) -> DataAnchorClientResult<DataAnchorClientBuilder<SetIndexerClient<State>>>
+    ) -> DataAnchorClientResult<DataAnchorClientBuilder<SetProofClient<SetIndexerClient<State>>>>
     where
         State::IndexerClient: IsUnset,
+        State::ProofClient: IsUnset,
     {
         let mut headers = HeaderMap::new();
         if let Some(token) = indexer_api_token {
@@ -55,9 +56,14 @@ impl<State: data_anchor_client_builder::State> DataAnchorClientBuilder<State> {
                 })?,
         );
         let indexer_client = HttpClientBuilder::new()
-            .set_headers(headers)
+            .set_headers(headers.clone())
             .build(indexer_url)?;
-        Ok(self.indexer_client(Arc::new(indexer_client)))
+        let proof_client = HttpClientBuilder::new()
+            .set_headers(headers)
+            .build(format!("{indexer_url}/proof"))?;
+        Ok(self
+            .indexer_client(Arc::new(indexer_client))
+            .proof_client(Arc::new(proof_client)))
     }
 
     /// Builds a new `DataAnchorClient` with an RPC client and a batch client built from the given

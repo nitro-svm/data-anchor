@@ -1,0 +1,34 @@
+use anchor_lang::solana_program::clock::Slot;
+use data_anchor_api::{CustomerElf, ProofRpcClient};
+use solana_signer::Signer;
+
+use super::BloberIdentifier;
+use crate::{DataAnchorClient, DataAnchorClientResult};
+
+#[derive(thiserror::Error, Debug)]
+pub enum ProofError {
+    /// Failed to read checkpoint proof for blober {0} and slot {1} with {2} via indexer client: {3}
+    #[error(
+        "Failed to read checkpoint proof for blober {0} and slot {1} with {2} via indexer client: {3}"
+    )]
+    ZKProof(String, u64, CustomerElf, String),
+}
+
+impl DataAnchorClient {
+    /// Requests ZK proof generation on the proof RPC for a given blober, slot and proof type.
+    pub async fn checkpoint_custom_proof(
+        &self,
+        slot: Slot,
+        identifier: BloberIdentifier,
+        customer_elf: CustomerElf,
+    ) -> DataAnchorClientResult<String> {
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
+
+        self.proof()
+            .checkpoint_proof(blober.into(), slot, customer_elf)
+            .await
+            .map_err(|e| {
+                ProofError::ZKProof(blober.to_string(), slot, customer_elf, e.to_string()).into()
+            })
+    }
+}

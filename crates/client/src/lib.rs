@@ -12,7 +12,7 @@ mod types;
 
 pub use crate::{
     batch_client::*,
-    client::{BloberIdentifier, ChainError, DataAnchorClient, IndexerError},
+    client::{BloberIdentifier, ChainError, DataAnchorClient, IndexerError, ProofError},
     fees::*,
     types::*,
 };

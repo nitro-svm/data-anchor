@@ -21,6 +21,8 @@ pub enum ProofGenerationError {
     Generate(#[from] anyhow::Error),
     #[error("Failed to verify proof: {0}")]
     Verify(#[from] SP1VerificationError),
+    #[error("Failed to put Groth16 proof bytes into array")]
+    Groth16ProofBytes,
 }
 
 pub type ProofGenerationResult<T = ()> = Result<T, ProofGenerationError>;
@@ -106,8 +108,13 @@ pub async fn generate_proof(
     info!("Generating Groth16 proof");
     let proof = spawn_blocking(move || client.prove(&pk, &sp1_stdin).groth16().run()).await??;
 
+    let proof_bytes = proof
+        .bytes()
+        .try_into()
+        .map_err(|_| ProofGenerationError::Groth16ProofBytes)?;
+
     Ok(ProofData {
-        proof: proof.bytes().to_vec(),
+        proof: proof_bytes,
         public_values: proof.public_values.to_vec(),
         verification_key: vk.bytes32(),
     })

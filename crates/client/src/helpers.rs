@@ -308,6 +308,16 @@ impl DataAnchorClient {
             .as_ref()
             .expect("indexer client to be present")
     }
+
+    /// Get a reference to the Proof RPC client.
+    ///
+    /// # Panics
+    /// If the client is not present. It will be present in real code, but may not be in tests.
+    pub(crate) fn proof(&self) -> &HttpClient {
+        self.proof_client
+            .as_ref()
+            .expect("proof client to be present")
+    }
 }
 
 /// Returns a unique timestamp in seconds since the UNIX epoch.

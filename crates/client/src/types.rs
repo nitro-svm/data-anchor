@@ -10,7 +10,7 @@ use thiserror::Error;
 
 use crate::{
     TransactionOutcome,
-    client::{ChainError, IndexerError},
+    client::{ChainError, IndexerError, ProofError},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageBuilder},
 };
 
@@ -23,6 +23,9 @@ pub enum DataAnchorClientError {
     /// Indexer errors
     #[error(transparent)]
     Indexer(#[from] IndexerError),
+    /// Proof errors
+    #[error(transparent)]
+    Proof(#[from] ProofError),
     /// Failed to query Solana RPC: {0}
     #[error("Failed to query Solana RPC: {0}")]
     SolanaRpc(#[from] Error),

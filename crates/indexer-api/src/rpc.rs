@@ -2,6 +2,8 @@ use std::collections::HashSet;
 
 use anchor_lang::prelude::Pubkey;
 use chrono::{DateTime, Utc};
+use clap::ValueEnum;
+use data_anchor_blober::GROTH16_PROOF_SIZE;
 use data_anchor_proofs::compound::CompoundInclusionProof;
 use jsonrpsee::{
     core::{RpcResult, SubscriptionResult},
@@ -59,10 +61,12 @@ impl From<Pubkey> for PubkeyFromStr {
 }
 
 /// Data structure to hold the proof data
+#[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProofData {
     /// The Groth16 proof bytes
-    pub proof: Vec<u8>,
+    #[serde_as(as = "serde_with::Bytes")]
+    pub proof: [u8; GROTH16_PROOF_SIZE],
     /// The public values from the proof
     pub public_values: Vec<u8>,
     /// The verification key bytes in hex encoding with a leading "0x"
@@ -142,10 +146,6 @@ pub trait IndexerRpc {
         blob_address: PubkeyFromStr,
     ) -> RpcResult<Option<CompoundInclusionProof>>;
 
-    /// Request building a succinct ZK Groth16 proof for a given blober and slot.
-    #[method(name = "checkpoint_proof")]
-    async fn checkpoint_proof(&self, blober: PubkeyFromStr, slot: u64) -> RpcResult<ProofData>;
-
     /// Listen to blob finalization events from specified blobers. This will return a stream of
     /// slots and blober PDAs that have finalized blobs. The stream will be closed when the RPC server is
     /// shut down.
@@ -158,6 +158,40 @@ pub trait IndexerRpc {
         &self,
         blobers: HashSet<PubkeyFromStr>,
     ) -> SubscriptionResult;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+pub enum CustomerElf {
+    DataCorrectness,
+    DawnSla,
+}
+
+impl std::fmt::Display for CustomerElf {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CustomerElf::DataCorrectness => write!(f, "data-correctness"),
+            CustomerElf::DawnSla => write!(f, "dawn-sla"),
+        }
+    }
+}
+
+/// The Proof RPC interface.
+#[rpc(server, client)]
+pub trait ProofRpc {
+    /// Check the health of the RPC server. Returns an error if the server is not healthy.
+    #[method(name = "health")]
+    async fn health(&self) -> RpcResult<()>;
+
+    /// Request building a succinct ZK Groth16 proof for a given blober and slot. (Custom per
+    /// client)
+    #[method(name = "checkpoint_proof")]
+    async fn checkpoint_proof(
+        &self,
+        blober: PubkeyFromStr,
+        slot: u64,
+        customer_elf: CustomerElf,
+    ) -> RpcResult<String>;
 }
 
 pub mod pubkey_with_str {

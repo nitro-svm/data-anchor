@@ -1,5 +1,5 @@
 use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
-use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, ProofData, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, TimeRange};
 use solana_signer::Signer;
 
 use super::BloberIdentifier;
@@ -127,19 +127,5 @@ impl DataAnchorClient {
             .get_proof_for_blob(blob.into())
             .await
             .map_err(|e| IndexerError::ProofForBlob(blob.to_string(), e.to_string()).into())
-    }
-
-    /// Requests ZK proof generation on the indexer for a given blober and slot.
-    pub async fn checkpoint_proof(
-        &self,
-        slot: Slot,
-        identifier: BloberIdentifier,
-    ) -> DataAnchorClientResult<ProofData> {
-        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
-
-        self.indexer()
-            .checkpoint_proof(blober.into(), slot)
-            .await
-            .map_err(|e| IndexerError::ZKProof(blober.to_string(), slot, e.to_string()).into())
     }
 }

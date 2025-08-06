@@ -29,9 +29,11 @@ use crate::{
 mod builder;
 mod indexer_client;
 mod ledger_client;
+mod proof_client;
 
 pub use indexer_client::IndexerError;
 pub use ledger_client::ChainError;
+pub use proof_client::ProofError;
 
 /// Identifier for a blober, which can be either a combination of payer and namespace or just a pubkey.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,8 +117,8 @@ pub struct DataAnchorClient {
     pub(crate) program_id: Pubkey,
     pub(crate) rpc_client: Arc<RpcClient>,
     pub(crate) batch_client: BatchClient,
-    // Optional for the sake of testing, because in some tests indexer client is not used
     pub(crate) indexer_client: Option<Arc<HttpClient>>,
+    pub(crate) proof_client: Option<Arc<HttpClient>>,
 }
 
 impl DataAnchorClient {

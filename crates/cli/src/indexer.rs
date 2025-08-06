@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
-use data_anchor_api::{CompoundInclusionProof, ProofData, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, CustomerElf, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
@@ -68,9 +68,16 @@ pub enum IndexerSubCommand {
     /// Get compound proof for a given slot.
     #[command(visible_alias = "p", alias = "proofs")]
     Proof(SlotArgs),
-    /// Request proof checkpoint generation for a given slot.
-    #[command(visible_alias = "cp")]
-    CheckpointProof(SlotArgs),
+    /// Request a custom proof for a given slot.
+    #[command(visible_alias = "zkp")]
+    ZKProof {
+        /// The slot to query.
+        #[arg(short, long)]
+        slot: u64,
+        /// The proof type to request.
+        #[arg(long, value_enum)]
+        proof_type: CustomerElf,
+    },
 }
 
 #[derive(Debug, Clone, Args)]
@@ -95,8 +102,8 @@ pub enum IndexerCommandOutput {
     Blobs(Vec<Vec<u8>>),
     /// The compound proof for the given slot.
     Proofs(Box<Option<CompoundInclusionProof>>),
-    /// The Groth16 proof data for the given slot.
-    ZKProofs(Box<ProofData>),
+    /// The request ID for the ZK proof generation.
+    ZKProofs(String),
 }
 
 impl std::fmt::Display for IndexerCommandOutput {
@@ -203,9 +210,11 @@ impl IndexerSubCommand {
                 let proof = client.get_proof_for_blob(blob.to_owned()).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
-            IndexerSubCommand::CheckpointProof(SlotArgs { slot }) => {
-                let proof = client.checkpoint_proof(*slot, blober_pda.into()).await?;
-                Ok(IndexerCommandOutput::ZKProofs(Box::new(proof)).into())
+            IndexerSubCommand::ZKProof { slot, proof_type } => {
+                let request_id = client
+                    .checkpoint_custom_proof(*slot, blober_pda.into(), *proof_type)
+                    .await?;
+                Ok(IndexerCommandOutput::ZKProofs(request_id).into())
             }
         }
     }
