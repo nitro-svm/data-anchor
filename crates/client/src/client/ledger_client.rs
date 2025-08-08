@@ -403,22 +403,17 @@ impl DataAnchorClient {
     /// Retrieves the checkpoint containing the Groth16 proof for a given blober account.
     pub async fn get_checkpoint(
         &self,
-        blober: Pubkey,
+        blober: BloberIdentifier,
     ) -> DataAnchorClientResult<Option<Checkpoint>> {
+        let blober = blober.to_blober_address(self.program_id, self.payer.pubkey());
         let checkpoint_address = find_checkpoint_address(self.program_id, blober);
         let account = self
             .rpc_client
-            .get_account_with_config(
-                &checkpoint_address,
-                RpcAccountInfoConfig {
-                    encoding: Some(UiAccountEncoding::Base64),
-                    commitment: Some(self.rpc_client.commitment()),
-                    ..Default::default()
-                },
-            )
-            .await?;
+            .get_account_with_commitment(&checkpoint_address, self.rpc_client.commitment())
+            .await?
+            .value;
 
-        let Some(account) = account.value else {
+        let Some(account) = account else {
             return Ok(None);
         };
 
@@ -426,17 +421,27 @@ impl DataAnchorClient {
             return Err(LedgerDataBlobError::AccountNotOwnedByProgram.into());
         }
 
-        if account.data.get(..Checkpoint::DISCRIMINATOR.len()) != Some(Checkpoint::DISCRIMINATOR) {
-            return Err(LedgerDataBlobError::InvalidCheckpointAccount.into());
+        if !account.data.starts_with(Checkpoint::DISCRIMINATOR) {
+            return Err(LedgerDataBlobError::InvalidCheckpointAccount(
+                "Invalid discriminator".to_owned(),
+            )
+            .into());
         }
 
-        let state = account
-            .data
-            .get(Checkpoint::DISCRIMINATOR.len()..)
-            .ok_or(LedgerDataBlobError::InvalidCheckpointAccount)?;
+        let mut state = account.data.get(Checkpoint::DISCRIMINATOR.len()..).ok_or(
+            LedgerDataBlobError::InvalidCheckpointAccount("No state data".to_owned()),
+        )?;
 
-        let checkpoint = Checkpoint::try_from_slice(state)
-            .map_err(|_| LedgerDataBlobError::InvalidCheckpointAccount)?;
+        if state.is_empty() {
+            return Err(LedgerDataBlobError::InvalidCheckpointAccount(
+                "Empty state data".to_owned(),
+            )
+            .into());
+        }
+
+        let checkpoint = Checkpoint::deserialize(&mut state).map_err(|e| {
+            LedgerDataBlobError::InvalidCheckpointAccount(format!("Failed to deserialize: {e:?}"))
+        })?;
 
         Ok(Some(checkpoint))
     }

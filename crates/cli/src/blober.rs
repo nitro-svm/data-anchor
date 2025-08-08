@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use clap::Parser;
 use data_anchor_api::BloberWithNamespace;
+use data_anchor_blober::checkpoint::Checkpoint;
 use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
@@ -25,6 +26,9 @@ pub enum BloberSubCommand {
     /// Get all the PDA addresses for the given program ID.
     #[command(visible_alias = "l")]
     List,
+    /// Query checkpoint status for the given blober account.
+    #[command(visible_alias = "ch")]
+    CheckpointStatus,
     /// Create an on-chain checkpoint for the given blober account.
     #[command(visible_alias = "cp")]
     ConfigureCheckpoint {
@@ -41,6 +45,7 @@ pub struct BloberCommandOutput {
     program_id: Pubkey,
     payer: Pubkey,
     blobers: Vec<BloberWithNamespace>,
+    checkpoint: Option<Checkpoint>,
 }
 
 impl Serialize for BloberCommandOutput {
@@ -48,7 +53,7 @@ impl Serialize for BloberCommandOutput {
     where
         S: serde::Serializer,
     {
-        let mut state = serializer.serialize_struct("BloberCommandOutput", 5)?;
+        let mut state = serializer.serialize_struct("BloberCommandOutput", 9)?;
         state.serialize_field(
             "identifier",
             &self
@@ -60,6 +65,21 @@ impl Serialize for BloberCommandOutput {
         state.serialize_field("program_id", &self.program_id.to_string())?;
         state.serialize_field("payer", &self.payer.to_string())?;
         state.serialize_field("blobers", &self.blobers)?;
+        let (proof, public_values, verification_key, slot) =
+            if let Some(checkpoint) = &self.checkpoint {
+                (
+                    hex::encode(checkpoint.proof),
+                    hex::encode(&checkpoint.public_values),
+                    checkpoint.verification_key.as_str(),
+                    checkpoint.slot,
+                )
+            } else {
+                (String::new(), String::new(), "", 0)
+            };
+        state.serialize_field("checkpoint_proof", &proof)?;
+        state.serialize_field("checkpoint_public_values", &public_values)?;
+        state.serialize_field("checkpoint_verification_key", &verification_key)?;
+        state.serialize_field("checkpoint_slot", &slot)?;
         state.end()
     }
 }
@@ -93,14 +113,35 @@ impl std::fmt::Display for BloberCommandOutput {
                         .to_blober_address(self.program_id, self.payer)
                 )
             }
+            BloberSubCommand::CheckpointStatus => {
+                if let Some(checkpoint) = &self.checkpoint {
+                    write!(
+                        f,
+                        "Checkpoint status for blober account {:?}:\nProof: {}\nPublic Values: {}\nVerification Key: {}\nSlot: {}",
+                        self.identifier.namespace(),
+                        hex::encode(checkpoint.proof),
+                        hex::encode(&checkpoint.public_values),
+                        checkpoint.verification_key,
+                        checkpoint.slot
+                    )
+                } else {
+                    write!(
+                        f,
+                        "No checkpoint found for blober account {:?}",
+                        self.identifier.namespace()
+                    )
+                }
+            }
             on_chain => {
                 write!(
                     f,
                     "Blober account {:?} has been successfully {} (Pubkey: {})",
                     self.identifier.namespace(),
                     match on_chain {
-                        BloberSubCommand::Initialize => "initialized",
-                        BloberSubCommand::Close => "closed",
+                        BloberSubCommand::Initialize => "initialized".to_owned(),
+                        BloberSubCommand::Close => "closed".to_owned(),
+                        BloberSubCommand::ConfigureCheckpoint { authority } =>
+                            format!("configured for checkpointing by {authority}"),
                         _ => unreachable!(),
                     },
                     self.identifier
@@ -121,6 +162,7 @@ impl BloberSubCommand {
         payer: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput> {
         let mut blobers = Vec::new();
+        let mut checkpoint = None;
         match self {
             BloberSubCommand::Initialize => {
                 let Some(namespace) = identifier.namespace() else {
@@ -150,6 +192,13 @@ impl BloberSubCommand {
             BloberSubCommand::List => {
                 blobers = client.list_blobers().await?;
             }
+            BloberSubCommand::CheckpointStatus => {
+                info!(
+                    "Querying checkpoint status for blober account with namespace: {}",
+                    identifier.namespace().unwrap_or("unknown")
+                );
+                checkpoint = client.get_checkpoint(identifier.clone()).await?;
+            }
             BloberSubCommand::ConfigureCheckpoint { authority } => {
                 info!(
                     "Configuring checkpoint for blober account with namespace: {}",
@@ -171,6 +220,7 @@ impl BloberSubCommand {
             program_id,
             payer,
             blobers,
+            checkpoint,
         }
         .into())
     }

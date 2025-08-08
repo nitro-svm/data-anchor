@@ -1,12 +1,27 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    checkpoint::CheckpointConfig, error::ErrorCode, state::blober::Blober, CHECKPOINT_CONFIG_SEED,
-    CHECKPOINT_SEED, SEED,
+    checkpoint::{Checkpoint, CheckpointConfig},
+    error::ErrorCode,
+    state::blober::Blober,
+    CHECKPOINT_CONFIG_SEED, CHECKPOINT_SEED, SEED,
 };
 
 #[derive(Accounts)]
 pub struct ConfigureCheckpoint<'info> {
+    #[account(
+        init_if_needed,
+        payer = payer,
+        space = Checkpoint::DISCRIMINATOR.len() + Checkpoint::INIT_SPACE,
+        seeds = [
+            SEED,
+            CHECKPOINT_SEED,
+            blober.key().as_ref(),
+        ],
+        bump
+    )]
+    pub checkpoint: Account<'info, Checkpoint>,
+
     #[account(
         init_if_needed,
         payer = payer,
@@ -62,12 +77,14 @@ mod tests {
 
     #[test]
     fn test_first_account_is_the_checkpoint_config() {
+        let checkpoint = Pubkey::new_unique();
         let checkpoint_config = Pubkey::new_unique();
         let blober = Pubkey::new_unique();
         let payer = Pubkey::new_unique();
         let system_program = Pubkey::new_unique();
 
         let account = ConfigureCheckpoint {
+            checkpoint,
             checkpoint_config,
             blober,
             payer,
@@ -81,7 +98,7 @@ mod tests {
         };
 
         let is_signer = None;
-        let actual = &account.to_account_metas(is_signer)[0];
+        let actual = &account.to_account_metas(is_signer)[1];
         assert_eq!(actual, &expected);
     }
 }

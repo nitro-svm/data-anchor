@@ -4,7 +4,7 @@ use anchor_lang::{Discriminator, Space, prelude::Pubkey};
 use bon::Builder;
 use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE, find_blob_address, find_blober_address,
-    find_checkpoint_config_address,
+    find_checkpoint_address, find_checkpoint_config_address,
     instruction::{
         Close, ConfigureCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
     },
@@ -15,7 +15,7 @@ use solana_commitment_config::CommitmentConfig;
 use solana_keypair::Keypair;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_signer::Signer;
-use tracing::{Instrument, Span, info_span};
+use tracing::{Instrument, Span, info, info_span};
 
 use crate::{
     DataAnchorClientError, DataAnchorClientResult,
@@ -394,28 +394,41 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
+        let checkpoint = find_checkpoint_address(self.program_id, blober);
         let checkpoint_config = find_checkpoint_config_address(self.program_id, blober);
+
+        let in_mock_env = self.in_mock_env();
+        if !in_mock_env && !self.check_account_exists(blober).await? {
+            return Err(ChainError::AccountDoesNotExist(format!(
+                "Blober PDA with address {blober}"
+            ))
+            .into());
+        }
 
         let fee = fee_strategy
             .convert_fee_strategy_to_fixed(
                 &self.rpc_client,
-                &[checkpoint_config, self.payer.pubkey()],
+                &[checkpoint, checkpoint_config, self.payer.pubkey()],
                 TransactionType::ConfigureCheckpoint,
             )
             .in_current_span()
             .await?;
 
-        if !self.in_mock_env() {
+        if !in_mock_env {
             self.require_balance(fee.total_fee()).await?;
         }
 
+        info!(
+            "Configuring checkpoint for blober: {}, authority: {}",
+            blober, authority
+        );
         let msg = ConfigureCheckpoint::build_message(MessageArguments::new(
             self.program_id,
             blober,
             &self.payer,
             self.rpc_client.clone(),
             fee,
-            (ConfigureCheckpoint { authority }, checkpoint_config),
+            authority,
         ))
         .in_current_span()
         .await

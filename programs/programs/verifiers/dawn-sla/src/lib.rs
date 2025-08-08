@@ -2,7 +2,10 @@
 // Allow unexpected_cfgs because anchor macros add cfgs which are not in the original code
 
 use anchor_lang::prelude::*;
-use data_anchor_blober::checkpoint::{Checkpoint, CheckpointConfig};
+use data_anchor_blober::{
+    checkpoint::{Checkpoint, CheckpointConfig},
+    state::blober::Blober,
+};
 
 declare_id!("A4Ks3ivLsBVvysaf6BMTNjdcvig1Ti8cSkoMBqYDdsGF");
 
@@ -13,7 +16,6 @@ pub mod data_anchor_dawn_sla_verifier {
 
     pub fn verify(
         ctx: Context<Verify>,
-        blober: Pubkey,
         proof: [u8; data_anchor_blober::GROTH16_PROOF_SIZE],
         public_values: Vec<u8>,
         verification_key: String,
@@ -34,21 +36,22 @@ pub mod data_anchor_dawn_sla_verifier {
         require_gte!(sla_score, 0.0, DawnSlaError::InvalidScore);
 
         checkpoint.cpi_create_checkpoint(
-            blober,
+            ctx.accounts.blober.key(),
             ctx.accounts.data_anchor.to_account_info(),
             ctx.accounts.into(),
+            &[ctx.bumps.pda_signer],
         )
     }
 }
 
 #[derive(Accounts)]
-#[instruction(blober: Pubkey)]
 pub struct Verify<'info> {
     #[account(
+        mut,
         seeds = [
             data_anchor_blober::SEED,
             data_anchor_blober::CHECKPOINT_SEED,
-            blober.as_ref(),
+            blober.key().as_ref(),
         ],
         seeds::program = data_anchor_blober::ID,
         bump
@@ -60,19 +63,22 @@ pub struct Verify<'info> {
             data_anchor_blober::SEED,
             data_anchor_blober::CHECKPOINT_SEED,
             data_anchor_blober::CHECKPOINT_CONFIG_SEED,
-            blober.as_ref(),
+            blober.key().as_ref(),
         ],
         seeds::program = data_anchor_blober::ID,
         bump
     )]
     pub checkpoint_config: Account<'info, CheckpointConfig>,
 
+    pub blober: Account<'info, Blober>,
+
     #[account(
         mut,
         seeds = [
             data_anchor_blober::SEED,
             data_anchor_blober::CHECKPOINT_SEED,
-            blober.as_ref(),
+            data_anchor_blober::CHECKPOINT_PDA_SIGNER_SEED,
+            blober.key().as_ref(),
         ],
         bump
     )]

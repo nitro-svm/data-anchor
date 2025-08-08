@@ -132,7 +132,16 @@ pub fn find_checkpoint_config_address(program_id: Pubkey, blober: Pubkey) -> Pub
 /// Retrieves the PDA address of a checkpoint PDA signer account to sign the checkoint modifying
 /// instruction.
 pub fn find_checkpoint_signer_address(program_id: Pubkey, blober: Pubkey) -> Pubkey {
-    Pubkey::find_program_address(&[SEED, CHECKPOINT_SEED, blober.as_ref()], &program_id).0
+    Pubkey::find_program_address(
+        &[
+            SEED,
+            CHECKPOINT_SEED,
+            CHECKPOINT_PDA_SIGNER_SEED,
+            blober.as_ref(),
+        ],
+        &program_id,
+    )
+    .0
 }
 
 /// Computes the hashed state of a blob account.

@@ -23,7 +23,7 @@ pub enum OutputFormat {
 
 #[derive(Debug, Serialize)]
 pub enum CommandOutput {
-    Blober(BloberCommandOutput),
+    Blober(Box<BloberCommandOutput>),
     Blob(BlobCommandOutput),
     Indexer(IndexerCommandOutput),
     Benchmark(BenchmarkCommandOutput),
@@ -31,7 +31,7 @@ pub enum CommandOutput {
 
 impl From<BloberCommandOutput> for CommandOutput {
     fn from(command: BloberCommandOutput) -> Self {
-        CommandOutput::Blober(command)
+        CommandOutput::Blober(Box::new(command))
     }
 }
 

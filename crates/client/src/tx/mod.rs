@@ -16,7 +16,7 @@ pub mod close_blober;
 pub mod compound;
 pub mod compound_declare;
 pub mod compound_finalize;
-pub mod create_checkpoint;
+pub mod configure_checkpoint;
 pub mod declare_blob;
 pub mod discard_blob;
 pub mod finalize_blob;

@@ -3,7 +3,9 @@ use anchor_lang::{
     prelude::Pubkey,
     solana_program::{instruction::Instruction, system_program},
 };
-use data_anchor_blober::instruction::ConfigureCheckpoint;
+use data_anchor_blober::{
+    find_checkpoint_address, find_checkpoint_config_address, instruction::ConfigureCheckpoint,
+};
 
 use crate::{
     TransactionType,
@@ -11,24 +13,29 @@ use crate::{
 };
 
 impl MessageBuilder for ConfigureCheckpoint {
-    type Input = (Self, Pubkey);
+    type Input = Pubkey;
     const TX_TYPE: TransactionType = TransactionType::ConfigureCheckpoint;
-    const COMPUTE_UNIT_LIMIT: u32 = 15_500;
+    const COMPUTE_UNIT_LIMIT: u32 = 23_700;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
-        vec![args.blober, args.payer]
+        vec![
+            find_checkpoint_address(args.program_id, args.blober),
+            find_checkpoint_config_address(args.program_id, args.blober),
+            args.payer,
+        ]
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
         let accounts = data_anchor_blober::accounts::ConfigureCheckpoint {
-            checkpoint_config: args.input.1,
+            checkpoint: find_checkpoint_address(args.program_id, args.blober),
+            checkpoint_config: find_checkpoint_config_address(args.program_id, args.blober),
             blober: args.blober,
             payer: args.payer,
             system_program: system_program::id(),
         };
 
         let data = Self {
-            authority: args.input.0.authority,
+            authority: args.input,
         };
 
         vec![Instruction {
@@ -42,13 +49,9 @@ impl MessageBuilder for ConfigureCheckpoint {
     fn generate_arbitrary_input(
         _u: &mut arbitrary::Unstructured,
         payer: Pubkey,
-        blober: Pubkey,
+        _blober: Pubkey,
     ) -> arbitrary::Result<Self::Input> {
-        let checkpoint_config =
-            data_anchor_blober::find_checkpoint_config_address(data_anchor_blober::id(), blober);
-        let config = Self { authority: payer };
-
-        Ok((config, checkpoint_config))
+        Ok(payer)
     }
 }
 

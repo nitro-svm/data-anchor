@@ -218,6 +218,16 @@ run-indexer rpc-url:
 run-rpc:
     cargo run --release --bin data-anchor-rpc -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696'
 
+# Run the indexer proof RPC server
+[group('indexer')]
+run-proof-rpc:
+    cargo run --release --bin data-anchor-proof-rpc -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9697'
+
+# Run sozu reverse proxy over the RPC and proof RPC servers
+[group('indexer')]
+run-sozu:
+    sozu -c scripts/sozu.toml start
+
 # Build the docker image for the indexer
 [group('docker')]
 [linux]
@@ -293,5 +303,5 @@ apply-mainnet: (initialize-workspace "mainnet")
 # Run local e2e tests
 [confirm('This will run all the indexer components and run CLI commands against it. Are you sure you want to continue [y/n]?')]
 [group('test')]
-run-e2e:
-    ./scripts/run-e2e.sh
+run-e2e prover-mode='' private-key='':
+    {{ prover-mode && "SP1_PROVER=" + prover-mode }} {{ private-key && "NETWORK_PRIVATE_KEY=" + private-key }} ./scripts/run-e2e.sh

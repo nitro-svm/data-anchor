@@ -2,7 +2,7 @@ use anchor_lang::{prelude::*, solana_program::clock::Slot};
 
 use crate::{
     checkpoint::CheckpointConfig, error::ErrorCode, state::checkpoint::Checkpoint,
-    CHECKPOINT_CONFIG_SEED, CHECKPOINT_SEED, GROTH16_PROOF_SIZE, SEED,
+    CHECKPOINT_CONFIG_SEED, CHECKPOINT_PDA_SIGNER_SEED, CHECKPOINT_SEED, GROTH16_PROOF_SIZE, SEED,
 };
 
 #[derive(Accounts)]
@@ -33,9 +33,11 @@ pub struct CreateCheckpoint<'info> {
     pub checkpoint_config: Account<'info, CheckpointConfig>,
 
     #[account(
+        mut,
         seeds = [
             SEED,
             CHECKPOINT_SEED,
+            CHECKPOINT_PDA_SIGNER_SEED,
             blober.as_ref(),
         ],
         seeds::program = checkpoint_config.authority,
