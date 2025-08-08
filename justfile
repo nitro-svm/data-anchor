@@ -271,7 +271,9 @@ apply-staging: initialize-workspace
 
     RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
 
-    tofu apply -var="release_id=${RELEASE}"
+    tofu apply \
+        -var-file="environments/devnet.tfvars" \
+        -var="release_id=${RELEASE}"
 
 # Apply devnet infrastructure
 [confirm('This will apply the devnet infrastructure. Are you sure you want to continue [y/n]?')]
@@ -283,7 +285,9 @@ apply-devnet: (initialize-workspace "devnet")
 
     RELEASE=$(git log --pretty=format:'%H' -n 1 origin/devnet)
 
-    tofu apply -var="release_id=${RELEASE}"
+    tofu apply \
+        -var-file="environments/devnet.tfvars" \
+        -var="release_id=${RELEASE}"
 
 # Apply mainnet infrastructure
 [confirm('This will apply the mainnet infrastructure. Are you sure you want to continue [y/n]?')]
@@ -296,8 +300,7 @@ apply-mainnet: (initialize-workspace "mainnet")
     RELEASE=$(git log --pretty=format:'%H' -n 1 origin/mainnet)
 
     tofu apply \
-        -var="rpc_url=https://hana-o8f2gi-fast-mainnet.helius-rpc.com" \
-        -var="yellowstone_url=https://laserstream-mainnet-ewr.helius-rpc.com" \
+        -var-file="environments/mainnet.tfvars" \
         -var="release_id=${RELEASE}"
 
 # Run local e2e tests
