@@ -127,6 +127,16 @@ impl CommandOutput {
                     writer.write_record(&[request_id.clone(), format!("{status:?}")])?;
                     Ok(String::from_utf8(writer.into_inner()?)?)
                 }
+                IndexerCommandOutput::Payers(payers) => {
+                    let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
+                    writer.write_record(["payers"])?;
+                    writer.write_record(&[payers
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")])?;
+                    Ok(String::from_utf8(writer.into_inner()?)?)
+                }
             },
             CommandOutput::Benchmark(output) => match output {
                 BenchmarkCommandOutput::DataPath(path_buf) => {
@@ -187,6 +197,9 @@ impl CommandOutput {
                         "status": status,
                     }))
                 }
+                IndexerCommandOutput::Payers(payers) => serde_json::to_string(&json!({
+                    "payers": payers.iter().map(|p| p.to_string()).collect::<Vec<_>>(),
+                })),
             },
             CommandOutput::Benchmark(output) => serde_json::to_string(output),
         };
@@ -241,6 +254,9 @@ impl CommandOutput {
                         "status": status,
                     }))
                 }
+                IndexerCommandOutput::Payers(payers) => serde_json::to_string_pretty(&json!({
+                    "payers": payers.iter().map(|p| p.to_string()).collect::<Vec<_>>(),
+                })),
             },
             CommandOutput::Benchmark(output) => serde_json::to_string_pretty(output),
         };

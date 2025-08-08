@@ -1,3 +1,5 @@
+set unstable := true
+
 # The Pubkey of the payer account for image building
 
 export PAYER_PUBKEY := "2MCVmcuUcREwQKDS3HazuYctkkbZV3XRMspM5eLWRZUV"
@@ -9,7 +11,7 @@ export ARBTEST_BUDGET_MS := "10000"
 [group('lint')]
 [private]
 fmt-justfile:
-    just --fmt --unstable --check
+    just --fmt --check
 
 # Run formatting checks for the infrastructure directory
 [group('lint')]
@@ -35,7 +37,7 @@ lint: lint-programs fmt-justfile fmt-tofu build-prover
 [group('lint')]
 [private]
 fmt-justfile-fix:
-    just --fmt --unstable
+    just --fmt
 
 # Fix formatting issues in the infrastructure directory
 [group('lint')]
@@ -200,23 +202,21 @@ run-yellowstone:
 
 # Run the yellowstone consumer binary
 [group('indexer')]
-run-yellowstone-consumer url token:
-    cargo run --bin yellowstone-consumer -- -y {{ url }} -x {{ token }}
+run-yellowstone-consumer url token="":
+    cargo run --release --bin yellowstone-consumer -- -y {{ url }} {{ token && "-x " + token }}
 
 # Run the indexer binary
 [group('indexer')]
-run-indexer rpc-url bucket:
-    cargo run --bin data-anchor-indexer -- \
+run-indexer rpc-url:
+    cargo run --release --bin data-anchor-indexer -- \
         -c postgres://postgres:secret@localhost:5432/postgres \
         -g none \
-        --payer 4cN1XdV1FEbNcj1NdNmDJKMFJZJ7fgbJz3xAUwr4iSt4aHtxbeqDj6wrFeV9J5XWcEJHJ3No3oe3kJGR9Y8CEYQ1 \
-        -r {{ rpc-url }} \
-        -s {{ bucket }}
+        -r {{ rpc-url }}
 
 # Run the indexer RPC server
 [group('indexer')]
-run-rpc bucket:
-    cargo run --bin data-anchor-rpc -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696' -s {{ bucket }}
+run-rpc:
+    cargo run --release --bin data-anchor-rpc -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696'
 
 # Build the docker image for the indexer
 [group('docker')]

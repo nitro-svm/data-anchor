@@ -68,6 +68,13 @@ pub enum IndexerSubCommand {
     /// Get compound proof for a given slot.
     #[command(visible_alias = "p", alias = "proofs")]
     Proof(SlotArgs),
+    /// List payers for a given network.
+    #[command(visible_alias = "lp")]
+    ListPayers {
+        /// The network name to query.
+        #[arg(short = 'm', long)]
+        network_name: String,
+    },
     /// Request a custom proof for a given slot.
     #[command(visible_alias = "zkp")]
     ZKProof {
@@ -113,6 +120,8 @@ pub enum IndexerCommandOutput {
     ZKProofs(String),
     /// The status of a proof request.
     ProofRequestStatus(String, RequestStatus),
+    /// The list of payers for a given network.
+    Payers(Vec<Pubkey>),
 }
 
 impl std::fmt::Display for IndexerCommandOutput {
@@ -135,6 +144,17 @@ impl std::fmt::Display for IndexerCommandOutput {
                 write!(
                     f,
                     "Proof Request Status: Request ID: {request_id}, Status: {status:?}"
+                )
+            }
+            IndexerCommandOutput::Payers(payers) => {
+                write!(
+                    f,
+                    "Payers: [{}]",
+                    payers
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect_vec()
+                        .join(", ")
                 )
             }
         }
@@ -224,6 +244,12 @@ impl IndexerSubCommand {
             IndexerSubCommand::ProofForBlob { blob } => {
                 let proof = client.get_proof_for_blob(blob.to_owned()).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
+            }
+            IndexerSubCommand::ListPayers { network_name } => {
+                let payers = client
+                    .get_payers_by_network(network_name.to_owned())
+                    .await?;
+                Ok(IndexerCommandOutput::Payers(payers.into_iter().map_into().collect()).into())
             }
             IndexerSubCommand::ZKProof { slot, proof_type } => {
                 let request_id = client

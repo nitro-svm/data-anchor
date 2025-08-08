@@ -14788,9 +14788,9 @@ dependencies = [
 
 [[package]]
 name = "yellowstone-grpc-client"
-version = "6.0.0"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7504e16bd8edc6af4ba11be0b42fba24ffb42b383b1373c5d26dc644a327070a"
+checksum = "37a311e4e4cc77ead180f6d89234b7c760f85b5d4917e6798b937b1d299de34d"
 dependencies = [
  "bytes",
  "futures 0.3.31",
@@ -14802,17 +14802,25 @@ dependencies = [
 
 [[package]]
 name = "yellowstone-grpc-proto"
-version = "6.0.0"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a19211525073ab3811f57f30056633011f836fd61781a1f3b24ed4404a4c214"
+checksum = "cec3b1c61e97383dc6f7c66240243c8981c16ba519c8bdf0310560db2a18876d"
 dependencies = [
  "anyhow",
  "bincode",
  "prost 0.13.5",
  "prost-types 0.13.5",
  "protobuf-src",
+ "solana-account",
  "solana-account-decoder",
- "solana-sdk",
+ "solana-clock",
+ "solana-hash",
+ "solana-message",
+ "solana-pubkey",
+ "solana-signature",
+ "solana-transaction",
+ "solana-transaction-context",
+ "solana-transaction-error",
  "solana-transaction-status",
  "tonic 0.12.3",
  "tonic-build 0.12.3",

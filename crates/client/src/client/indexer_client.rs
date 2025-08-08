@@ -1,5 +1,5 @@
 use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
-use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, TimeRange};
+use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, PubkeyFromStr, TimeRange};
 use solana_signer::Signer;
 
 use super::BloberIdentifier;
@@ -31,6 +31,9 @@ pub enum IndexerError {
     /// Failed to read compound proof for slot {0} via indexer client: {1}
     #[error("Failed to read checkpoint proof for blober {0} and slot {1} via indexer client: {2}")]
     ZKProof(String, u64, String),
+    /// Failed to read payers for network {0} via indexer client: {1}
+    #[error("Failed to read payers for network {0} via indexer client: {1}")]
+    PayersForNamespace(String, String),
 }
 
 impl DataAnchorClient {
@@ -102,6 +105,17 @@ impl DataAnchorClient {
             )
             .await
             .map_err(|e| IndexerError::BlobsForNamespace(namespace, e.to_string()).into())
+    }
+
+    /// Fetches payers for a given network from the [`IndexerRpcClient`].
+    pub async fn get_payers_by_network(
+        &self,
+        network: String,
+    ) -> DataAnchorClientResult<Vec<PubkeyFromStr>> {
+        self.indexer()
+            .get_payers_by_network(network.clone())
+            .await
+            .map_err(|e| IndexerError::PayersForNamespace(network, e.to_string()).into())
     }
 
     /// Fetches compound proof for a given slot from the [`IndexerRpcClient`].

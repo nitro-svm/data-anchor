@@ -84,14 +84,14 @@ solana-transaction-status-client-types = "=2.2.1"
 
 anchor-lang = "=0.31.1"
 
-yellowstone-grpc-client = "=6.0.0"
-yellowstone-grpc-proto = "=6.0.0"
+yellowstone-grpc-client = "=7.0.0"
+yellowstone-grpc-proto = "=7.0.0"
 
 # SP1 dependencies
-sp1-build = "5.0.8"
-sp1-derive = "5.0.8"
-sp1-sdk = "5.0.8"
-sp1-zkvm = "5.0.8"
+sp1-build = "5.1.0"
+sp1-derive = "5.1.0"
+sp1-sdk = "5.1.0"
+sp1-zkvm = "5.1.0"
 
 # Locals
 data-anchor = { path = "crates/cli", version = "0.4.0" }
