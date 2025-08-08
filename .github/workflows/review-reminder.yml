@@ -1,0 +1,18 @@
+name: PR Review Reminder
+
+on:
+  schedule:
+    - cron: '0 8 * * 1-5'   # 8 AM UTC weekdays
+    - cron: '0 20 * * 1-5'  # 8 PM UTC weekdays
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  remind-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nitro-svm/infrastructure/actions/pr-review-reminder@main
+        with:
+          slack_token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack_channel: ${{ vars.SLACK_CHANNEL }}
+          min_age_hours: 24
+          urgent_age_days: 3
