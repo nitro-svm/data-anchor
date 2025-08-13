@@ -308,3 +308,9 @@ apply-mainnet: (initialize-workspace "mainnet")
 [group('test')]
 run-e2e prover-mode='' private-key='':
     {{ prover-mode && "SP1_PROVER=" + prover-mode }} {{ private-key && "NETWORK_PRIVATE_KEY=" + private-key }} ./scripts/run-e2e.sh
+
+# Run local e2e process and calculate on-chain cost
+[confirm('This will run all the indexer components and run CLI commands against it. Are you sure you want to continue [y/n]?')]
+[group('test')]
+calculate-on-chain-cost:
+    ./scripts/calculate-on-chain-cost.sh
