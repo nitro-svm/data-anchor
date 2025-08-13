@@ -9,18 +9,26 @@ use crate::{
 };
 
 impl MessageBuilder for Close {
-    type Input = ();
+    type Input = Option<(Pubkey, Pubkey)>;
     const TX_TYPE: TransactionType = TransactionType::CloseBlober;
-    const COMPUTE_UNIT_LIMIT: u32 = 2_400;
+    const COMPUTE_UNIT_LIMIT: u32 = 10_000;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
-        vec![args.blober, args.payer]
+        let mut certain = vec![args.blober, args.payer];
+
+        if let Some((checkpoint, checkpoint_config)) = &args.input {
+            certain.extend_from_slice(&[*checkpoint, *checkpoint_config]);
+        }
+
+        certain
     }
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction> {
         let accounts = data_anchor_blober::accounts::Close {
             blober: args.blober,
             payer: args.payer,
+            checkpoint: args.input.map(|(checkpoint, _)| checkpoint),
+            checkpoint_config: args.input.map(|(_, checkpoint_config)| checkpoint_config),
         };
 
         let data = Self {};
@@ -36,9 +44,13 @@ impl MessageBuilder for Close {
     fn generate_arbitrary_input(
         _u: &mut arbitrary::Unstructured,
         _payer: Pubkey,
-        _blober: Pubkey,
+        blober: Pubkey,
     ) -> arbitrary::Result<Self::Input> {
-        Ok(())
+        let checkoint =
+            data_anchor_blober::find_checkpoint_address(data_anchor_blober::id(), blober);
+        let checkpoint_config =
+            data_anchor_blober::find_checkpoint_config_address(data_anchor_blober::id(), blober);
+        Ok(Some((checkoint, checkpoint_config)))
     }
 }
 

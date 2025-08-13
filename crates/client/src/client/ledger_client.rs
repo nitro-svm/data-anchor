@@ -87,6 +87,8 @@ pub enum ChainError {
     /// Provided proof commitment does not match the blober's address
     #[error("Provided proof commitment does not match the blober's address expected {0}, got {1}")]
     ProofBloberMismatch(Pubkey, Pubkey),
+    #[error("Checkpoint account is not up to date with current blober state")]
+    CheckpointNotUpToDate,
 }
 
 impl DataAnchorClient {
@@ -398,6 +400,46 @@ impl DataAnchorClient {
                 })
             })
             .collect())
+    }
+
+    /// Retrieves a blober account by its identifier.
+    pub async fn get_blober(
+        &self,
+        identifier: BloberIdentifier,
+    ) -> DataAnchorClientResult<Option<Blober>> {
+        let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
+        let account = self
+            .rpc_client
+            .get_account_with_commitment(&blober, self.rpc_client.commitment())
+            .await?
+            .value;
+
+        let Some(account) = account else {
+            return Ok(None);
+        };
+
+        if !account.data.starts_with(Blober::DISCRIMINATOR) {
+            return Err(LedgerDataBlobError::InvalidBloberAccount(
+                "Invalid discriminator".to_owned(),
+            )
+            .into());
+        }
+
+        let mut state = account.data.get(Blober::DISCRIMINATOR.len()..).ok_or(
+            LedgerDataBlobError::InvalidBloberAccount("No state data".to_owned()),
+        )?;
+
+        if state.is_empty() {
+            return Err(
+                LedgerDataBlobError::InvalidBloberAccount("Empty state data".to_owned()).into(),
+            );
+        }
+
+        let blober = Blober::deserialize(&mut state).map_err(|e| {
+            LedgerDataBlobError::InvalidBloberAccount(format!("Failed to deserialize: {e:?}"))
+        })?;
+
+        Ok(Some(blober))
     }
 
     /// Retrieves the checkpoint containing the Groth16 proof for a given blober account.

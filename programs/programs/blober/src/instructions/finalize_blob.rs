@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 
-use crate::{blob::Blob, hash_blob, state::blober::Blober, BLOB_DATA_END, BLOB_DATA_START, SEED};
+use crate::{
+    blob::Blob, error::ErrorCode, hash_blob, state::blober::Blober, BLOB_DATA_END, BLOB_DATA_START,
+    SEED,
+};
 
 #[derive(Accounts)]
 pub struct FinalizeBlob<'info> {
@@ -29,25 +32,17 @@ pub struct FinalizeBlob<'info> {
 }
 
 pub fn finalize_blob_handler(ctx: Context<FinalizeBlob>) -> Result<()> {
-    if !ctx.accounts.blob.is_complete() {
-        panic!("blob is missing chunks, can't be completed in this state")
-    }
+    require!(ctx.accounts.blob.is_complete(), ErrorCode::BlobNotComplete);
 
     let blob_info = ctx.accounts.blob.to_account_info();
 
     let blob_digest_and_size = &blob_info.data.borrow()[BLOB_DATA_START..BLOB_DATA_END];
 
     let blob_hash = hash_blob(blob_info.key, blob_digest_and_size);
-    let current_slot_num = Clock::get()?.slot;
 
-    let blober_account = &mut ctx.accounts.blober;
-    blober_account.store_hash(&blob_hash, current_slot_num);
-
-    let new_hash = blober_account.hash;
-
-    msg!(
-        &format!("slot: {current_slot_num:?}, triggering account hash: {blob_hash:?}, accumulated hash: {new_hash:?}")
-    );
+    ctx.accounts
+        .blober
+        .store_hash(&blob_hash, Clock::get()?.slot);
 
     Ok(())
 }

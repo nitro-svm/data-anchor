@@ -15,7 +15,7 @@ use crate::{
 impl MessageBuilder for ConfigureCheckpoint {
     type Input = Pubkey;
     const TX_TYPE: TransactionType = TransactionType::ConfigureCheckpoint;
-    const COMPUTE_UNIT_LIMIT: u32 = 23_700;
+    const COMPUTE_UNIT_LIMIT: u32 = 28_500;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         vec![

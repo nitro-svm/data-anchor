@@ -22,4 +22,10 @@ pub enum ErrorCode {
     ProofVerificationFailed,
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("Checkpoint not up to date with blober state")]
+    CheckpointNotUpToDate,
+    #[msg("Checkpoint config not found for existing checkpoint")]
+    CheckpointWithoutConfig,
+    #[msg("Blob is missing chunks, can't be completed in this state")]
+    BlobNotComplete,
 }

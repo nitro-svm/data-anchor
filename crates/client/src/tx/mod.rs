@@ -277,6 +277,8 @@ mod utils {
         let accounts = data_anchor_blober::accounts::Close {
             blober,
             payer: payer.pubkey(),
+            checkpoint: None,
+            checkpoint_config: None,
         };
 
         let data = data_anchor_blober::instruction::Close {};

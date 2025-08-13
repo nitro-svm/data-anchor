@@ -227,12 +227,39 @@ impl DataAnchorClient {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let in_mock_env = self.in_mock_env();
+
         if !in_mock_env && !self.check_account_exists(blober).await? {
             return Err(ChainError::AccountDoesNotExist(format!(
                 "Blober PDA with address {blober}"
             ))
             .into());
         }
+
+        let checkpoint = self.get_checkpoint(identifier.clone()).await?;
+
+        let checkpoint_accounts = if let Some(checkpoint) = checkpoint {
+            let Some(blober_state) = self.get_blober(identifier).await? else {
+                return Err(ChainError::AccountDoesNotExist(format!(
+                    "Blober PDA with address {blober}"
+                ))
+                .into());
+            };
+
+            let checkpointed_hash = checkpoint
+                .final_hash()
+                .map_err(|_| ChainError::CheckpointNotUpToDate)?;
+
+            if checkpoint.slot != blober_state.slot || checkpointed_hash != blober_state.hash {
+                return Err(ChainError::CheckpointNotUpToDate.into());
+            }
+
+            Some((
+                find_checkpoint_address(self.program_id, blober),
+                find_checkpoint_config_address(self.program_id, blober),
+            ))
+        } else {
+            None
+        };
 
         let fee = fee_strategy
             .convert_fee_strategy_to_fixed(
@@ -253,7 +280,7 @@ impl DataAnchorClient {
             &self.payer,
             self.rpc_client.clone(),
             fee,
-            (),
+            checkpoint_accounts,
         ))
         .await
         .expect("infallible with a fixed fee strategy");

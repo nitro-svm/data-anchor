@@ -75,8 +75,8 @@ impl Checkpoint {
         .map_err(|_| error!(ErrorCode::InvalidPublicValue))
     }
 
-    pub fn initial_hash(&self) -> Result<[u8; 32]> {
-        bincode::deserialize::<[u8; 32]>(
+    pub fn initial_hash(&self) -> Result<[u8; HASH_BYTES]> {
+        bincode::deserialize::<[u8; HASH_BYTES]>(
             self.public_values
                 .get(PUBKEY_BYTES..PUBKEY_BYTES + HASH_BYTES)
                 .ok_or_else(|| error!(ErrorCode::InvalidPublicValue))?,
@@ -84,8 +84,8 @@ impl Checkpoint {
         .map_err(|_| error!(ErrorCode::InvalidPublicValue))
     }
 
-    pub fn final_hash(&self) -> Result<[u8; 32]> {
-        bincode::deserialize::<[u8; 32]>(
+    pub fn final_hash(&self) -> Result<[u8; HASH_BYTES]> {
+        bincode::deserialize::<[u8; HASH_BYTES]>(
             self.public_values
                 .get(PUBKEY_BYTES + HASH_BYTES..)
                 .ok_or_else(|| error!(ErrorCode::InvalidPublicValue))?,

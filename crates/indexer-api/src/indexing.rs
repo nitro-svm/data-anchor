@@ -316,6 +316,8 @@ pub enum LedgerDataBlobError {
     /// Invalid checkpoint account
     #[error("Invalid checkpoint account")]
     InvalidCheckpointAccount(String),
+    #[error("Invalid blober account")]
+    InvalidBloberAccount(String),
 }
 
 /// Extracts the blob data from the relevant instructions.

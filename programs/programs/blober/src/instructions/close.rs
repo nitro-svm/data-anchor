@@ -1,6 +1,11 @@
 use anchor_lang::prelude::*;
 
-use crate::state::blober::Blober;
+use crate::{
+    checkpoint::{Checkpoint, CheckpointConfig},
+    error::ErrorCode,
+    state::blober::Blober,
+    CHECKPOINT_CONFIG_SEED, CHECKPOINT_SEED, SEED,
+};
 
 #[derive(Accounts)]
 pub struct Close<'info> {
@@ -11,11 +16,55 @@ pub struct Close<'info> {
     )]
     pub blober: Account<'info, Blober>,
 
+    #[account(
+        mut,
+        seeds = [
+            SEED,
+            CHECKPOINT_SEED,
+            blober.key().as_ref(),
+        ],
+        bump
+    )]
+    pub checkpoint: Option<Account<'info, Checkpoint>>,
+
+    #[account(
+        mut,
+        seeds = [
+            SEED,
+            CHECKPOINT_SEED,
+            CHECKPOINT_CONFIG_SEED,
+            blober.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub checkpoint_config: Option<Account<'info, CheckpointConfig>>,
+
     #[account(mut)]
     pub payer: Signer<'info>,
 }
 
-pub fn close_handler(_ctx: Context<Close>) -> Result<()> {
+pub fn close_handler(ctx: Context<Close>) -> Result<()> {
+    let blober = &mut ctx.accounts.blober;
+    let payer = &ctx.accounts.payer;
+
+    let Some(checkpoint) = &ctx.accounts.checkpoint else {
+        blober.close(payer.to_account_info())?;
+        return Ok(());
+    };
+
+    let Some(checkpoint_config) = &ctx.accounts.checkpoint_config else {
+        return Err(ErrorCode::CheckpointWithoutConfig.into());
+    };
+
+    require!(
+        blober.slot == checkpoint.slot && blober.hash == checkpoint.final_hash()?,
+        ErrorCode::CheckpointNotUpToDate,
+    );
+
+    blober.close(payer.to_account_info())?;
+    checkpoint.close(payer.to_account_info())?;
+    checkpoint_config.close(payer.to_account_info())?;
+
     Ok(())
 }
 
@@ -33,7 +82,12 @@ mod tests {
         let blober = Pubkey::new_unique();
         let payer = Pubkey::new_unique();
 
-        let account = Close { blober, payer };
+        let account = Close {
+            blober,
+            payer,
+            checkpoint: None,
+            checkpoint_config: None,
+        };
 
         let expected = AccountMeta {
             pubkey: blober,
