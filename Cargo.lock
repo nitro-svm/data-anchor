@@ -2368,6 +2368,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "data-anchor-encoding-compression-test"
+version = "0.4.0"
+dependencies = [
+ "data-anchor-prover-core",
+ "data-anchor-utils",
+ "sp1-zkvm 5.1.0",
+]
+
+[[package]]
 name = "data-anchor-indexer"
 version = "0.4.0"
 dependencies = [
@@ -2475,6 +2484,8 @@ dependencies = [
  "data-anchor-blober",
  "data-anchor-proofs",
  "data-anchor-prover",
+ "data-anchor-utils",
+ "itertools 0.14.0",
  "rand 0.7.3",
  "sp1-sdk",
 ]
@@ -2491,11 +2502,11 @@ dependencies = [
  "lz4_flex",
  "postcard",
  "rstest",
+ "ruzstd",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
  "tokio",
- "zstd",
 ]
 
 [[package]]
@@ -7483,6 +7494,15 @@ dependencies = [
  "quick-error",
  "tempfile",
  "wait-timeout",
+]
+
+[[package]]
+name = "ruzstd"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3640bec8aad418d7d03c72ea2de10d5c646a598f9883c7babc160d91e3c1b26c"
+dependencies = [
+ "twox-hash",
 ]
 
 [[package]]

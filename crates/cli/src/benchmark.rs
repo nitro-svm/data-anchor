@@ -15,7 +15,7 @@ use data_anchor_client::{
     ChainError, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
     Priority,
 };
-use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
+use data_anchor_utils::{compression::DataAnchorCompressionAsync, encoding::DataAnchorEncoding};
 use futures::StreamExt;
 use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
@@ -99,8 +99,8 @@ impl BenchmarkSubCommand {
         namespace: &str,
     ) -> DataAnchorClientResult<CommandOutput>
     where
-        Encoding: DataAnchorEncoding,
-        Compression: DataAnchorCompression,
+        Encoding: DataAnchorEncoding + Default,
+        Compression: DataAnchorCompressionAsync,
     {
         match self {
             BenchmarkSubCommand::GenerateData {
@@ -272,8 +272,8 @@ async fn measure_performance<Encoding, Compression>(
     namespace: &str,
 ) -> DataAnchorClientResult<BenchMeasurement>
 where
-    Encoding: DataAnchorEncoding,
-    Compression: DataAnchorCompression,
+    Encoding: DataAnchorEncoding + Default,
+    Compression: DataAnchorCompressionAsync,
 {
     let reads = data_path
         .read_dir()?

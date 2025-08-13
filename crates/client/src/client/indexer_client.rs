@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
 use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, PubkeyFromStr, TimeRange};
 use data_anchor_utils::{
-    compression::DataAnchorCompression,
+    compression::DataAnchorCompressionAsync,
     encoding::{DataAnchorEncoding, Decodable},
 };
 use solana_signer::Signer;
@@ -42,8 +42,8 @@ pub enum IndexerError {
 
 impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
 where
-    Encoding: DataAnchorEncoding,
-    Compression: DataAnchorCompression,
+    Encoding: DataAnchorEncoding + Default,
+    Compression: DataAnchorCompressionAsync,
 {
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
     pub async fn get_blobs<T>(

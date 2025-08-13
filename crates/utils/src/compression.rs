@@ -1,154 +1,127 @@
 use std::io::{Read, Write};
 
-use lz4_flex::{compress_prepend_size, decompress_size_prepended};
+#[cfg(feature = "async")]
+mod _async;
+
+#[cfg(feature = "async")]
+pub use _async::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum DataAnchorCompressionError {
-    #[error("Tokio task error: {0}")]
-    TokioTaskError(#[from] tokio::task::JoinError),
+    #[error("Zstd decoding error: {0}")]
+    ZstdDecodingError(#[from] ruzstd::decoding::errors::FrameDecoderError),
 
-    #[error("Zstd compression error: {0}")]
-    ZstdCompressionError(std::io::Error),
+    #[error("Zstd decoding error: {0}")]
+    ZstdDecodingIoError(#[from] std::io::Error),
 
     #[error("Lz4 compression error: {0}")]
     Lz4CompressionError(#[from] lz4_flex::block::DecompressError),
 
     #[error("Flate2 compression error: {0}")]
     Flate2CompressionError(std::io::Error),
+
+    #[cfg(feature = "async")]
+    #[error("Tokio task error: {0}")]
+    TokioTaskError(#[from] tokio::task::JoinError),
 }
 
 pub type DataAnchorCompressionResult<T = ()> = Result<T, DataAnchorCompressionError>;
 
-#[async_trait::async_trait]
-pub trait DataAnchorCompression: std::default::Default + Send + Sync {
-    type NewInput;
-
-    fn new(new_input: Self::NewInput) -> Self;
-    async fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>>;
-    async fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>>;
+pub trait DataAnchorCompression: Send + Sync {
+    fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>>;
+    fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>>;
 }
 
 #[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct NoCompression;
 
-#[async_trait::async_trait]
 impl DataAnchorCompression for NoCompression {
-    type NewInput = ();
-
-    fn new(_: Self::NewInput) -> Self {
-        NoCompression
-    }
-
-    async fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+    fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
         Ok(data.to_vec())
     }
 
-    async fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+    fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
         Ok(data.to_vec())
     }
 }
 
-pub struct ZstdCompression(pub i32);
+#[derive(Clone, Copy)]
+pub struct ZstdCompression(pub ruzstd::encoding::CompressionLevel);
+
+impl std::fmt::Debug for ZstdCompression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use ruzstd::encoding::CompressionLevel;
+
+        f.debug_tuple("ZstdCompression")
+            .field(match self.0 {
+                CompressionLevel::Uncompressed => &"Uncompressed",
+                CompressionLevel::Fastest => &"Fastest",
+                CompressionLevel::Default => &"Default",
+                CompressionLevel::Better => &"Better",
+                CompressionLevel::Best => &"Best",
+            })
+            .finish()
+    }
+}
 
 impl std::default::Default for ZstdCompression {
     fn default() -> Self {
-        ZstdCompression(6)
+        ZstdCompression(ruzstd::encoding::CompressionLevel::Fastest)
     }
 }
 
-pub use ZstdCompression as Default;
-
-#[async_trait::async_trait]
 impl DataAnchorCompression for ZstdCompression {
-    type NewInput = i32;
-
-    fn new(new_input: Self::NewInput) -> Self {
-        ZstdCompression(new_input)
+    fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+        Ok(ruzstd::encoding::compress_to_vec(data, self.0))
     }
 
-    async fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
-        let compression_level = self.0;
-        let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            zstd::encode_all(data.as_slice(), compression_level)
-                .map_err(DataAnchorCompressionError::ZstdCompressionError)
-        })
-        .await?
-    }
+    fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+        let mut data = data;
+        let mut decoder = ruzstd::decoding::StreamingDecoder::new(&mut data)?;
 
-    async fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
-        let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            zstd::decode_all(data.as_slice())
-                .map_err(DataAnchorCompressionError::ZstdCompressionError)
-        })
-        .await?
+        let mut result = Vec::new();
+        decoder.read_to_end(&mut result)?;
+
+        Ok(result)
     }
 }
 
 #[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct Lz4Compression;
 
-#[async_trait::async_trait]
+pub use Lz4Compression as Default;
+
 impl DataAnchorCompression for Lz4Compression {
-    type NewInput = ();
-
-    fn new(_: Self::NewInput) -> Self {
-        Lz4Compression
+    fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+        Ok(lz4_flex::compress_prepend_size(data))
     }
 
-    async fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
-        let data = data.to_vec();
-        tokio::task::spawn_blocking(move || Ok(compress_prepend_size(&data))).await?
-    }
-
-    async fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
-        let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            decompress_size_prepended(&data)
-                .map_err(DataAnchorCompressionError::Lz4CompressionError)
-        })
-        .await?
+    fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+        Ok(lz4_flex::decompress_size_prepended(data)?)
     }
 }
 
 #[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct Flate2Compression;
 
-#[async_trait::async_trait]
 impl DataAnchorCompression for Flate2Compression {
-    type NewInput = ();
-
-    fn new(_: Self::NewInput) -> Self {
-        Flate2Compression
+    fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+        let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+        encoder
+            .write_all(data)
+            .map_err(DataAnchorCompressionError::Flate2CompressionError)?;
+        encoder
+            .finish()
+            .map_err(DataAnchorCompressionError::Flate2CompressionError)
     }
 
-    async fn compress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
-        let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            let mut encoder =
-                flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
-            encoder
-                .write_all(&data)
-                .map_err(DataAnchorCompressionError::Flate2CompressionError)?;
-            encoder
-                .finish()
-                .map_err(DataAnchorCompressionError::Flate2CompressionError)
-        })
-        .await?
-    }
-
-    async fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
-        let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            let mut decoder = flate2::read::GzDecoder::new(data.as_slice());
-            let mut decompressed_data = Vec::new();
-            decoder
-                .read_to_end(&mut decompressed_data)
-                .map_err(DataAnchorCompressionError::Flate2CompressionError)?;
-            Ok(decompressed_data)
-        })
-        .await?
+    fn decompress(&self, data: &[u8]) -> DataAnchorCompressionResult<Vec<u8>> {
+        let mut decoder = flate2::read::GzDecoder::new(data);
+        let mut decompressed_data = Vec::new();
+        decoder
+            .read_to_end(&mut decompressed_data)
+            .map_err(DataAnchorCompressionError::Flate2CompressionError)?;
+        Ok(decompressed_data)
     }
 }
 
@@ -160,13 +133,15 @@ mod tests {
 
     #[rstest]
     #[case::no_compression(NoCompression, false)]
-    #[case::default_compression(Default::default(), true)]
+    #[case::default_compression(Default, true)]
     #[case::zstd_compression(ZstdCompression::default(), true)]
-    #[case::zstd_custom_compression(ZstdCompression(1), true)]
+    #[case::zstd_custom_compression(
+        ZstdCompression(ruzstd::encoding::CompressionLevel::Fastest),
+        true
+    )]
     #[case::lz4_compression(Lz4Compression, true)]
     #[case::flate2_compression(Flate2Compression, true)]
-    #[tokio::test]
-    async fn test_compression_decompression<C>(
+    fn test_compression_decompression<C>(
         #[case] compression: C,
         #[case] should_be_compressed: bool,
         #[values(1, 24, 100, 1000)] size: usize,
@@ -174,14 +149,14 @@ mod tests {
         C: DataAnchorCompression,
     {
         let data = vec![100; size];
-        let compressed_data = compression.compress(&data).await.unwrap();
+        let compressed_data = compression.compress(&data).unwrap();
         // When size is less than 24, compression does not reduce size
         if should_be_compressed && size >= 24 {
             assert!(compressed_data.len() < data.len());
         } else {
             assert!(compressed_data.len() >= data.len());
         }
-        let decompressed_data = compression.decompress(&compressed_data).await.unwrap();
+        let decompressed_data = compression.decompress(&compressed_data).unwrap();
         assert_eq!(decompressed_data, data);
     }
 }

@@ -45,9 +45,8 @@ mod _with_borsh {
 #[cfg(feature = "borsh")]
 pub use _with_borsh::*;
 
-pub trait DataAnchorEncoding: std::default::Default {
+pub trait DataAnchorEncoding {
     fn encode<T: Encodable>(&self, data: &T) -> DataAnchorEncodingResult<Vec<u8>>;
-
     fn decode<T: Decodable>(&self, data: &[u8]) -> DataAnchorEncodingResult<T>;
 }
 

@@ -1,0 +1,20 @@
+[package]
+name = "data-anchor-encoding-compression-test"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+# External dependencies
+sp1-zkvm = { workspace = true }
+
+# Locals
+data-anchor-prover-core = { workspace = true }
+data-anchor-utils = { workspace = true, features = [
+  "borsh",
+  "compression",
+] }

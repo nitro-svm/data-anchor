@@ -1,6 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
-use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
+use data_anchor_utils::{compression::DataAnchorCompressionAsync, encoding::DataAnchorEncoding};
 use jsonrpsee::{http_client::HttpClientBuilder, ws_client::HeaderMap};
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -16,8 +16,8 @@ use crate::{
 
 impl<Encoding, Compression, State> DataAnchorClientBuilder<Encoding, Compression, State>
 where
-    Encoding: DataAnchorEncoding,
-    Compression: DataAnchorCompression,
+    Encoding: DataAnchorEncoding + Default,
+    Compression: DataAnchorCompressionAsync,
     State: data_anchor_client_builder::State,
 {
     /// Adds an indexer client to the builder based on the given indexer URL and optional API token.

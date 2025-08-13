@@ -4,9 +4,7 @@ use data_anchor_api::LedgerDataBlobError;
 use data_anchor_blober::instruction::{
     Close, ConfigureCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
-use data_anchor_utils::{
-    compression::DataAnchorCompressionError, encoding::DataAnchorEncodingError,
-};
+use data_anchor_utils::DataAnchorUtilsError;
 use solana_commitment_config::ParseCommitmentLevelError;
 use solana_rpc_client_api::client_error::Error;
 use thiserror::Error;
@@ -53,12 +51,9 @@ pub enum DataAnchorClientError {
     /// Invalid data: {0}
     #[error("Invalid data: {0}")]
     InvalidData(String),
-    /// Encoding/Decoding error: {0}
-    #[error("Encoding/Decoding error: {0}")]
-    EncodingDecodingError(#[from] DataAnchorEncodingError),
-    /// Compression/Decompression error: {0}
-    #[error("Compression/Decompression error: {0}")]
-    CompressionDecompressionError(#[from] DataAnchorCompressionError),
+    /// Encoding/Decoding and Compression/Decompression error: {0}
+    #[error(transparent)]
+    UtilsError(#[from] DataAnchorUtilsError),
     /// Tokio task error
     #[error("Tokio task error: {0}")]
     TokioTaskError(#[from] tokio::task::JoinError),

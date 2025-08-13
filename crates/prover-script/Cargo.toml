@@ -13,6 +13,7 @@ publish = false
 arbitrary = { workspace = true, features = ["derive"] }
 bytesize = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
+itertools = { workspace = true }
 rand = { workspace = true }
 sp1-sdk = { workspace = true }
 
@@ -23,3 +24,7 @@ anchor-lang = { workspace = true }
 data-anchor-blober = { workspace = true }
 data-anchor-proofs = { workspace = true }
 data-anchor-prover = { workspace = true }
+data-anchor-utils = { workspace = true, features = [
+  "borsh",
+  "compression",
+] }

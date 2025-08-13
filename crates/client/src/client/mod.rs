@@ -11,7 +11,8 @@ use data_anchor_blober::{
     state::blober::Blober,
 };
 use data_anchor_utils::{
-    compression::{self, DataAnchorCompression},
+    compression::{self, DataAnchorCompressionAsync},
+    decompress_and_decode_async, encode_and_compress_async,
     encoding::{self, DataAnchorEncoding, Decodable, Encodable},
 };
 use futures::{StreamExt, TryStreamExt};
@@ -118,8 +119,8 @@ impl BloberIdentifier {
 #[derive(Builder, Clone)]
 pub struct DataAnchorClient<Encoding = encoding::Default, Compression = compression::Default>
 where
-    Encoding: DataAnchorEncoding,
-    Compression: DataAnchorCompression,
+    Encoding: DataAnchorEncoding + Default,
+    Compression: DataAnchorCompressionAsync,
 {
     #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
@@ -137,8 +138,8 @@ where
 
 impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
 where
-    Encoding: DataAnchorEncoding,
-    Compression: DataAnchorCompression,
+    Encoding: DataAnchorEncoding + Default,
+    Compression: DataAnchorCompressionAsync,
 {
     /// Returns the underlaying [`RpcClient`].
     pub fn rpc_client(&self) -> Arc<RpcClient> {
@@ -179,16 +180,14 @@ where
     where
         T: Encodable,
     {
-        let encoded_data = self.encoding.encode(data)?;
-        Ok(self.compression.compress(&encoded_data).await?)
+        Ok(encode_and_compress_async(&self.encoding, &self.compression, data).await?)
     }
 
     pub async fn decompress_and_decode<T>(&self, bytes: &[u8]) -> DataAnchorClientResult<T>
     where
         T: Decodable,
     {
-        let decompressed_data = self.compression.decompress(bytes).await?;
-        Ok(self.encoding.decode(&decompressed_data)?)
+        Ok(decompress_and_decode_async(&self.encoding, &self.compression, bytes).await?)
     }
 
     pub async fn decompress_and_decode_vec<T>(

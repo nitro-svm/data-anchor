@@ -18,29 +18,28 @@ serde = { workspace = true, features = ["alloc", "derive"] }
 bincode = { workspace = true }
 borsh = { workspace = true, optional = true }
 postcard = { workspace = true }
-serde_json = { workspace = true }
+serde_json = { workspace = true, features = ["std"] }
 
 # Compression
 async-trait = { workspace = true, optional = true }
 lz4_flex = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
-zstd = { workspace = true, optional = true }
+ruzstd = { workspace = true, optional = true }
 
 [dev-dependencies]
 # External dependencies
 rstest = { workspace = true }
 
 # Locals
-data-anchor-utils = { workspace = true, features = ["borsh"] }
+data-anchor-utils = { workspace = true, features = [
+	"borsh",
+	"compression",
+	"async",
+] }
 
 [features]
 default = []
+async = [ "dep:async-trait", "dep:tokio" ]
 borsh = [ "dep:borsh" ]
-compression = [
-	"dep:async-trait",
-	"dep:flate2",
-	"dep:lz4_flex",
-	"dep:tokio",
-	"dep:zstd",
-]
+compression = [ "dep:flate2", "dep:lz4_flex", "dep:ruzstd" ]

@@ -12,7 +12,7 @@ use data_anchor_blober::{
     find_checkpoint_address, state::blober::Blober,
 };
 use data_anchor_utils::{
-    compression::DataAnchorCompression,
+    compression::DataAnchorCompressionAsync,
     encoding::{DataAnchorEncoding, Decodable},
 };
 use futures::{StreamExt, TryStreamExt};
@@ -97,8 +97,8 @@ pub enum ChainError {
 
 impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
 where
-    Encoding: DataAnchorEncoding,
-    Compression: DataAnchorCompression,
+    Encoding: DataAnchorEncoding + Default,
+    Compression: DataAnchorCompressionAsync,
 {
     /// Returns the raw blob data from the ledger for the given signatures.
     pub async fn get_ledger_blobs_from_signatures<T>(

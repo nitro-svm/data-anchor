@@ -12,9 +12,17 @@ use data_anchor_proofs::{
     blober_account_state::{BlobAccount, BloberAccountStateProof, merge_all_hashes},
     compound::{CompoundInclusionProof, ProofBlob, VerifyArgs},
 };
-use data_anchor_prover::{DATA_CORRECTNESS_ELF, DAWN_SLA_ELF, run_client};
+use data_anchor_prover::{
+    DATA_CORRECTNESS_ELF, DAWN_SLA_ELF, ENCODING_COMPRESSION_TEST_ELF, run_client,
+    setup_prover_input,
+};
+use data_anchor_utils::{
+    compression, encode_and_compress,
+    encoding::{self, DataAnchorEncoding},
+};
+use itertools::iproduct;
 use rand::{RngCore, rngs::OsRng};
-use sp1_sdk::utils;
+use sp1_sdk::{ProverClient, utils};
 
 #[derive(Debug, Clone, Parser)]
 struct Config {
@@ -24,12 +32,43 @@ struct Config {
     pub verify: bool,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn match_compression<Encoding>(encoding: &Encoding, compression: &str, data: &[u8]) -> Vec<u8>
+where
+    Encoding: DataAnchorEncoding,
+{
+    let data = data.to_vec();
+    match compression {
+        "default_compression" => {
+            encode_and_compress(encoding, &compression::Default, &data).unwrap()
+        }
+        "zstd_compression" => {
+            encode_and_compress(encoding, &compression::ZstdCompression::default(), &data).unwrap()
+        }
+        "no_compression" => {
+            encode_and_compress(encoding, &compression::NoCompression, &data).unwrap()
+        }
+        "flate2_compression" => {
+            encode_and_compress(encoding, &compression::Flate2Compression, &data).unwrap()
+        }
+        "lz4_compression" => {
+            encode_and_compress(encoding, &compression::Lz4Compression, &data).unwrap()
+        }
+        _ => panic!("Unknown compression: {compression}"),
+    }
+}
+
+fn generate_inputs<Encoding>(
+    slots: u64,
+    max_blob_size: u16,
+    encoding: &Encoding,
+    compression: &str,
+) -> Result<(CompoundInclusionProof, VerifyArgs, usize), Box<dyn std::error::Error>>
+where
+    Encoding: DataAnchorEncoding,
+{
     let mut seed = vec![0u8; 50];
     OsRng.fill_bytes(&mut seed);
     let mut u = arbitrary::Unstructured::new(&seed);
-
-    let slots: u64 = 31 * 3;
 
     let mut blobs = BTreeMap::<u64, Vec<(ProofBlob<Vec<u8>>, BlobProof, BlobAccount)>>::new();
     for slot in 1..=slots {
@@ -40,12 +79,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // ------------------------- Blob -------------------------
             // MBPS + Total sent + Timestamp + Challenger identity
             let min_blob_size = 8 + 8 + 8 + 32;
-            let blob_size = u.int_in_range(min_blob_size..=COMPOUND_TX_SIZE)?;
+            let blob_size = u.int_in_range(min_blob_size..=max_blob_size)?;
             let mut blob = vec![0u8; blob_size as usize];
             u.fill_buffer(&mut blob)?;
             if blob.len() > u16::MAX as usize {
                 blob = blob[..blob_size as usize].to_vec();
             }
+
+            println!("Generating blob of size: {}", blob.len());
+            let blob = match_compression(encoding, compression, &blob);
+            println!("Compressed blob size: {}", blob.len());
 
             let mut chunks = blob
                 .chunks(CHUNK_SIZE as usize)
@@ -161,16 +204,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     verification_result.unwrap();
 
+    Ok((compound_inclusion_proof, args, blob_proof_count))
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let slots = 31 * 3;
+    let max_blob_size = COMPOUND_TX_SIZE;
+    let (compound_inclusion_proof, args, blob_proof_count) =
+        generate_inputs(slots, max_blob_size, &encoding::Json, "no_compression")?;
+
     utils::setup_logger();
 
     let config = Config::parse();
 
+    let mut output = "slot,blob_proof_count,program,cycles,cycle_tracker,gases,elf".to_owned();
     for (elf, name) in [
         (DATA_CORRECTNESS_ELF, "DATA_CORRECTNESS"),
         (DAWN_SLA_ELF, "DAWN_SLA"),
     ] {
-        println!("Running script for {name}");
-
         let (public_values, report) = run_client(
             &compound_inclusion_proof,
             &args,
@@ -180,8 +231,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
         let size = ByteSize(public_values.as_slice().len() as u64);
-        println!(
-            "{slots},{blob_proof_count},{},{size},{},{}",
+        output.push_str(&format!(
+            "\n{slots},{blob_proof_count},{},{size},{},{},{name}",
             report
                 .cycle_tracker
                 .iter()
@@ -190,8 +241,60 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .join(","),
             report.cycle_tracker.values().sum::<u64>(),
             report.gas.unwrap_or_default(),
-        );
+        ));
     }
+
+    let matrix = iproduct!(
+        [
+            "default_compression",
+            "zstd_compression",
+            "no_compression",
+            "flate2_compression",
+            "lz4_compression"
+        ],
+        ["default_encoding", "postcard", "bincode", "borsh", "json"]
+    );
+
+    for (compression_str, encoding) in matrix {
+        let (compound_inclusion_proof, args, blob_proof_count) = match encoding {
+            "default_encoding" => {
+                generate_inputs(slots, max_blob_size, &encoding::Default, compression_str)?
+            }
+            "postcard" => {
+                generate_inputs(slots, max_blob_size, &encoding::Postcard, compression_str)?
+            }
+            "bincode" => {
+                generate_inputs(slots, max_blob_size, &encoding::Bincode, compression_str)?
+            }
+            "borsh" => generate_inputs(slots, max_blob_size, &encoding::Borsh, compression_str)?,
+            "json" => generate_inputs(slots, max_blob_size, &encoding::Json, compression_str)?,
+            _ => panic!("Unknown encoding: {encoding}"),
+        };
+        let mut inputs = setup_prover_input(&compound_inclusion_proof, &args);
+        inputs.write(&encoding.to_owned());
+        inputs.write(&compression_str.to_owned());
+
+        let client = ProverClient::from_env();
+
+        let (public_values, report) = client
+            .execute(ENCODING_COMPRESSION_TEST_ELF, &inputs)
+            .run()?;
+
+        let size = ByteSize(public_values.as_slice().len() as u64);
+        output.push_str(&format!(
+            "\n{slots},{blob_proof_count},{},{size},{},{},ENCODING_COMPRESSION_TEST_{compression_str}_{encoding}",
+            report
+                .cycle_tracker
+                .iter()
+                .map(|(k, v)| format!("{k}:{v}"))
+                .collect::<Vec<_>>()
+                .join(","),
+            report.cycle_tracker.values().sum::<u64>(),
+            report.gas.unwrap_or_default(),
+        ));
+    }
+
+    println!("{output}");
 
     Ok(())
 }

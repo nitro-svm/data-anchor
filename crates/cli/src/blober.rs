@@ -7,7 +7,7 @@ use data_anchor_blober::checkpoint::Checkpoint;
 use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
-use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
+use data_anchor_utils::{compression::DataAnchorCompressionAsync, encoding::DataAnchorEncoding};
 use serde::{Serialize, ser::SerializeStruct};
 use tracing::{info, instrument};
 
@@ -163,8 +163,8 @@ impl BloberSubCommand {
         payer: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput>
     where
-        Encoding: DataAnchorEncoding,
-        Compression: DataAnchorCompression,
+        Encoding: DataAnchorEncoding + Default,
+        Compression: DataAnchorCompressionAsync,
     {
         let mut blobers = Vec::new();
         let mut checkpoint = None;

@@ -314,3 +314,9 @@ run-e2e prover-mode='' private-key='':
 [group('test')]
 calculate-on-chain-cost:
     ./scripts/calculate-on-chain-cost.sh
+
+# Run prover script for different elfs
+[confirm('This will run the prover script all ELFs (might take a long time). Are you sure you want to continue [y/n]?')]
+[group('test')]
+run-prover prove='' verify='':
+    cargo run --release -p data-anchor-prover-script {{ prove && '-p' + verify && ' -v' }} 2>&1
