@@ -45,6 +45,7 @@ solana-transaction-status = { workspace = true }
 # Locals
 data-anchor-blober = { workspace = true }
 data-anchor-api = { workspace = true }
+data-anchor-utils = { workspace = true }
 
 [dev-dependencies]
 # External dependencies
@@ -55,3 +56,7 @@ tokio = { workspace = true, features = ["test-util", "macros"] }
 
 # Solana & Agave
 solana-test-validator = { workspace = true }
+
+[features]
+default = []
+borsh = [ "data-anchor-utils/borsh" ]

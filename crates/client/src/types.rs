@@ -50,6 +50,9 @@ pub enum DataAnchorClientError {
     /// Invalid data: {0}
     #[error("Invalid data: {0}")]
     InvalidData(String),
+    /// Encoding/Decoding error: {0}
+    #[error("Encoding/Decoding error: {0}")]
+    EncodingDecodingError(#[from] data_anchor_utils::encoding::DataAnchorEncodingError),
 }
 
 /// Result returned when interacting with the Blober client.

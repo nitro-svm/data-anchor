@@ -35,3 +35,4 @@ solana-signer = { workspace = true }
 data-anchor-blober = { workspace = true }
 data-anchor-client = { workspace = true }
 data-anchor-api = { workspace = true }
+data-anchor-utils = { workspace = true }

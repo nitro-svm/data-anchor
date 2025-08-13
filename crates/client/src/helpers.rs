@@ -11,6 +11,7 @@ use data_anchor_blober::{
     CHUNK_SIZE, COMPOUND_DECLARE_TX_SIZE, COMPOUND_TX_SIZE,
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
 };
+use data_anchor_utils::encoding::DataAnchorEncoding;
 use jsonrpsee::http_client::HttpClient;
 use solana_signer::Signer;
 use tracing::{Instrument, Span, info_span};
@@ -32,7 +33,10 @@ pub enum UploadMessages {
     },
 }
 
-impl DataAnchorClient {
+impl<Encoding> DataAnchorClient<Encoding>
+where
+    Encoding: DataAnchorEncoding,
+{
     /// Uploads the blob: [`data_anchor_blober::DeclareBlob`], [`data_anchor_blober::InsertChunk`] * N,
     /// [`data_anchor_blober::FinalizeBlob`].
     pub(crate) async fn do_upload(

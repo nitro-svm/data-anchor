@@ -6,6 +6,7 @@ use data_anchor_api::pubkey_with_str;
 use data_anchor_client::{
     DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority, TransactionType,
 };
+use data_anchor_utils::encoding::DataAnchorEncoding;
 use itertools::Itertools;
 use serde::Serialize;
 use solana_signature::Signature;
@@ -94,11 +95,14 @@ impl std::fmt::Display for BlobCommandOutput {
 
 impl BlobSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run(
+    pub async fn run<Encoding>(
         &self,
-        client: Arc<DataAnchorClient>,
+        client: Arc<DataAnchorClient<Encoding>>,
         namespace: &str,
-    ) -> DataAnchorClientResult<CommandOutput> {
+    ) -> DataAnchorClientResult<CommandOutput>
+    where
+        Encoding: DataAnchorEncoding,
+    {
         match self {
             BlobSubCommand::Upload { data_path, data } => {
                 let blob_data = if let Some(data_path) = data_path {
@@ -153,7 +157,7 @@ impl BlobSubCommand {
             }
             BlobSubCommand::Fetch { signatures } => {
                 let blob = client
-                    .get_ledger_blobs_from_signatures(
+                    .get_ledger_blobs_from_signatures::<Vec<u8>>(
                         namespace.to_owned().into(),
                         signatures.to_owned(),
                     )
@@ -165,7 +169,11 @@ impl BlobSubCommand {
                 lookback_slots,
             } => {
                 let blobs = client
-                    .get_ledger_blobs(*slot, namespace.to_owned().into(), *lookback_slots)
+                    .get_ledger_blobs::<Vec<u8>>(
+                        *slot,
+                        namespace.to_owned().into(),
+                        *lookback_slots,
+                    )
                     .await?;
                 Ok(BlobCommandOutput::Fetching(blobs).into())
             }

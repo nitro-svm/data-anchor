@@ -1,0 +1,32 @@
+[package]
+name = "data-anchor-utils"
+description = "Data Anchor utilities library"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+homepage.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[dependencies]
+# External dependencies from crates.io
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["alloc", "derive"] }
+
+# Encoding
+bincode = { workspace = true }
+borsh = { workspace = true, optional = true }
+postcard = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+# External dependencies
+rstest = { workspace = true }
+
+# Locals
+data-anchor-utils = { workspace = true, features = ["borsh"] }
+
+[features]
+default = []
+borsh = [ "dep:borsh" ]

@@ -10,6 +10,7 @@ use data_anchor_blober::{
     },
     state::blober::Blober,
 };
+use data_anchor_utils::encoding::{DataAnchorEncoding, Encodable};
 use jsonrpsee::http_client::HttpClient;
 use solana_commitment_config::CommitmentConfig;
 use solana_keypair::Keypair;
@@ -110,7 +111,10 @@ impl BloberIdentifier {
 }
 
 #[derive(Builder, Clone)]
-pub struct DataAnchorClient {
+pub struct DataAnchorClient<Encoding>
+where
+    Encoding: DataAnchorEncoding,
+{
     #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
     #[builder(default = data_anchor_blober::id())]
@@ -119,9 +123,14 @@ pub struct DataAnchorClient {
     pub(crate) batch_client: BatchClient,
     pub(crate) indexer_client: Option<Arc<HttpClient>>,
     pub(crate) proof_client: Option<Arc<HttpClient>>,
+    #[builder(default = std::marker::PhantomData)]
+    pub(crate) phantom: std::marker::PhantomData<Encoding>,
 }
 
-impl DataAnchorClient {
+impl<Encoding> DataAnchorClient<Encoding>
+where
+    Encoding: DataAnchorEncoding,
+{
     /// Returns the underlaying [`RpcClient`].
     pub fn rpc_client(&self) -> Arc<RpcClient> {
         self.rpc_client.clone()
@@ -301,22 +310,27 @@ impl DataAnchorClient {
     /// blob PDA gets closed sending it's funds back to the [`DataAnchorClient::payer`].
     /// If the blob upload fails, the blob PDA gets discarded and the funds also get sent to the
     /// [`DataAnchorClient::payer`].
-    pub async fn upload_blob(
+    pub async fn upload_blob<T>(
         &self,
-        blob_data: &[u8],
+        blob_data: &T,
         fee_strategy: FeeStrategy,
         namespace: &str,
         timeout: Option<Duration>,
-    ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)> {
+    ) -> DataAnchorClientResult<(Vec<SuccessfulTransaction<TransactionType>>, Pubkey)>
+    where
+        T: Encodable,
+    {
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
         let timestamp = get_unique_timestamp();
+
+        let encoded_data = Encoding::encode(blob_data)?;
 
         let blob = find_blob_address(
             self.program_id,
             self.payer.pubkey(),
             blober,
             timestamp,
-            blob_data.len(),
+            encoded_data.len(),
         );
 
         let in_mock_env = self.in_mock_env();
@@ -325,7 +339,7 @@ impl DataAnchorClient {
         }
 
         let fee = self
-            .estimate_fees(blob_data.len(), blober, fee_strategy)
+            .estimate_fees(encoded_data.len(), blober, fee_strategy)
             .await?;
 
         if !in_mock_env {
@@ -337,7 +351,7 @@ impl DataAnchorClient {
         }
 
         let upload_messages = self
-            .generate_messages(blob, timestamp, blob_data, fee_strategy, blober)
+            .generate_messages(blob, timestamp, &encoded_data, fee_strategy, blober)
             .await?;
 
         let res = self

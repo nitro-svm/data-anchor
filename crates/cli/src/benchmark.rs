@@ -15,6 +15,7 @@ use data_anchor_client::{
     ChainError, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
     Priority,
 };
+use data_anchor_utils::encoding::DataAnchorEncoding;
 use futures::StreamExt;
 use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
@@ -92,11 +93,14 @@ impl std::fmt::Display for BenchmarkCommandOutput {
 
 impl BenchmarkSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run(
+    pub async fn run<Encoding>(
         &self,
-        client: Arc<DataAnchorClient>,
+        client: Arc<DataAnchorClient<Encoding>>,
         namespace: &str,
-    ) -> DataAnchorClientResult<CommandOutput> {
+    ) -> DataAnchorClientResult<CommandOutput>
+    where
+        Encoding: DataAnchorEncoding,
+    {
         match self {
             BenchmarkSubCommand::GenerateData {
                 data_path,
@@ -258,14 +262,17 @@ async fn generate_data(
 }
 
 /// Measures the performance of the blober.
-async fn measure_performance(
+async fn measure_performance<Encoding>(
     data_path: &Path,
     timeout: u64,
     concurrency: u64,
     priority: Priority,
-    client: Arc<DataAnchorClient>,
+    client: Arc<DataAnchorClient<Encoding>>,
     namespace: &str,
-) -> DataAnchorClientResult<BenchMeasurement> {
+) -> DataAnchorClientResult<BenchMeasurement>
+where
+    Encoding: DataAnchorEncoding,
+{
     let reads = data_path
         .read_dir()?
         .filter_map(|entry| {

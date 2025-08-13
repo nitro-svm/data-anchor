@@ -1,5 +1,7 @@
 use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
 use data_anchor_api::{CompoundInclusionProof, IndexerRpcClient, PubkeyFromStr, TimeRange};
+use data_anchor_utils::encoding::{DataAnchorEncoding, Decodable};
+use itertools::Itertools;
 use solana_signer::Signer;
 
 use super::BloberIdentifier;
@@ -36,67 +38,116 @@ pub enum IndexerError {
     PayersForNamespace(String, String),
 }
 
-impl DataAnchorClient {
+impl<Encoding> DataAnchorClient<Encoding>
+where
+    Encoding: DataAnchorEncoding,
+{
     /// Fetches all blobs for a given slot from the [`IndexerRpcClient`].
-    pub async fn get_blobs(
+    pub async fn get_blobs<T>(
         &self,
         slot: u64,
         identifier: BloberIdentifier,
-    ) -> DataAnchorClientResult<Option<Vec<Vec<u8>>>> {
+    ) -> DataAnchorClientResult<Option<Vec<T>>>
+    where
+        T: Decodable,
+    {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         self.indexer()
             .get_blobs(blober.into(), slot)
             .await
             .map_err(|e| IndexerError::Blobs(slot, e.to_string()).into())
+            .and_then(|blobs| {
+                blobs
+                    .map(|b| {
+                        b.iter()
+                            .map(|blob| Encoding::decode(blob))
+                            .try_collect()
+                            .map_err(|e| e.into())
+                    })
+                    .transpose()
+            })
     }
 
     /// Fetches blobs for a given blober and time range from the [`IndexerRpcClient`].
-    pub async fn get_blobs_by_blober(
+    pub async fn get_blobs_by_blober<T>(
         &self,
         identifier: BloberIdentifier,
         time_range: Option<TimeRange>,
-    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<T>>
+    where
+        T: Decodable,
+    {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         self.indexer()
             .get_blobs_by_blober(blober.into(), time_range)
             .await
             .map_err(|e| IndexerError::BlobsForBlober(blober.to_string(), e.to_string()).into())
+            .and_then(|blobs| {
+                blobs
+                    .iter()
+                    .map(|blob| Encoding::decode(blob))
+                    .try_collect()
+                    .map_err(|e| e.into())
+            })
     }
 
     /// Fetches blobs for a given payer, network name and time range from the [`IndexerRpcClient`].
-    pub async fn get_blobs_by_payer(
+    pub async fn get_blobs_by_payer<T>(
         &self,
         payer: Pubkey,
         network_name: String,
         time_range: Option<TimeRange>,
-    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<T>>
+    where
+        T: Decodable,
+    {
         self.indexer()
             .get_blobs_by_payer(payer.into(), network_name, time_range)
             .await
             .map_err(|e| IndexerError::BlobsForPayer(payer.to_string(), e.to_string()).into())
+            .and_then(|blobs| {
+                blobs
+                    .iter()
+                    .map(|blob| Encoding::decode(blob))
+                    .try_collect()
+                    .map_err(|e| e.into())
+            })
     }
 
     /// Fetches blobs for a given network and time range from the [`IndexerRpcClient`].
-    pub async fn get_blobs_by_network(
+    pub async fn get_blobs_by_network<T>(
         &self,
         network_name: String,
         time_range: Option<TimeRange>,
-    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<T>>
+    where
+        T: Decodable,
+    {
         self.indexer()
             .get_blobs_by_network(network_name.clone(), time_range)
             .await
             .map_err(|e| IndexerError::BlobsForNetwork(network_name, e.to_string()).into())
+            .and_then(|blobs| {
+                blobs
+                    .iter()
+                    .map(|blob| Encoding::decode(blob))
+                    .try_collect()
+                    .map_err(|e| e.into())
+            })
     }
 
     /// Fetches blobs for a given namespace and time range from the [`IndexerRpcClient`].
-    pub async fn get_blobs_by_namespace_for_payer(
+    pub async fn get_blobs_by_namespace_for_payer<T>(
         &self,
         namespace: String,
         payer_pubkey: Option<Pubkey>,
         time_range: Option<TimeRange>,
-    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<T>>
+    where
+        T: Decodable,
+    {
         self.indexer()
             .get_blobs_by_namespace_for_payer(
                 namespace.clone(),
@@ -105,6 +156,13 @@ impl DataAnchorClient {
             )
             .await
             .map_err(|e| IndexerError::BlobsForNamespace(namespace, e.to_string()).into())
+            .and_then(|blobs| {
+                blobs
+                    .iter()
+                    .map(|blob| Encoding::decode(blob))
+                    .try_collect()
+                    .map_err(|e| e.into())
+            })
     }
 
     /// Fetches payers for a given network from the [`IndexerRpcClient`].

@@ -9,6 +9,7 @@ use anchor_lang::{
 };
 use async_trait::async_trait;
 use data_anchor_blober::find_blober_address;
+use data_anchor_utils::encoding;
 use itertools::Itertools;
 use rand::Rng;
 use solana_client::{
@@ -91,7 +92,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
         .await
         .unwrap();
-    let data_anchor_client = DataAnchorClient::builder()
+    let data_anchor_client = DataAnchorClient::<encoding::Default>::builder()
         .payer(payer.clone())
         .program_id(data_anchor_blober::id())
         .rpc_client(blober_rpc_client.clone())
@@ -185,7 +186,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let signatures = result.iter().map(|r| r.signature).collect::<Vec<_>>();
 
     let ledger_data = data_anchor_client
-        .get_ledger_blobs_from_signatures(blober_pubkey.into(), signatures)
+        .get_ledger_blobs_from_signatures::<Vec<u8>>(blober_pubkey.into(), signatures)
         .await
         .unwrap();
 
@@ -194,7 +195,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let finalized_slot = result.last().unwrap().slot;
 
     let all_ledger_blobs = data_anchor_client
-        .get_ledger_blobs(
+        .get_ledger_blobs::<Vec<u8>>(
             finalized_slot,
             blober_pubkey.into(),
             Some(finalized_slot - slot_before_upload + 1),
@@ -217,7 +218,7 @@ async fn failing_upload_returns_error() {
             .await
             .unwrap();
     // Give a successful RPC client to the DataAnchorClient to allow other calls to succeed.
-    let data_anchor_client = DataAnchorClient::builder()
+    let data_anchor_client = DataAnchorClient::<encoding::Default>::builder()
         .payer(payer)
         .program_id(Pubkey::new_unique())
         .rpc_client(successful_rpc_client.clone())

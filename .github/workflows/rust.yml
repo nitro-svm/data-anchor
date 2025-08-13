@@ -93,7 +93,9 @@ jobs:
           tool: zepter@1
 
       - name: Install just
-        uses: extractions/setup-just@v2
+        uses: extractions/setup-just@v3
+        with:
+          just-version: 1.39.0
 
       - name: Install system dependencies
         run: |
@@ -170,7 +172,9 @@ jobs:
           echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
 
       - name: Install just
-        uses: extractions/setup-just@v2
+        uses: extractions/setup-just@v3
+        with:
+          just-version: 1.39.0
 
       - name: Start database
         run: just docker-run-db
@@ -261,7 +265,9 @@ jobs:
           echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
 
       - name: Install just
-        uses: extractions/setup-just@v2
+        uses: extractions/setup-just@v3
+        with:
+          just-version: 1.39.0
 
       - name: Install SP1
         uses: nitro-svm/infrastructure/actions/install-sp1@main

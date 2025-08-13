@@ -2249,6 +2249,7 @@ dependencies = [
  "data-anchor-api",
  "data-anchor-blober",
  "data-anchor-client",
+ "data-anchor-utils",
  "futures 0.3.31",
  "hex",
  "itertools 0.14.0",
@@ -2303,6 +2304,7 @@ dependencies = [
  "clap 4.5.42",
  "data-anchor-api",
  "data-anchor-blober",
+ "data-anchor-utils",
  "futures 0.3.31",
  "itertools 0.14.0",
  "jsonrpsee",
@@ -2475,6 +2477,20 @@ dependencies = [
  "data-anchor-prover",
  "rand 0.7.3",
  "sp1-sdk",
+]
+
+[[package]]
+name = "data-anchor-utils"
+version = "0.4.0"
+dependencies = [
+ "bincode",
+ "borsh 1.5.7",
+ "data-anchor-utils",
+ "postcard",
+ "rstest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -6952,6 +6968,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
+name = "relative-path"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
+
+[[package]]
 name = "remoc"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7190,6 +7212,35 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "rstest"
+version = "0.26.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5a3193c063baaa2a95a33f03035c8a72b83d97a54916055ba22d35ed3839d49"
+dependencies = [
+ "futures-timer",
+ "futures-util",
+ "rstest_macros",
+]
+
+[[package]]
+name = "rstest_macros"
+version = "0.26.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c845311f0ff7951c5506121a9ad75aec44d083c31583b2ea5a30bcb0b0abba0"
+dependencies = [
+ "cfg-if 1.0.1",
+ "glob",
+ "proc-macro-crate 3.3.0",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "relative-path",
+ "rustc_version",
+ "syn 2.0.104",
+ "unicode-ident",
 ]
 
 [[package]]

@@ -11,7 +11,9 @@ use data_anchor_blober::{
     BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, checkpoint::Checkpoint,
     find_checkpoint_address, state::blober::Blober,
 };
+use data_anchor_utils::encoding::{DataAnchorEncoding, Decodable};
 use futures::StreamExt;
+use itertools::Itertools;
 use solana_account_decoder_client_types::UiAccountEncoding;
 use solana_client::{
     rpc_config::{
@@ -91,13 +93,19 @@ pub enum ChainError {
     CheckpointNotUpToDate,
 }
 
-impl DataAnchorClient {
+impl<Encoding> DataAnchorClient<Encoding>
+where
+    Encoding: DataAnchorEncoding,
+{
     /// Returns the raw blob data from the ledger for the given signatures.
-    pub async fn get_ledger_blobs_from_signatures(
+    pub async fn get_ledger_blobs_from_signatures<T>(
         &self,
         identifier: BloberIdentifier,
         signatures: Vec<Signature>,
-    ) -> DataAnchorClientResult<Vec<u8>> {
+    ) -> DataAnchorClientResult<T>
+    where
+        T: Decodable,
+    {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let relevant_transactions = futures::stream::iter(signatures)
@@ -161,20 +169,21 @@ impl DataAnchorClient {
             return Err(LedgerDataBlobError::MultipleFinalizes.into());
         }
 
-        Ok(get_blob_data_from_instructions(
-            &relevant_instructions,
-            blober,
-            *blob,
-        )?)
+        let data = get_blob_data_from_instructions(&relevant_instructions, blober, *blob)?;
+
+        Ok(Encoding::decode(&data)?)
     }
 
     /// Fetches all blobs finalized in a given slot from the ledger.
-    pub async fn get_ledger_blobs(
+    pub async fn get_ledger_blobs<T>(
         &self,
         slot: u64,
         identifier: BloberIdentifier,
         lookback_slots: Option<u64>,
-    ) -> DataAnchorClientResult<Vec<Vec<u8>>> {
+    ) -> DataAnchorClientResult<Vec<T>>
+    where
+        T: Decodable,
+    {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
         let block_config = RpcBlockConfig {
@@ -235,7 +244,10 @@ impl DataAnchorClient {
 
         // If all blobs are found, return them.
         if blobs.len() == finalized_blobs.len() {
-            return Ok(blobs.values().cloned().collect());
+            return Ok(blobs
+                .values()
+                .map(|data| Encoding::decode(data))
+                .try_collect()?);
         }
 
         let lookback_slots = lookback_slots.unwrap_or(DEFAULT_LOOKBACK_SLOTS);
@@ -291,7 +303,12 @@ impl DataAnchorClient {
             }
         }
 
-        Ok(blobs.values().cloned().collect())
+        let blob_data = blobs
+            .values()
+            .map(|data| Encoding::decode(data))
+            .try_collect()?;
+
+        Ok(blob_data)
     }
 
     /// Fetches blob messages for a given slot
