@@ -11,7 +11,7 @@ use crate::{
 impl MessageBuilder for FinalizeBlob {
     type Input = Pubkey;
     const TX_TYPE: TransactionType = TransactionType::FinalizeBlob;
-    const COMPUTE_UNIT_LIMIT: u32 = 25_000;
+    const COMPUTE_UNIT_LIMIT: u32 = 5_000;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         vec![args.input, args.blober, args.payer]

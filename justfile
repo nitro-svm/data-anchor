@@ -157,9 +157,9 @@ init-blober namespace:
 
 [confirm('This will run benchmarks against a deployed program and will take a while. Are you sure you want to continue [y/n]?')]
 [group('program-utils')]
-run-benchmark indexer_url:
-    @echo "Running benchmark for indexer URL: {{ indexer_url }} with default config"
-    cargo run --release -p data-anchor -- -i {{ indexer_url }} -n bench m a ./target/data
+run-benchmark:
+    @echo "Running benchmark with default config"
+    cargo run --release -p data-anchor -- -n bench m a --data-path ./target/data
 
 # Clean the programs directory
 [group('clean')]

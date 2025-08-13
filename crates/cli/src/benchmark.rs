@@ -20,7 +20,7 @@ use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_signer::Signer;
-use tracing::{instrument, trace};
+use tracing::{error, instrument, trace};
 
 use crate::formatting::CommandOutput;
 
@@ -151,6 +151,13 @@ impl BenchmarkSubCommand {
                 // We preallocate the vectors to avoid reallocations.
                 let mut measurements = Vec::with_capacity(3 * 2 * 4 * 5);
 
+                if let Err(e) = client
+                    .initialize_blober(Default::default(), namespace.to_owned().into(), None)
+                    .await
+                {
+                    error!("Failed to initialize blober: {e}");
+                }
+
                 let mut writer = running_csv
                     .as_ref()
                     .and_then(|filename| std::fs::File::create(filename).ok())
@@ -199,6 +206,12 @@ impl BenchmarkSubCommand {
                 }
                 .await;
                 delete_all_in_dir(data_path).await?;
+                if let Err(e) = client
+                    .close_blober(Default::default(), namespace.to_owned().into(), None)
+                    .await
+                {
+                    error!("Failed to close blober: {e}");
+                }
 
                 Ok(BenchmarkCommandOutput::Measurements(measurements.clone()).into())
             }
