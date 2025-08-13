@@ -6,7 +6,7 @@ use data_anchor_api::pubkey_with_str;
 use data_anchor_client::{
     DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority, TransactionType,
 };
-use data_anchor_utils::encoding::DataAnchorEncoding;
+use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
 use itertools::Itertools;
 use serde::Serialize;
 use solana_signature::Signature;
@@ -95,13 +95,14 @@ impl std::fmt::Display for BlobCommandOutput {
 
 impl BlobSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run<Encoding>(
+    pub async fn run<Encoding, Compression>(
         &self,
-        client: Arc<DataAnchorClient<Encoding>>,
+        client: Arc<DataAnchorClient<Encoding, Compression>>,
         namespace: &str,
     ) -> DataAnchorClientResult<CommandOutput>
     where
         Encoding: DataAnchorEncoding,
+        Compression: DataAnchorCompression,
     {
         match self {
             BlobSubCommand::Upload { data_path, data } => {

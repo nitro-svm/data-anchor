@@ -9,7 +9,7 @@ use anchor_lang::{
 };
 use async_trait::async_trait;
 use data_anchor_blober::find_blober_address;
-use data_anchor_utils::encoding;
+use data_anchor_utils::{compression, encoding};
 use itertools::Itertools;
 use rand::Rng;
 use solana_client::{
@@ -92,12 +92,13 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
         .await
         .unwrap();
-    let data_anchor_client = DataAnchorClient::<encoding::Default>::builder()
-        .payer(payer.clone())
-        .program_id(data_anchor_blober::id())
-        .rpc_client(blober_rpc_client.clone())
-        .batch_client(batch_client)
-        .build();
+    let data_anchor_client =
+        DataAnchorClient::<encoding::Default, compression::NoCompression>::builder()
+            .payer(payer.clone())
+            .program_id(data_anchor_blober::id())
+            .rpc_client(blober_rpc_client.clone())
+            .batch_client(batch_client)
+            .build();
 
     let namespace = "test".to_owned();
     let blober_pubkey = find_blober_address(data_anchor_blober::id(), payer.pubkey(), &namespace);
@@ -218,12 +219,13 @@ async fn failing_upload_returns_error() {
             .await
             .unwrap();
     // Give a successful RPC client to the DataAnchorClient to allow other calls to succeed.
-    let data_anchor_client = DataAnchorClient::<encoding::Default>::builder()
-        .payer(payer)
-        .program_id(Pubkey::new_unique())
-        .rpc_client(successful_rpc_client.clone())
-        .batch_client(batch_client)
-        .build();
+    let data_anchor_client =
+        DataAnchorClient::<encoding::Default, compression::NoCompression>::builder()
+            .payer(payer)
+            .program_id(Pubkey::new_unique())
+            .rpc_client(successful_rpc_client.clone())
+            .batch_client(batch_client)
+            .build();
 
     // Useful for spotting the blob data in the transaction ledger.
     let data: Vec<u8> = [0xDE, 0xAD, 0xBE, 0xEF]

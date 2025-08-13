@@ -45,64 +45,64 @@ mod _with_borsh {
 #[cfg(feature = "borsh")]
 pub use _with_borsh::*;
 
-pub trait DataAnchorEncoding {
-    fn encode<T: Encodable>(data: &T) -> DataAnchorEncodingResult<Vec<u8>>;
+pub trait DataAnchorEncoding: std::default::Default {
+    fn encode<T: Encodable>(&self, data: &T) -> DataAnchorEncodingResult<Vec<u8>>;
 
-    fn decode<T: Decodable>(data: &[u8]) -> DataAnchorEncodingResult<T>;
+    fn decode<T: Decodable>(&self, data: &[u8]) -> DataAnchorEncodingResult<T>;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct Postcard;
 
 pub use Postcard as Default;
 
 impl DataAnchorEncoding for Postcard {
-    fn encode<T: Encodable>(data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
+    fn encode<T: Encodable>(&self, data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
         Ok(postcard::to_allocvec(data)?)
     }
 
-    fn decode<T: Decodable>(data: &[u8]) -> DataAnchorEncodingResult<T> {
+    fn decode<T: Decodable>(&self, data: &[u8]) -> DataAnchorEncodingResult<T> {
         Ok(postcard::from_bytes(data)?)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct Bincode;
 
 impl DataAnchorEncoding for Bincode {
-    fn encode<T: Encodable>(data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
+    fn encode<T: Encodable>(&self, data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
         Ok(bincode::serialize(data)?)
     }
 
-    fn decode<T: Decodable>(data: &[u8]) -> DataAnchorEncodingResult<T> {
+    fn decode<T: Decodable>(&self, data: &[u8]) -> DataAnchorEncodingResult<T> {
         Ok(bincode::deserialize(data)?)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct Json;
 
 impl DataAnchorEncoding for Json {
-    fn encode<T: Encodable>(data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
+    fn encode<T: Encodable>(&self, data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
         Ok(serde_json::to_vec(data)?)
     }
 
-    fn decode<T: Decodable>(data: &[u8]) -> DataAnchorEncodingResult<T> {
+    fn decode<T: Decodable>(&self, data: &[u8]) -> DataAnchorEncodingResult<T> {
         Ok(serde_json::from_slice(data)?)
     }
 }
 
 #[cfg(feature = "borsh")]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, std::default::Default)]
 pub struct Borsh;
 
 #[cfg(feature = "borsh")]
 impl DataAnchorEncoding for Borsh {
-    fn encode<T: Encodable>(data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
+    fn encode<T: Encodable>(&self, data: &T) -> DataAnchorEncodingResult<Vec<u8>> {
         Ok(borsh::to_vec(data)?)
     }
 
-    fn decode<T: Decodable>(data: &[u8]) -> DataAnchorEncodingResult<T> {
+    fn decode<T: Decodable>(&self, data: &[u8]) -> DataAnchorEncodingResult<T> {
         Ok(borsh::from_slice(data)?)
     }
 }
@@ -137,13 +137,13 @@ mod tests {
     })]
     fn test_encoding<T, E>(
         #[case] data: T,
-        #[values(Default, Postcard, Bincode, Json, Borsh)] _encoding: E,
+        #[values(Default, Postcard, Bincode, Json, Borsh)] encoding: E,
     ) where
         T: Encodable + Decodable + PartialEq + std::fmt::Debug,
         E: DataAnchorEncoding,
     {
-        let encoded = E::encode(&data).unwrap();
-        let decoded: T = E::decode(&encoded).unwrap();
+        let encoded = encoding.encode(&data).unwrap();
+        let decoded: T = encoding.decode(&encoded).unwrap();
         assert_eq!(data, decoded);
     }
 }

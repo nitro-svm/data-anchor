@@ -45,7 +45,7 @@ solana-transaction-status = { workspace = true }
 # Locals
 data-anchor-blober = { workspace = true }
 data-anchor-api = { workspace = true }
-data-anchor-utils = { workspace = true }
+data-anchor-utils = { workspace = true, features = ["compression"] }
 
 [dev-dependencies]
 # External dependencies

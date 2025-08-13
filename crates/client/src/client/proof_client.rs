@@ -1,6 +1,6 @@
 use anchor_lang::solana_program::clock::Slot;
 use data_anchor_api::{CustomerElf, ProofRpcClient, RequestStatus};
-use data_anchor_utils::encoding::DataAnchorEncoding;
+use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
 use solana_signer::Signer;
 
 use super::BloberIdentifier;
@@ -18,9 +18,10 @@ pub enum ProofError {
     ProofRequestStatus(String, String),
 }
 
-impl<Encoding> DataAnchorClient<Encoding>
+impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
 where
     Encoding: DataAnchorEncoding,
+    Compression: DataAnchorCompression,
 {
     /// Requests ZK proof generation on the proof RPC for a given blober, slot and proof type.
     pub async fn checkpoint_custom_proof(

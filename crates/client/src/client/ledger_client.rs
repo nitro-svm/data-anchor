@@ -11,9 +11,11 @@ use data_anchor_blober::{
     BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, checkpoint::Checkpoint,
     find_checkpoint_address, state::blober::Blober,
 };
-use data_anchor_utils::encoding::{DataAnchorEncoding, Decodable};
-use futures::StreamExt;
-use itertools::Itertools;
+use data_anchor_utils::{
+    compression::DataAnchorCompression,
+    encoding::{DataAnchorEncoding, Decodable},
+};
+use futures::{StreamExt, TryStreamExt};
 use solana_account_decoder_client_types::UiAccountEncoding;
 use solana_client::{
     rpc_config::{
@@ -93,9 +95,10 @@ pub enum ChainError {
     CheckpointNotUpToDate,
 }
 
-impl<Encoding> DataAnchorClient<Encoding>
+impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
 where
     Encoding: DataAnchorEncoding,
+    Compression: DataAnchorCompression,
 {
     /// Returns the raw blob data from the ledger for the given signatures.
     pub async fn get_ledger_blobs_from_signatures<T>(
@@ -171,7 +174,7 @@ where
 
         let data = get_blob_data_from_instructions(&relevant_instructions, blober, *blob)?;
 
-        Ok(Encoding::decode(&data)?)
+        self.decompress_and_decode(&data).await
     }
 
     /// Fetches all blobs finalized in a given slot from the ledger.
@@ -244,10 +247,13 @@ where
 
         // If all blobs are found, return them.
         if blobs.len() == finalized_blobs.len() {
-            return Ok(blobs
-                .values()
-                .map(|data| Encoding::decode(data))
-                .try_collect()?);
+            let blob_data = futures::stream::iter(blobs.values())
+                .map(|data| async move { self.decompress_and_decode(data).await })
+                .buffer_unordered(DEFAULT_CONCURRENCY)
+                .try_collect()
+                .await?;
+
+            return Ok(blob_data);
         }
 
         let lookback_slots = lookback_slots.unwrap_or(DEFAULT_LOOKBACK_SLOTS);
@@ -303,10 +309,11 @@ where
             }
         }
 
-        let blob_data = blobs
-            .values()
-            .map(|data| Encoding::decode(data))
-            .try_collect()?;
+        let blob_data = futures::stream::iter(blobs.values())
+            .map(|data| async move { self.decompress_and_decode(data).await })
+            .buffer_unordered(DEFAULT_CONCURRENCY)
+            .try_collect()
+            .await?;
 
         Ok(blob_data)
     }

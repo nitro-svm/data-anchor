@@ -20,6 +20,13 @@ borsh = { workspace = true, optional = true }
 postcard = { workspace = true }
 serde_json = { workspace = true }
 
+# Compression
+async-trait = { workspace = true, optional = true }
+lz4_flex = { workspace = true, optional = true }
+flate2 = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+zstd = { workspace = true, optional = true }
+
 [dev-dependencies]
 # External dependencies
 rstest = { workspace = true }
@@ -30,3 +37,10 @@ data-anchor-utils = { workspace = true, features = ["borsh"] }
 [features]
 default = []
 borsh = [ "dep:borsh" ]
+compression = [
+	"dep:async-trait",
+	"dep:flate2",
+	"dep:lz4_flex",
+	"dep:tokio",
+	"dep:zstd",
+]

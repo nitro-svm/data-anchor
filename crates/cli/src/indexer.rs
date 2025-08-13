@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
 use data_anchor_api::{CompoundInclusionProof, CustomerElf, RequestStatus, TimeRange};
 use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
-use data_anchor_utils::encoding::DataAnchorEncoding;
+use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
 use itertools::Itertools;
 use serde::Serialize;
 use tracing::instrument;
@@ -164,13 +164,14 @@ impl std::fmt::Display for IndexerCommandOutput {
 
 impl IndexerSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run<Encoding>(
+    pub async fn run<Encoding, Compression>(
         &self,
-        client: Arc<DataAnchorClient<Encoding>>,
+        client: Arc<DataAnchorClient<Encoding, Compression>>,
         blober_pda: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput>
     where
         Encoding: DataAnchorEncoding,
+        Compression: DataAnchorCompression,
     {
         match self {
             IndexerSubCommand::Blobs(SlotArgs { slot }) => {

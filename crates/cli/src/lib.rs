@@ -8,7 +8,7 @@ use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientResult};
-use data_anchor_utils::encoding;
+use data_anchor_utils::{compression, encoding};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
@@ -186,7 +186,7 @@ impl Options {
                 let Some(indexer_url) = self.indexer_url else {
                     Cli::exit_with_missing_arg(INDEXER_URL_MISSING_MSG);
                 };
-                let client = DataAnchorClient::<encoding::Default>::builder()
+                let client = DataAnchorClient::<encoding::Default, compression::Default>::builder()
                     .payer(self.payer.clone())
                     .program_id(self.program_id)
                     .indexer_from_url(&indexer_url, self.indexer_api_token.clone())
@@ -207,7 +207,7 @@ impl Options {
                 let Some(namespace) = &self.blober_pda.namespace() else {
                     Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
                 };
-                let client = DataAnchorClient::<encoding::Default>::builder()
+                let client = DataAnchorClient::<encoding::Default, compression::Default>::builder()
                     .payer(self.payer.clone())
                     .program_id(self.program_id)
                     .build_with_config(self.config)

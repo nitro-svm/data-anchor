@@ -10,7 +10,11 @@ use data_anchor_blober::{
     },
     state::blober::Blober,
 };
-use data_anchor_utils::encoding::{DataAnchorEncoding, Encodable};
+use data_anchor_utils::{
+    compression::{self, DataAnchorCompression},
+    encoding::{self, DataAnchorEncoding, Decodable, Encodable},
+};
+use futures::{StreamExt, TryStreamExt};
 use jsonrpsee::http_client::HttpClient;
 use solana_commitment_config::CommitmentConfig;
 use solana_keypair::Keypair;
@@ -21,6 +25,7 @@ use tracing::{Instrument, Span, info, info_span};
 use crate::{
     DataAnchorClientError, DataAnchorClientResult,
     batch_client::{BatchClient, SuccessfulTransaction},
+    constants::DEFAULT_CONCURRENCY,
     fees::{Fee, FeeStrategy, Lamports},
     helpers::{check_outcomes, get_unique_timestamp},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
@@ -111,9 +116,10 @@ impl BloberIdentifier {
 }
 
 #[derive(Builder, Clone)]
-pub struct DataAnchorClient<Encoding>
+pub struct DataAnchorClient<Encoding = encoding::Default, Compression = compression::Default>
 where
     Encoding: DataAnchorEncoding,
+    Compression: DataAnchorCompression,
 {
     #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
@@ -123,13 +129,16 @@ where
     pub(crate) batch_client: BatchClient,
     pub(crate) indexer_client: Option<Arc<HttpClient>>,
     pub(crate) proof_client: Option<Arc<HttpClient>>,
-    #[builder(default = std::marker::PhantomData)]
-    pub(crate) phantom: std::marker::PhantomData<Encoding>,
+    #[builder(default)]
+    pub(crate) encoding: Encoding,
+    #[builder(default)]
+    pub(crate) compression: Compression,
 }
 
-impl<Encoding> DataAnchorClient<Encoding>
+impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
 where
     Encoding: DataAnchorEncoding,
+    Compression: DataAnchorCompression,
 {
     /// Returns the underlaying [`RpcClient`].
     pub fn rpc_client(&self) -> Arc<RpcClient> {
@@ -164,6 +173,36 @@ where
             return Err(ChainError::InsufficientBalance(cost_u64, balance).into());
         }
         Ok(())
+    }
+
+    pub async fn encode_and_compress<T>(&self, data: &T) -> DataAnchorClientResult<Vec<u8>>
+    where
+        T: Encodable,
+    {
+        let encoded_data = self.encoding.encode(data)?;
+        Ok(self.compression.compress(&encoded_data).await?)
+    }
+
+    pub async fn decompress_and_decode<T>(&self, bytes: &[u8]) -> DataAnchorClientResult<T>
+    where
+        T: Decodable,
+    {
+        let decompressed_data = self.compression.decompress(bytes).await?;
+        Ok(self.encoding.decode(&decompressed_data)?)
+    }
+
+    pub async fn decompress_and_decode_vec<T>(
+        &self,
+        slice_of_bytes: impl Iterator<Item = &[u8]>,
+    ) -> DataAnchorClientResult<Vec<T>>
+    where
+        T: Decodable,
+    {
+        futures::stream::iter(slice_of_bytes)
+            .map(|blob| async move { self.decompress_and_decode(blob).await })
+            .buffer_unordered(DEFAULT_CONCURRENCY)
+            .try_collect()
+            .await
     }
 
     /// Initializes a new [`Blober`] PDA account.
@@ -323,14 +362,14 @@ where
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
         let timestamp = get_unique_timestamp();
 
-        let encoded_data = Encoding::encode(blob_data)?;
+        let encoded_and_compressed = self.encode_and_compress(blob_data).await?;
 
         let blob = find_blob_address(
             self.program_id,
             self.payer.pubkey(),
             blober,
             timestamp,
-            encoded_data.len(),
+            encoded_and_compressed.len(),
         );
 
         let in_mock_env = self.in_mock_env();
@@ -339,7 +378,7 @@ where
         }
 
         let fee = self
-            .estimate_fees(encoded_data.len(), blober, fee_strategy)
+            .estimate_fees(encoded_and_compressed.len(), blober, fee_strategy)
             .await?;
 
         if !in_mock_env {
@@ -351,7 +390,13 @@ where
         }
 
         let upload_messages = self
-            .generate_messages(blob, timestamp, &encoded_data, fee_strategy, blober)
+            .generate_messages(
+                blob,
+                timestamp,
+                &encoded_and_compressed,
+                fee_strategy,
+                blober,
+            )
             .await?;
 
         let res = self

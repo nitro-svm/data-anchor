@@ -7,7 +7,7 @@ use data_anchor_blober::checkpoint::Checkpoint;
 use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
 };
-use data_anchor_utils::encoding::DataAnchorEncoding;
+use data_anchor_utils::{compression::DataAnchorCompression, encoding::DataAnchorEncoding};
 use serde::{Serialize, ser::SerializeStruct};
 use tracing::{info, instrument};
 
@@ -155,15 +155,16 @@ impl std::fmt::Display for BloberCommandOutput {
 
 impl BloberSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run<Encoding>(
+    pub async fn run<Encoding, Compression>(
         &self,
-        client: Arc<DataAnchorClient<Encoding>>,
+        client: Arc<DataAnchorClient<Encoding, Compression>>,
         identifier: BloberIdentifier,
         program_id: Pubkey,
         payer: Pubkey,
     ) -> DataAnchorClientResult<CommandOutput>
     where
         Encoding: DataAnchorEncoding,
+        Compression: DataAnchorCompression,
     {
         let mut blobers = Vec::new();
         let mut checkpoint = None;
