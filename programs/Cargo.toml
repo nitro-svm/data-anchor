@@ -3,7 +3,7 @@ members = ["programs/blober", "programs/verifiers/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.7"
+version = "0.2.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
@@ -32,7 +32,7 @@ anchor-lang = "=0.31.1"
 sp1-solana = { git = "https://github.com/succinctlabs/sp1-solana" }
 
 # Locals
-data-anchor-blober = { path = "./programs/blober", version = "0.1.7", default-features = false }
+data-anchor-blober = { path = "./programs/blober", version = "0.2.0", default-features = false }
 
 [profile.release]
 overflow-checks = true

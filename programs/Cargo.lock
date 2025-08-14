@@ -1434,7 +1434,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-blober"
-version = "0.1.7"
+version = "0.2.0"
 dependencies = [
  "anchor-lang",
  "bincode",
@@ -1452,7 +1452,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-data-correctness-verifier"
-version = "0.1.7"
+version = "0.2.0"
 dependencies = [
  "anchor-lang",
  "data-anchor-blober",
@@ -1460,7 +1460,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-dawn-sla-verifier"
-version = "0.1.7"
+version = "0.2.0"
 dependencies = [
  "anchor-lang",
  "bincode",
