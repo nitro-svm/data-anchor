@@ -1,5 +1,7 @@
 set unstable := true
 
+export DATABASE_URL := env("DATABASE_URL", "postgres://postgres:secret@localhost:5432/postgres")
+
 # The Pubkey of the payer account for image building
 
 export PAYER_PUBKEY := "2MCVmcuUcREwQKDS3HazuYctkkbZV3XRMspM5eLWRZUV"
@@ -30,7 +32,10 @@ lint-programs:
 # Run lint and formatting checks for the entire project
 [group('lint')]
 lint: lint-programs fmt-justfile fmt-tofu build-prover
+    #!/usr/bin/env bash
+    set -euxo pipefail
     cargo +nightly fmt -- --check
+    unset DATABASE_URL
     cargo clippy --all-targets --all-features
     zepter
 
@@ -74,6 +79,9 @@ test-compute-unit-limit:
 # Run tests for the crates in the workspace
 [group('test')]
 test:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    unset DATABASE_URL
     cargo nextest run --workspace
 
 # Run tests for the entire project
