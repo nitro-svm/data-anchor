@@ -7,10 +7,10 @@ use data_anchor_blober::{
     state::blober::Blober,
 };
 
-declare_id!("A4Ks3ivLsBVvysaf6BMTNjdcvig1Ti8cSkoMBqYDdsGF");
+declare_id!("3mZEYiiZQX8eprTzUex2fnKLqxwRDbhcz5pm8PDsZwUG");
 
 #[program]
-pub mod data_anchor_dawn_sla_verifier {
+pub mod data_anchor_data_correctness_verifier {
 
     use super::*;
 
@@ -25,15 +25,6 @@ pub mod data_anchor_dawn_sla_verifier {
 
         #[cfg(feature = "sp1")]
         checkpoint.verify_zk_proof()?;
-
-        let sla_bytes = checkpoint
-            .non_base_commitments()
-            .ok_or_else(|| error!(DawnSlaError::NoSlaCommitmentsFound))?;
-
-        let sla_score: f64 = bincode::deserialize(sla_bytes)
-            .map_err(|_| error!(DawnSlaError::InvalidSlaScoreFormat))?;
-
-        require_gte!(sla_score, 0.0, DawnSlaError::InvalidScore);
 
         checkpoint.cpi_create_checkpoint(
             ctx.accounts.blober.key(),
@@ -104,14 +95,4 @@ impl<'info> From<&mut Verify<'info>>
             system_program: verify.system_program.to_account_info(),
         }
     }
-}
-
-#[error_code]
-pub enum DawnSlaError {
-    #[msg("No SLA commitments found in public values")]
-    NoSlaCommitmentsFound,
-    #[msg("Invalid SLA score format")]
-    InvalidSlaScoreFormat,
-    #[msg("Invalid SLA score, must be greater than or equal to 0")]
-    InvalidScore,
 }

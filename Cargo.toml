@@ -108,10 +108,10 @@ data-anchor-proofs = { path = "crates/proofs", version = "0.4.0" }
 data-anchor-blober = { path = "programs/programs/blober", version = "0.2.0", default-features = false, features = [
   "no-entrypoint",
 ] }
-data-anchor-data-correctness-verifier = { path = "programs/programs/verifiers/data-correctness", default-features = false, features = [
+data-anchor-data-correctness-verifier = { path = "programs/programs/data-correctness", default-features = false, features = [
   "no-entrypoint",
 ] }
-data-anchor-dawn-sla-verifier = { path = "programs/programs/verifiers/dawn-sla", default-features = false, features = [
+data-anchor-dawn-sla-verifier = { path = "programs/programs/dawn-sla", default-features = false, features = [
   "no-entrypoint",
 ] }
 data-anchor-prover = { path = "crates/prover" }

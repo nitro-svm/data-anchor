@@ -69,6 +69,9 @@ lint-fix: lint-programs-fix fmt-justfile-fix fmt-tofu-fix build-prover
 [group('test')]
 [working-directory('programs')]
 test-programs: build-programs
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    unset DATABASE_URL
     cargo nextest run --workspace
 
 # Run compute budget tests for transaction fees
