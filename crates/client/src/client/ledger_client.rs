@@ -17,11 +17,8 @@ use data_anchor_utils::{
 };
 use futures::{StreamExt, TryStreamExt};
 use solana_account_decoder_client_types::UiAccountEncoding;
-use solana_client::{
-    rpc_config::{
-        RpcAccountInfoConfig, RpcBlockConfig, RpcProgramAccountsConfig, RpcTransactionConfig,
-    },
-    rpc_filter::{Memcmp, RpcFilterType},
+use solana_client::rpc_config::{
+    RpcAccountInfoConfig, RpcBlockConfig, RpcProgramAccountsConfig, RpcTransactionConfig,
 };
 use solana_rpc_client_api::client_error::Error;
 use solana_signature::Signature;
@@ -399,10 +396,6 @@ where
             .get_program_accounts_with_config(
                 &self.program_id,
                 RpcProgramAccountsConfig {
-                    filters: Some(vec![RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
-                        0,
-                        Blober::DISCRIMINATOR.to_vec(),
-                    ))]),
                     account_config: RpcAccountInfoConfig {
                         encoding: Some(UiAccountEncoding::Base64),
                         ..Default::default()
@@ -415,8 +408,12 @@ where
         Ok(blobers
             .into_iter()
             .filter_map(|(pubkey, account)| {
-                let state = account.data.get(Blober::DISCRIMINATOR.len()..)?;
-                let blober_state = Blober::try_from_slice(state).ok()?;
+                if !account.data.starts_with(Blober::DISCRIMINATOR) {
+                    return None;
+                }
+
+                let mut state = account.data.get(Blober::DISCRIMINATOR.len()..)?;
+                let blober_state = Blober::deserialize(&mut state).ok()?;
 
                 (blober_state.caller == self.payer.pubkey()).then_some(BloberWithNamespace {
                     address: pubkey.into(),
