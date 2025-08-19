@@ -29,7 +29,7 @@ solana-test-validator = "=2.1.6"
 anchor-lang = "=0.31.1"
 
 # SP1
-sp1-solana = { git = "https://github.com/succinctlabs/sp1-solana" }
+sp1-solana = "=0.1.0"
 
 # Locals
 data-anchor-blober = { path = "./programs/blober", version = "0.2.0", default-features = false }

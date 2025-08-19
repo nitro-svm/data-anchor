@@ -77,6 +77,9 @@ test-programs: build-programs
 # Run compute budget tests for transaction fees
 [group('test')]
 test-compute-unit-limit:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    unset DATABASE_URL
     cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
 
 # Run tests for the crates in the workspace
@@ -135,6 +138,9 @@ pre-push: lint-fix test-all sqlx-prepare
 [group('build')]
 [working-directory('programs')]
 build-programs:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    unset DATABASE_URL
     anchor build --no-idl
 
 # Build the prover script
@@ -256,6 +262,7 @@ docker-run:
 [working-directory('.github/workflows/db')]
 docker-run-db:
     docker compose -f ./no-tls-db.yml up -d --wait --force-recreate
+    @sleep 2
 
 # Stop the docker db
 [group('docker')]
