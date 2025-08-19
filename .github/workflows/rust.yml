@@ -51,6 +51,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   RUSTFLAGS: -D warnings
   # This is faster for CI: https://github.com/dtolnay/rust-toolchain/issues/26.
   CARGO_INCREMENTAL: "0"
