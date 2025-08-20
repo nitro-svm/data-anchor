@@ -15,7 +15,7 @@ exclude = ["programs"]
 
 [workspace.package]
 edition = "2024"
-version = "0.4.0"
+version = "0.4.1"
 license = "MIT OR Apache-2.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
@@ -100,11 +100,11 @@ sp1-sdk = "5.1.0"
 sp1-zkvm = "5.1.0"
 
 # Locals
-data-anchor = { path = "crates/cli", version = "0.4.0" }
-data-anchor-api = { path = "crates/indexer-api", version = "0.4.0" }
-data-anchor-client = { path = "crates/client", version = "0.4.0" }
+data-anchor = { path = "crates/cli", version = "0.4.1" }
+data-anchor-api = { path = "crates/indexer-api", version = "0.4.1" }
+data-anchor-client = { path = "crates/client", version = "0.4.1" }
 data-anchor-indexer = { path = "crates/indexer" }
-data-anchor-proofs = { path = "crates/proofs", version = "0.4.0" }
+data-anchor-proofs = { path = "crates/proofs", version = "0.4.1" }
 data-anchor-blober = { path = "programs/programs/blober", version = "0.2.0", default-features = false, features = [
   "no-entrypoint",
 ] }
@@ -116,7 +116,7 @@ data-anchor-dawn-sla-verifier = { path = "programs/programs/dawn-sla", default-f
 ] }
 data-anchor-prover = { path = "crates/prover" }
 data-anchor-prover-core = { path = "crates/prover/programs/core" }
-data-anchor-utils = { path = "crates/utils", version = "0.4.0" }
+data-anchor-utils = { path = "crates/utils", version = "0.4.1" }
 
 [patch.crates-io]
 getrandom_v0_1 = { package = "getrandom", git = "https://github.com/nitro-svm/getrandom", branch = "0.1-zkvm" }

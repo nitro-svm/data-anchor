@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-proofs-v0.4.0...data-anchor-proofs-v0.4.1) - 2025-08-19
+
+### Added
+
+- Add initial checkpoint PDA ([#280](https://github.com/nitro-svm/data-anchor/pull/280))
+- Add prover program and proof generation script ([#272](https://github.com/nitro-svm/data-anchor/pull/272))
+- Strip down proof system ([#268](https://github.com/nitro-svm/data-anchor/pull/268))
+
+### Other
+
+- Clean up all dependencies ([#302](https://github.com/nitro-svm/data-anchor/pull/302))
+- Remove solana_sdk everywhere (almost) ([#301](https://github.com/nitro-svm/data-anchor/pull/301))
+- Use solana_pubkey instead of solana_sdk Pubkey import ([#296](https://github.com/nitro-svm/data-anchor/pull/296))
+- Add no change proof test ([#290](https://github.com/nitro-svm/data-anchor/pull/290))
+
 ## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-proofs-v0.3.1...data-anchor-proofs-v0.4.0) - 2025-07-10
 
 ### Other

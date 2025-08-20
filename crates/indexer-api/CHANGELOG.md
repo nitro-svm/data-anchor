@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-api-v0.4.0...data-anchor-api-v0.4.1) - 2025-08-19
+
+### Added
+
+- Add foot-gun protection against early blober closing ([#310](https://github.com/nitro-svm/data-anchor/pull/310))
+- Improve end-to-end test and fix bugs discovered by it ([#308](https://github.com/nitro-svm/data-anchor/pull/308))
+- Add proof request status query ([#305](https://github.com/nitro-svm/data-anchor/pull/305))
+- Add proof posting on-chain after ZK generation ([#303](https://github.com/nitro-svm/data-anchor/pull/303))
+- Add client and CLI methods for checkpoint handling ([#281](https://github.com/nitro-svm/data-anchor/pull/281))
+- Add initial checkpoint PDA ([#280](https://github.com/nitro-svm/data-anchor/pull/280))
+- Add prover program and proof generation script ([#272](https://github.com/nitro-svm/data-anchor/pull/272))
+- Strip down proof system ([#268](https://github.com/nitro-svm/data-anchor/pull/268))
+
+### Other
+
+- Clean up all dependencies ([#302](https://github.com/nitro-svm/data-anchor/pull/302))
+- Use solana_transaction instead of solana_sdk Transaction import ([#299](https://github.com/nitro-svm/data-anchor/pull/299))
+- Use solana_pubkey instead of solana_sdk Pubkey import ([#296](https://github.com/nitro-svm/data-anchor/pull/296))
+- Make time range param consistently optional ([#283](https://github.com/nitro-svm/data-anchor/pull/283))
+- Add health check endpoint ([#267](https://github.com/nitro-svm/data-anchor/pull/267))
+
 ## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-api-v0.3.1...data-anchor-api-v0.4.0) - 2025-07-10
 
 ### Added

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.0...data-anchor-v0.4.1) - 2025-08-19
+
+### Added
+
+- Add SP1 support for compression ([#326](https://github.com/nitro-svm/data-anchor/pull/326))
+- Add compression support to client ([#315](https://github.com/nitro-svm/data-anchor/pull/315))
+- Add encoding support to client ([#314](https://github.com/nitro-svm/data-anchor/pull/314))
+- Improve end-to-end test and fix bugs discovered by it ([#308](https://github.com/nitro-svm/data-anchor/pull/308))
+- Add proof request status query ([#305](https://github.com/nitro-svm/data-anchor/pull/305))
+- Add proof posting on-chain after ZK generation ([#303](https://github.com/nitro-svm/data-anchor/pull/303))
+- Add verifiers and improve checkpointing ([#294](https://github.com/nitro-svm/data-anchor/pull/294))
+- Add client and CLI methods for checkpoint handling ([#281](https://github.com/nitro-svm/data-anchor/pull/281))
+- Strip down proof system ([#268](https://github.com/nitro-svm/data-anchor/pull/268))
+- Use vanity address for blober program ([#266](https://github.com/nitro-svm/data-anchor/pull/266))
+
+### Other
+
+- Benchmark cleanup ([#312](https://github.com/nitro-svm/data-anchor/pull/312))
+- Add list payers command and improve e2e script ([#306](https://github.com/nitro-svm/data-anchor/pull/306))
+- Clean up all dependencies ([#302](https://github.com/nitro-svm/data-anchor/pull/302))
+- Remove solana_sdk everywhere (almost) ([#301](https://github.com/nitro-svm/data-anchor/pull/301))
+- Use solana_clock instead of solana_sdk Slot import ([#300](https://github.com/nitro-svm/data-anchor/pull/300))
+- Use solana_signer instead of solana_sdk Signer import ([#298](https://github.com/nitro-svm/data-anchor/pull/298))
+- Use solana_keypair instead of solana_sdk Keypair import ([#297](https://github.com/nitro-svm/data-anchor/pull/297))
+- Use solana_pubkey instead of solana_sdk Pubkey import ([#296](https://github.com/nitro-svm/data-anchor/pull/296))
+- Make time range param consistently optional ([#283](https://github.com/nitro-svm/data-anchor/pull/283))
+
 ## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.3.1...data-anchor-v0.4.0) - 2025-07-10
 
 ### Added
