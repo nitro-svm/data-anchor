@@ -290,7 +290,7 @@ apply-staging: initialize-workspace
     RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
 
     tofu apply \
-        -var-file="environments/devnet.tfvars" \
+        -var-file="environments/staging.tfvars" \
         -var="release_id=${RELEASE}"
 
 # Apply devnet infrastructure
