@@ -17,8 +17,9 @@ use data_anchor_prover::{
     setup_prover_input,
 };
 use data_anchor_utils::{
-    compression, encode_and_compress,
-    encoding::{self, DataAnchorEncoding},
+    compression::{CompressionType, ZstdCompression},
+    encode_and_compress,
+    encoding::EncodingType,
 };
 use itertools::iproduct;
 use rand::{RngCore, rngs::OsRng};
@@ -32,40 +33,12 @@ struct Config {
     pub verify: bool,
 }
 
-fn match_compression<Encoding>(encoding: &Encoding, compression: &str, data: &[u8]) -> Vec<u8>
-where
-    Encoding: DataAnchorEncoding,
-{
-    let data = data.to_vec();
-    match compression {
-        "default_compression" => {
-            encode_and_compress(encoding, &compression::Default, &data).unwrap()
-        }
-        "zstd_compression" => {
-            encode_and_compress(encoding, &compression::ZstdCompression::default(), &data).unwrap()
-        }
-        "no_compression" => {
-            encode_and_compress(encoding, &compression::NoCompression, &data).unwrap()
-        }
-        "flate2_compression" => {
-            encode_and_compress(encoding, &compression::Flate2Compression, &data).unwrap()
-        }
-        "lz4_compression" => {
-            encode_and_compress(encoding, &compression::Lz4Compression, &data).unwrap()
-        }
-        _ => panic!("Unknown compression: {compression}"),
-    }
-}
-
-fn generate_inputs<Encoding>(
+fn generate_inputs(
     slots: u64,
     max_blob_size: u16,
-    encoding: &Encoding,
-    compression: &str,
-) -> Result<(CompoundInclusionProof, VerifyArgs, usize), Box<dyn std::error::Error>>
-where
-    Encoding: DataAnchorEncoding,
-{
+    encoding: &EncodingType,
+    compression: &CompressionType,
+) -> Result<(CompoundInclusionProof, VerifyArgs, usize), Box<dyn std::error::Error>> {
     let mut seed = vec![0u8; 50];
     OsRng.fill_bytes(&mut seed);
     let mut u = arbitrary::Unstructured::new(&seed);
@@ -86,9 +59,7 @@ where
                 blob = blob[..blob_size as usize].to_vec();
             }
 
-            println!("Generating blob of size: {}", blob.len());
-            let blob = match_compression(encoding, compression, &blob);
-            println!("Compressed blob size: {}", blob.len());
+            let blob = encode_and_compress(encoding, compression, &blob).unwrap();
 
             let mut chunks = blob
                 .chunks(CHUNK_SIZE as usize)
@@ -210,8 +181,12 @@ where
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let slots = 31 * 3;
     let max_blob_size = COMPOUND_TX_SIZE;
-    let (compound_inclusion_proof, args, blob_proof_count) =
-        generate_inputs(slots, max_blob_size, &encoding::Json, "no_compression")?;
+    let (compound_inclusion_proof, args, blob_proof_count) = generate_inputs(
+        slots,
+        max_blob_size,
+        &EncodingType::Json,
+        &CompressionType::NoCompression,
+    )?;
 
     utils::setup_logger();
 
@@ -246,33 +221,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let matrix = iproduct!(
         [
-            "default_compression",
-            "zstd_compression",
-            "no_compression",
-            "flate2_compression",
-            "lz4_compression"
+            CompressionType::default(),
+            CompressionType::ZstdCompression(ZstdCompression::default().0),
+            CompressionType::NoCompression,
+            CompressionType::Flate2Compression,
+            CompressionType::Lz4Compression,
         ],
-        ["default_encoding", "postcard", "bincode", "borsh", "json"]
+        [
+            EncodingType::default(),
+            EncodingType::Postcard,
+            EncodingType::Bincode,
+            EncodingType::Borsh,
+            EncodingType::Json
+        ]
     );
 
-    for (compression_str, encoding) in matrix {
-        let (compound_inclusion_proof, args, blob_proof_count) = match encoding {
-            "default_encoding" => {
-                generate_inputs(slots, max_blob_size, &encoding::Default, compression_str)?
-            }
-            "postcard" => {
-                generate_inputs(slots, max_blob_size, &encoding::Postcard, compression_str)?
-            }
-            "bincode" => {
-                generate_inputs(slots, max_blob_size, &encoding::Bincode, compression_str)?
-            }
-            "borsh" => generate_inputs(slots, max_blob_size, &encoding::Borsh, compression_str)?,
-            "json" => generate_inputs(slots, max_blob_size, &encoding::Json, compression_str)?,
-            _ => panic!("Unknown encoding: {encoding}"),
-        };
+    for (compression, encoding) in matrix {
+        let (compound_inclusion_proof, args, blob_proof_count) =
+            generate_inputs(slots, max_blob_size, &encoding, &compression)?;
         let mut inputs = setup_prover_input(&compound_inclusion_proof, &args);
-        inputs.write(&encoding.to_owned());
-        inputs.write(&compression_str.to_owned());
+        inputs.write(&encoding);
+        inputs.write(&compression);
 
         let client = ProverClient::from_env();
 
@@ -282,7 +251,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let size = ByteSize(public_values.as_slice().len() as u64);
         output.push_str(&format!(
-            "\n{slots},{blob_proof_count},{},{size},{},{},ENCODING_COMPRESSION_TEST_{compression_str}_{encoding}",
+            "\n{slots},{blob_proof_count},{},{size},{},{},ENCODING_COMPRESSION_TEST_{compression}_{encoding}",
             report
                 .cycle_tracker
                 .iter()

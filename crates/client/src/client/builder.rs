@@ -1,6 +1,5 @@
 use std::{str::FromStr, sync::Arc};
 
-use data_anchor_utils::{compression::DataAnchorCompressionAsync, encoding::DataAnchorEncoding};
 use jsonrpsee::{http_client::HttpClientBuilder, ws_client::HeaderMap};
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -14,10 +13,8 @@ use crate::{
     },
 };
 
-impl<Encoding, Compression, State> DataAnchorClientBuilder<Encoding, Compression, State>
+impl<State> DataAnchorClientBuilder<State>
 where
-    Encoding: DataAnchorEncoding + Default,
-    Compression: DataAnchorCompressionAsync,
     State: data_anchor_client_builder::State,
 {
     /// Adds an indexer client to the builder based on the given indexer URL and optional API token.
@@ -35,9 +32,7 @@ where
         self,
         indexer_url: &str,
         indexer_api_token: Option<String>,
-    ) -> DataAnchorClientResult<
-        DataAnchorClientBuilder<Encoding, Compression, SetProofClient<SetIndexerClient<State>>>,
-    >
+    ) -> DataAnchorClientResult<DataAnchorClientBuilder<SetProofClient<SetIndexerClient<State>>>>
     where
         State::IndexerClient: IsUnset,
         State::ProofClient: IsUnset,
@@ -99,7 +94,7 @@ where
     pub async fn build_with_config(
         self,
         solana_config: Config,
-    ) -> DataAnchorClientResult<DataAnchorClient<Encoding, Compression>>
+    ) -> DataAnchorClientResult<DataAnchorClient>
     where
         State::Payer: IsSet,
         State::ProgramId: IsSet,

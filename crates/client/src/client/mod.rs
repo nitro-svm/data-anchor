@@ -11,9 +11,9 @@ use data_anchor_blober::{
     state::blober::Blober,
 };
 use data_anchor_utils::{
-    compression::{self, DataAnchorCompressionAsync},
+    compression::CompressionType,
     decompress_and_decode_async, encode_and_compress_async,
-    encoding::{self, DataAnchorEncoding, Decodable, Encodable},
+    encoding::{Decodable, Encodable, EncodingType},
 };
 use futures::{StreamExt, TryStreamExt};
 use jsonrpsee::http_client::HttpClient;
@@ -117,11 +117,7 @@ impl BloberIdentifier {
 }
 
 #[derive(Builder, Clone)]
-pub struct DataAnchorClient<Encoding = encoding::Default, Compression = compression::Default>
-where
-    Encoding: DataAnchorEncoding + Default,
-    Compression: DataAnchorCompressionAsync,
-{
+pub struct DataAnchorClient {
     #[builder(getter(name = get_payer, vis = ""))]
     pub(crate) payer: Arc<Keypair>,
     #[builder(default = data_anchor_blober::id())]
@@ -131,16 +127,12 @@ where
     pub(crate) indexer_client: Option<Arc<HttpClient>>,
     pub(crate) proof_client: Option<Arc<HttpClient>>,
     #[builder(default)]
-    pub(crate) encoding: Encoding,
+    pub(crate) encoding: EncodingType,
     #[builder(default)]
-    pub(crate) compression: Compression,
+    pub(crate) compression: CompressionType,
 }
 
-impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
-where
-    Encoding: DataAnchorEncoding + Default,
-    Compression: DataAnchorCompressionAsync,
-{
+impl DataAnchorClient {
     /// Returns the underlaying [`RpcClient`].
     pub fn rpc_client(&self) -> Arc<RpcClient> {
         self.rpc_client.clone()
@@ -187,7 +179,7 @@ where
     where
         T: Decodable,
     {
-        Ok(decompress_and_decode_async(&self.encoding, &self.compression, bytes).await?)
+        Ok(decompress_and_decode_async(bytes).await?)
     }
 
     pub async fn decompress_and_decode_vec<T>(

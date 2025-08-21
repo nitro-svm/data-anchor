@@ -9,7 +9,7 @@ use anchor_lang::{
 };
 use async_trait::async_trait;
 use data_anchor_blober::find_blober_address;
-use data_anchor_utils::{compression, encoding};
+use data_anchor_utils::encode_and_compress_async;
 use itertools::Itertools;
 use rand::Rng;
 use solana_client::{
@@ -92,13 +92,12 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
     let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
         .await
         .unwrap();
-    let data_anchor_client =
-        DataAnchorClient::<encoding::Default, compression::NoCompression>::builder()
-            .payer(payer.clone())
-            .program_id(data_anchor_blober::id())
-            .rpc_client(blober_rpc_client.clone())
-            .batch_client(batch_client)
-            .build();
+    let data_anchor_client = DataAnchorClient::builder()
+        .payer(payer.clone())
+        .program_id(data_anchor_blober::id())
+        .rpc_client(blober_rpc_client.clone())
+        .batch_client(batch_client)
+        .build();
 
     let namespace = "test".to_owned();
     let blober_pubkey = find_blober_address(data_anchor_blober::id(), payer.pubkey(), &namespace);
@@ -135,10 +134,15 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .take(200 * 1024)
         .collect::<Vec<_>>();
 
+    let encoded_and_compressed =
+        encode_and_compress_async(&Default::default(), &Default::default(), &data)
+            .await
+            .unwrap();
+
     // Retry in case of unreliable client
     let expected_fee = loop {
         let res = data_anchor_client
-            .estimate_fees(data.len(), blober_pubkey, fee_strategy)
+            .estimate_fees(encoded_and_compressed.len(), blober_pubkey, fee_strategy)
             .await;
         if let Ok(fee) = res {
             break fee;
@@ -174,9 +178,9 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
             expected_fee.total_fee()
         );
         assert!(
-            // The fee is not exact, but should be within 1000 lamports.
+            // The fee is not exact, but should be within 1_000 lamports.
             balance_after.abs_diff(balance_before - expected_fee.total_fee().into_inner() as u64)
-                < 1000,
+                < 1_000,
         );
     }
 
@@ -219,13 +223,12 @@ async fn failing_upload_returns_error() {
             .await
             .unwrap();
     // Give a successful RPC client to the DataAnchorClient to allow other calls to succeed.
-    let data_anchor_client =
-        DataAnchorClient::<encoding::Default, compression::NoCompression>::builder()
-            .payer(payer)
-            .program_id(Pubkey::new_unique())
-            .rpc_client(successful_rpc_client.clone())
-            .batch_client(batch_client)
-            .build();
+    let data_anchor_client = DataAnchorClient::builder()
+        .payer(payer)
+        .program_id(Pubkey::new_unique())
+        .rpc_client(successful_rpc_client.clone())
+        .batch_client(batch_client)
+        .build();
 
     // Useful for spotting the blob data in the transaction ledger.
     let data: Vec<u8> = [0xDE, 0xAD, 0xBE, 0xEF]

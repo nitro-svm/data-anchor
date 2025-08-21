@@ -42,6 +42,7 @@ mod tests {
     )]
     #[case::lz4_compression(Lz4Compression, true)]
     #[case::flate2_compression(Flate2Compression, true)]
+    #[case::compression_type(CompressionType::default(), true)]
     #[tokio::test]
     async fn test_compression_decompression<C>(
         #[case] compression: C,
@@ -54,7 +55,12 @@ mod tests {
         let compressed_data = compression.compress_async(&data).await.unwrap();
         // When size is less than 24, compression does not reduce size
         if should_be_compressed && size >= 24 {
-            assert!(compressed_data.len() < data.len());
+            assert!(
+                compressed_data.len() < data.len() + 1,
+                "Compressed data should be smaller than original data plus the compression type byte: {} >= {}",
+                compressed_data.len(),
+                data.len() + 1
+            );
         } else {
             assert!(compressed_data.len() >= data.len());
         }

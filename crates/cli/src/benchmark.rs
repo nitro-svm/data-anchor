@@ -15,7 +15,6 @@ use data_anchor_client::{
     ChainError, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
     Priority,
 };
-use data_anchor_utils::{compression::DataAnchorCompressionAsync, encoding::DataAnchorEncoding};
 use futures::StreamExt;
 use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
@@ -93,15 +92,11 @@ impl std::fmt::Display for BenchmarkCommandOutput {
 
 impl BenchmarkSubCommand {
     #[instrument(skip(client), level = "debug")]
-    pub async fn run<Encoding, Compression>(
+    pub async fn run(
         &self,
-        client: Arc<DataAnchorClient<Encoding, Compression>>,
+        client: Arc<DataAnchorClient>,
         namespace: &str,
-    ) -> DataAnchorClientResult<CommandOutput>
-    where
-        Encoding: DataAnchorEncoding + Default,
-        Compression: DataAnchorCompressionAsync,
-    {
+    ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BenchmarkSubCommand::GenerateData {
                 data_path,
@@ -263,18 +258,14 @@ async fn generate_data(
 }
 
 /// Measures the performance of the blober.
-async fn measure_performance<Encoding, Compression>(
+async fn measure_performance(
     data_path: &Path,
     timeout: u64,
     concurrency: u64,
     priority: Priority,
-    client: Arc<DataAnchorClient<Encoding, Compression>>,
+    client: Arc<DataAnchorClient>,
     namespace: &str,
-) -> DataAnchorClientResult<BenchMeasurement>
-where
-    Encoding: DataAnchorEncoding + Default,
-    Compression: DataAnchorCompressionAsync,
-{
+) -> DataAnchorClientResult<BenchMeasurement> {
     let reads = data_path
         .read_dir()?
         .filter_map(|entry| {

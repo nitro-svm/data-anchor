@@ -11,10 +11,7 @@ use data_anchor_blober::{
     BLOB_ACCOUNT_INSTRUCTION_IDX, BLOB_BLOBER_INSTRUCTION_IDX, checkpoint::Checkpoint,
     find_checkpoint_address, state::blober::Blober,
 };
-use data_anchor_utils::{
-    compression::DataAnchorCompressionAsync,
-    encoding::{DataAnchorEncoding, Decodable},
-};
+use data_anchor_utils::encoding::Decodable;
 use futures::{StreamExt, TryStreamExt};
 use solana_account_decoder_client_types::UiAccountEncoding;
 use solana_client::rpc_config::{
@@ -92,11 +89,7 @@ pub enum ChainError {
     CheckpointNotUpToDate,
 }
 
-impl<Encoding, Compression> DataAnchorClient<Encoding, Compression>
-where
-    Encoding: DataAnchorEncoding + Default,
-    Compression: DataAnchorCompressionAsync,
-{
+impl DataAnchorClient {
     /// Returns the raw blob data from the ledger for the given signatures.
     pub async fn get_ledger_blobs_from_signatures<T>(
         &self,

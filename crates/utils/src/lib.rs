@@ -17,14 +17,12 @@ mod wrapper {
     pub type DataAnchorUtilsResult<T = ()> = Result<T, DataAnchorUtilsError>;
 
     /// Utility functions for encoding and compression in Data Anchor.
-    pub fn encode_and_compress<Encoding, Compression, T>(
-        encoding: &Encoding,
-        compression: &Compression,
+    pub fn encode_and_compress<T>(
+        encoding: &EncodingType,
+        compression: &CompressionType,
         data: &T,
     ) -> DataAnchorUtilsResult<Vec<u8>>
     where
-        Encoding: crate::encoding::DataAnchorEncoding,
-        Compression: crate::compression::DataAnchorCompression,
         T: crate::encoding::Encodable,
     {
         let encoded_data = encoding.encode(data)?;
@@ -32,32 +30,29 @@ mod wrapper {
     }
 
     /// Utility function to decompress and decode data in Data Anchor.
-    pub fn decompress_and_decode<Encoding, T>(
-        encoding: &Encoding,
-        compression: &dyn crate::compression::DataAnchorCompression,
-        data: &[u8],
-    ) -> DataAnchorUtilsResult<T>
+    pub fn decompress_and_decode<T>(data: &[u8]) -> DataAnchorUtilsResult<T>
     where
-        Encoding: crate::encoding::DataAnchorEncoding,
         T: crate::encoding::Decodable,
     {
-        let decompressed_data = compression.decompress(data)?;
-        Ok(encoding.decode(&decompressed_data)?)
+        let decompressed_data = CompressionType::default().decompress(data)?;
+        Ok(EncodingType::default().decode(&decompressed_data)?)
     }
 
     #[cfg(feature = "async")]
     mod _async {
         use super::DataAnchorUtilsResult;
+        use crate::{
+            compression::{CompressionType, DataAnchorCompressionAsync},
+            encoding::{DataAnchorEncoding, EncodingType},
+        };
 
         /// Utility functions for encoding and compression in Data Anchor.
-        pub async fn encode_and_compress_async<Encoding, Compression, T>(
-            encoding: &Encoding,
-            compression: &Compression,
+        pub async fn encode_and_compress_async<T>(
+            encoding: &EncodingType,
+            compression: &CompressionType,
             data: &T,
         ) -> DataAnchorUtilsResult<Vec<u8>>
         where
-            Encoding: crate::encoding::DataAnchorEncoding,
-            Compression: crate::compression::DataAnchorCompressionAsync,
             T: crate::encoding::Encodable,
         {
             let encoded_data = encoding.encode(data)?;
@@ -65,23 +60,22 @@ mod wrapper {
         }
 
         /// Utility function to decompress and decode data in Data Anchor.
-        pub async fn decompress_and_decode_async<Encoding, Compression, T>(
-            encoding: &Encoding,
-            compression: &Compression,
-            data: &[u8],
-        ) -> DataAnchorUtilsResult<T>
+        pub async fn decompress_and_decode_async<T>(data: &[u8]) -> DataAnchorUtilsResult<T>
         where
-            Encoding: crate::encoding::DataAnchorEncoding,
-            Compression: crate::compression::DataAnchorCompressionAsync,
             T: crate::encoding::Decodable,
         {
-            let decompressed_data = compression.decompress_async(data).await?;
-            Ok(encoding.decode(&decompressed_data)?)
+            let decompressed_data = CompressionType::default().decompress_async(data).await?;
+            Ok(EncodingType::default().decode(&decompressed_data)?)
         }
     }
 
     #[cfg(feature = "async")]
     pub use _async::*;
+
+    use crate::{
+        compression::{CompressionType, DataAnchorCompression},
+        encoding::{DataAnchorEncoding, EncodingType},
+    };
 }
 
 #[cfg(feature = "compression")]
