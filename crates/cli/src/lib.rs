@@ -203,6 +203,23 @@ impl Options {
                     )
                     .await
             }
+            Command::Blober(subcommand) => {
+                let client = DataAnchorClient::<encoding::Default, compression::Default>::builder()
+                    .payer(self.payer.clone())
+                    .program_id(self.program_id)
+                    .build_with_config(self.config)
+                    .await?;
+                let client = Arc::new(client);
+
+                subcommand
+                    .run(
+                        client.clone(),
+                        self.blober_pda,
+                        self.program_id,
+                        self.payer.pubkey(),
+                    )
+                    .await
+            }
             subcommand => {
                 let Some(namespace) = &self.blober_pda.namespace() else {
                     Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
@@ -216,20 +233,12 @@ impl Options {
 
                 match subcommand {
                     Command::Blob(subcommand) => subcommand.run(client.clone(), namespace).await,
-                    Command::Blober(subcommand) => {
-                        subcommand
-                            .run(
-                                client.clone(),
-                                self.blober_pda,
-                                self.program_id,
-                                self.payer.pubkey(),
-                            )
-                            .await
-                    }
                     Command::Benchmark(subcommand) => {
                         subcommand.run(client.clone(), namespace).await
                     }
-                    _ => unreachable!("Indexer subcommands should have been handled above"),
+                    _ => unreachable!(
+                        "Indexer and Blober subcommands should have been handled above"
+                    ),
                 }
             }
         }?;
