@@ -7,7 +7,7 @@ use benchmark::BenchmarkSubCommand;
 use blob::BlobSubCommand;
 use blober::BloberSubCommand;
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
-use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientResult};
+use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientResult, IndexerUrl};
 use formatting::OutputFormat;
 use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
@@ -22,7 +22,6 @@ mod formatting;
 mod indexer;
 
 const NAMESPACE_MISSING_MSG: &str = "Namespace is not set. Please provide a namespace using the --namespace flag or set the DATA_ANCHOR_NAMESPACE environment variable.";
-const INDEXER_URL_MISSING_MSG: &str = "Indexer URL is not set. Please provide a URL using the --indexer-url flag or set the DATA_ANCHOR_INDEXER_URL environment variable.";
 
 /// The CLI options for the Blober CLI client.
 #[derive(Debug, Parser)]
@@ -64,9 +63,9 @@ struct Cli {
     )]
     pub output: OutputFormat,
 
-    /// The URL of the indexer to use.
+    /// The indexer environment to use.
     #[arg(short, long, global = true, env = "DATA_ANCHOR_INDEXER_URL")]
-    pub indexer_url: Option<String>,
+    pub indexer_url: Option<IndexerUrl>,
 
     /// The API token for the indexer, if required.
     #[arg(
@@ -137,7 +136,7 @@ pub struct Options {
     program_id: Pubkey,
     payer: Arc<Keypair>,
     blober_pda: BloberIdentifier,
-    indexer_url: Option<String>,
+    indexer: Option<IndexerUrl>,
     indexer_api_token: Option<String>,
     config: Config,
     output: OutputFormat,
@@ -167,7 +166,7 @@ impl Options {
         };
 
         Self {
-            indexer_url: args.indexer_url,
+            indexer: args.indexer_url,
             indexer_api_token: args.indexer_api_token,
             command: args.command,
             program_id,
@@ -180,20 +179,16 @@ impl Options {
 
     /// Run the parsed CLI command.
     pub async fn run(self) -> DataAnchorClientResult {
+        let client = Arc::new(
+            DataAnchorClient::builder()
+                .payer(self.payer.clone())
+                .program_id(self.program_id)
+                .maybe_indexer(self.indexer)
+                .build_with_config(self.config, self.indexer_api_token.clone())
+                .await?,
+        );
         let output = match self.command {
             Command::Indexer(subcommand) => {
-                let Some(indexer_url) = self.indexer_url else {
-                    Cli::exit_with_missing_arg(INDEXER_URL_MISSING_MSG);
-                };
-                let client = DataAnchorClient::builder()
-                    .payer(self.payer.clone())
-                    .program_id(self.program_id)
-                    .indexer_from_url(&indexer_url, self.indexer_api_token.clone())
-                    .await?
-                    .build_with_config(self.config)
-                    .await?;
-                let client = Arc::new(client);
-
                 subcommand
                     .run(
                         client.clone(),
@@ -203,13 +198,6 @@ impl Options {
                     .await
             }
             Command::Blober(subcommand) => {
-                let client = DataAnchorClient::builder()
-                    .payer(self.payer.clone())
-                    .program_id(self.program_id)
-                    .build_with_config(self.config)
-                    .await?;
-                let client = Arc::new(client);
-
                 subcommand
                     .run(
                         client.clone(),
@@ -223,13 +211,6 @@ impl Options {
                 let Some(namespace) = &self.blober_pda.namespace() else {
                     Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
                 };
-                let client = DataAnchorClient::builder()
-                    .payer(self.payer.clone())
-                    .program_id(self.program_id)
-                    .build_with_config(self.config)
-                    .await?;
-                let client = Arc::new(client);
-
                 match subcommand {
                     Command::Blob(subcommand) => subcommand.run(client.clone(), namespace).await,
                     Command::Benchmark(subcommand) => {

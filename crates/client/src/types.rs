@@ -54,6 +54,9 @@ pub enum DataAnchorClientError {
     /// Encoding/Decoding and Compression/Decompression error: {0}
     #[error(transparent)]
     UtilsError(#[from] DataAnchorUtilsError),
+    /// Indexer URL error: {0}
+    #[error(transparent)]
+    IndexerUrlError(#[from] crate::constants::IndexerUrlError),
     /// Tokio task error
     #[error("Tokio task error: {0}")]
     TokioTaskError(#[from] tokio::task::JoinError),

@@ -52,6 +52,7 @@ data-anchor-utils = { workspace = true, features = ["async", "compression"] }
 arbitrary = { workspace = true, features = ["derive"] }
 arbtest = { workspace = true }
 rand = { workspace = true }
+rstest = { workspace = true }
 tokio = { workspace = true, features = ["test-util", "macros"] }
 
 # Solana & Agave

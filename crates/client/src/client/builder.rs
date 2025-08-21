@@ -11,6 +11,7 @@ use crate::{
         DataAnchorClientBuilder,
         data_anchor_client_builder::{self, IsSet, IsUnset, SetIndexerClient, SetProofClient},
     },
+    constants::IndexerUrl,
 };
 
 impl<State> DataAnchorClientBuilder<State>
@@ -28,7 +29,7 @@ where
     ///     .indexer_from_url("http://localhost:8080", None)
     ///     .await?;
     /// ```
-    pub async fn indexer_from_url(
+    async fn indexer_from_url(
         self,
         indexer_url: &str,
         indexer_api_token: Option<String>,
@@ -94,21 +95,35 @@ where
     pub async fn build_with_config(
         self,
         solana_config: Config,
+        indexer_api_token: Option<String>,
     ) -> DataAnchorClientResult<DataAnchorClient>
     where
         State::Payer: IsSet,
         State::ProgramId: IsSet,
+        State::Indexer: IsSet,
         State::RpcClient: IsUnset,
         State::BatchClient: IsUnset,
+        State::IndexerClient: IsUnset,
+        State::ProofClient: IsUnset,
     {
         let rpc_client = Arc::new(RpcClient::new_with_commitment(
             solana_config.json_rpc_url.clone(),
             CommitmentConfig::from_str(&solana_config.commitment)?,
         ));
         let payer = self.get_payer().clone();
+
+        let indexer_url = if let Some(indexer) = self.get_indexer() {
+            indexer.url()
+        } else {
+            let genesis_hash = rpc_client.get_genesis_hash().await?;
+            IndexerUrl::from_genesis_hash(&genesis_hash.to_string())?.url()
+        };
+
         Ok(self
             .rpc_client(rpc_client.clone())
             .batch_client(BatchClient::new(rpc_client.clone(), vec![payer.clone()]).await?)
+            .indexer_from_url(&indexer_url, indexer_api_token)
+            .await?
             .build())
     }
 }

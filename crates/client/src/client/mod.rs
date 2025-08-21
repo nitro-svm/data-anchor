@@ -24,7 +24,7 @@ use solana_signer::Signer;
 use tracing::{Instrument, Span, info, info_span};
 
 use crate::{
-    DataAnchorClientError, DataAnchorClientResult,
+    DataAnchorClientError, DataAnchorClientResult, IndexerUrl,
     batch_client::{BatchClient, SuccessfulTransaction},
     constants::DEFAULT_CONCURRENCY,
     fees::{Fee, FeeStrategy, Lamports},
@@ -124,6 +124,9 @@ pub struct DataAnchorClient {
     pub(crate) program_id: Pubkey,
     pub(crate) rpc_client: Arc<RpcClient>,
     pub(crate) batch_client: BatchClient,
+    #[builder(getter(name = get_indexer, vis = ""))]
+    #[allow(dead_code, reason = "Used in builder")]
+    indexer: Option<IndexerUrl>,
     pub(crate) indexer_client: Option<Arc<HttpClient>>,
     pub(crate) proof_client: Option<Arc<HttpClient>>,
     #[builder(default)]
