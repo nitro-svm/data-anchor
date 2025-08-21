@@ -32,11 +32,7 @@ ruzstd = { workspace = true, optional = true }
 rstest = { workspace = true }
 
 # Locals
-data-anchor-utils = { workspace = true, features = [
-	"borsh",
-	"compression",
-	"async",
-] }
+data-anchor-utils = { path = ".", features = ["borsh", "compression", "async"] }
 
 [features]
 default = []
