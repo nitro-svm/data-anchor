@@ -64,6 +64,11 @@ pub fn spawn_transaction_sender(
 
             match res {
                 Ok(_) => {
+                    trace!(
+                        "[{}] successfully submitted tx {} to RPC",
+                        msg.index,
+                        msg.transaction.get_signature()
+                    );
                     let _ = transaction_confirmer_tx.send(ConfirmTransactionMessage {
                         span: msg.span,
                         index: msg.index,
@@ -74,7 +79,13 @@ pub fn spawn_transaction_sender(
                 }
                 Err(e) => {
                     let _enter = msg.span.clone().entered();
-                    warn!("failed to send transaction: {e:?}, tx slot: {last_valid_block_height}");
+                    warn!(
+                        "failed to send transaction [{}] (batch index: {}, target slot: {}, current block: {}): {e:?}",
+                        msg.transaction.get_signature(),
+                        msg.index,
+                        last_valid_block_height,
+                        blockdata.block_height
+                    );
 
                     let res = upgrade_and_send(
                         &transaction_sender_tx,

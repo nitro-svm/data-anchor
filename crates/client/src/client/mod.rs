@@ -21,7 +21,7 @@ use solana_commitment_config::CommitmentConfig;
 use solana_keypair::Keypair;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_signer::Signer;
-use tracing::{Instrument, Span, info, info_span};
+use tracing::{Instrument, Span, info, info_span, trace};
 
 use crate::{
     DataAnchorClientError, DataAnchorClientResult, IndexerUrl,
@@ -166,8 +166,20 @@ impl DataAnchorClient {
             .map(|r| r.value)?;
         let cost_u64 = cost.into_inner() as u64;
         if balance < cost_u64 {
+            info!(
+                "Balance check failed: required={} lamports, available={} lamports, deficit={} lamports",
+                cost_u64,
+                balance,
+                cost_u64 - balance
+            );
             return Err(ChainError::InsufficientBalance(cost_u64, balance).into());
         }
+        trace!(
+            "Balance check passed: required={} lamports, available={} lamports, remaining={} lamports",
+            cost_u64,
+            balance,
+            balance - cost_u64
+        );
         Ok(())
     }
 
@@ -353,10 +365,22 @@ impl DataAnchorClient {
     where
         T: Encodable,
     {
+        info!(
+            "Starting blob upload: namespace='{}', original_size={} bytes",
+            namespace,
+            std::mem::size_of_val(blob_data)
+        );
+
         let blober = find_blober_address(self.program_id, self.payer.pubkey(), namespace);
         let timestamp = get_unique_timestamp();
 
         let encoded_and_compressed = self.encode_and_compress(blob_data).await?;
+
+        info!(
+            "Blob encoding/compression completed: compressed_size={} bytes, ratio={:.2}%",
+            encoded_and_compressed.len(),
+            (encoded_and_compressed.len() as f64 / std::mem::size_of_val(blob_data) as f64) * 100.0
+        );
 
         let blob = find_blob_address(
             self.program_id,
@@ -364,6 +388,11 @@ impl DataAnchorClient {
             blober,
             timestamp,
             encoded_and_compressed.len(),
+        );
+
+        info!(
+            "Created blob PDA: blob={}, blober={}, timestamp={}",
+            blob, blober, timestamp
         );
 
         let in_mock_env = self.in_mock_env();
@@ -575,12 +604,23 @@ impl DataAnchorClient {
 
         let blob_account_size = Blober::DISCRIMINATOR.len() + Blober::INIT_SPACE;
 
-        Ok(Fee {
+        let fee = Fee {
             num_signatures,
             price_per_signature,
             compute_unit_limit,
             prioritization_fee_rate,
             blob_account_size,
-        })
+        };
+
+        info!(
+            "Fee estimation: blob_size={} bytes, chunks={}, total_fee={} lamports (static: {}, prioritization: {})",
+            blob_size,
+            num_chunks,
+            fee.total_fee().into_inner(),
+            fee.static_fee().into_inner(),
+            fee.prioritization_fee().into_inner()
+        );
+
+        Ok(fee)
     }
 }

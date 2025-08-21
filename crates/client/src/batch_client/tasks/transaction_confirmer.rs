@@ -99,6 +99,14 @@ async fn transaction_confirm_loop(
         let slot = status.slot;
         let status = TransactionStatus::from_solana_status(status, logs, rpc_client.commitment());
 
+        trace!(
+            "[{}] transaction {} status: {:?} at slot {}",
+            msg.index,
+            msg.transaction.get_signature(),
+            status,
+            slot
+        );
+
         // If the transaction wasn't committed or failed, it has to be checked again.
         if status.should_be_reconfirmed() {
             reconfirm.push(msg.clone());
@@ -170,6 +178,12 @@ fn categorize_transaction_response(
         // If there is no status, the transaction was not recognized by the RPC server.
         if msg.last_valid_block_height + 10 < last_valid_block_height {
             // The request was not successful within 10 slots using RPC, try again.
+            trace!(
+                "[{}] transaction {} timed out after {} slots, re-sending",
+                msg.index,
+                msg.transaction.get_signature(),
+                last_valid_block_height - msg.last_valid_block_height
+            );
             categories.resend.push(msg.into());
         } else {
             // No status reported, check again later.
@@ -189,7 +203,12 @@ fn categorize_transaction_response(
             if !matches!(err, TransactionError::InstructionError(_, _)) {
                 // Other errors are *not* expected and will be logged, but will not otherwise be
                 // handled in any special way.
-                warn!("unexpected transaction error: {err:?}");
+                warn!(
+                    "unexpected transaction error for [{}] (batch index: {}, slot: {}): {err:?}",
+                    msg.transaction.get_signature(),
+                    msg.index,
+                    status.slot
+                );
             }
             // Regardless of the error type, it will be reported, re-signed and re-sent.
             categories.resend.push(SendTransactionMessage {
