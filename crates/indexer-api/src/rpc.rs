@@ -163,7 +163,9 @@ pub trait IndexerRpc {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum CustomerElf {
+    /// Data correctness elf, commits to the data being correct.
     DataCorrectness,
+    /// Dawn SLA elf, which commits to the data being correct and to a SLA result.
     DawnSla,
 }
 
@@ -172,6 +174,15 @@ impl std::fmt::Display for CustomerElf {
         match self {
             CustomerElf::DataCorrectness => write!(f, "data-correctness"),
             CustomerElf::DawnSla => write!(f, "dawn-sla"),
+        }
+    }
+}
+
+impl CustomerElf {
+    pub fn authority(&self) -> Pubkey {
+        match self {
+            CustomerElf::DataCorrectness => data_anchor_data_correctness_verifier::id(),
+            CustomerElf::DawnSla => data_anchor_dawn_sla_verifier::id(),
         }
     }
 }

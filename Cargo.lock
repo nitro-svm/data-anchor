@@ -3087,6 +3087,8 @@ dependencies = [
  "chrono",
  "clap 4.5.45",
  "data-anchor-blober",
+ "data-anchor-data-correctness-verifier",
+ "data-anchor-dawn-sla-verifier",
  "data-anchor-proofs",
  "itertools 0.14.0",
  "jsonrpsee",

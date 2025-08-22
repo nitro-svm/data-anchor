@@ -25,4 +25,6 @@ solana-transaction-status = { workspace = true }
 
 # Locals
 data-anchor-blober = { workspace = true }
+data-anchor-data-correctness-verifier = { workspace = true }
+data-anchor-dawn-sla-verifier = { workspace = true }
 data-anchor-proofs = { workspace = true }

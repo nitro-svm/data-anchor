@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use clap::Parser;
-use data_anchor_api::BloberWithNamespace;
+use data_anchor_api::{BloberWithNamespace, CustomerElf};
 use data_anchor_blober::checkpoint::Checkpoint;
 use data_anchor_client::{
     BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
@@ -33,8 +33,8 @@ pub enum BloberSubCommand {
     #[command(visible_alias = "cp")]
     ConfigureCheckpoint {
         /// The authority that can create the checkpoint for the given blober.
-        #[arg(short, long)]
-        authority: Pubkey,
+        #[arg(short, long, value_enum)]
+        authority: CustomerElf,
     },
 }
 
@@ -208,7 +208,7 @@ impl BloberSubCommand {
                     .configure_checkpoint(
                         FeeStrategy::BasedOnRecentFees(Priority::Medium),
                         identifier.clone(),
-                        *authority,
+                        authority.authority(),
                         None,
                     )
                     .await?;
