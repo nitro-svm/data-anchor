@@ -313,11 +313,9 @@ pub enum LedgerDataBlobError {
     /// Checkpoint account not owned by the program
     #[error("Blob account not owned by the program")]
     AccountNotOwnedByProgram,
-    /// Invalid checkpoint account
-    #[error("Invalid checkpoint account")]
-    InvalidCheckpointAccount(String),
-    #[error("Invalid blober account")]
-    InvalidBloberAccount(String),
+    /// Invalid PDA data
+    #[error("Invalid PDA data: {0}")]
+    InvalidCheckpointAccount(#[from] anchor_lang::error::Error),
 }
 
 /// Extracts the blob data from the relevant instructions.

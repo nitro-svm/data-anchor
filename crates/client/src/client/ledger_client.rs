@@ -1,8 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use anchor_lang::{
-    AnchorDeserialize, Discriminator, prelude::Pubkey, solana_program::message::VersionedMessage,
-};
+use anchor_lang::{AccountDeserialize, prelude::Pubkey, solana_program::message::VersionedMessage};
 use data_anchor_api::{
     BloberWithNamespace, LedgerDataBlobError, RelevantInstruction, RelevantInstructionWithAccounts,
     extract_relevant_instructions, get_account_at_index, get_blob_data_from_instructions,
@@ -401,12 +399,7 @@ impl DataAnchorClient {
         Ok(blobers
             .into_iter()
             .filter_map(|(pubkey, account)| {
-                if !account.data.starts_with(Blober::DISCRIMINATOR) {
-                    return None;
-                }
-
-                let mut state = account.data.get(Blober::DISCRIMINATOR.len()..)?;
-                let blober_state = Blober::deserialize(&mut state).ok()?;
+                let blober_state = Blober::try_deserialize(&mut account.data.as_slice()).ok()?;
 
                 (blober_state.caller == self.payer.pubkey()).then_some(BloberWithNamespace {
                     address: pubkey.into(),
@@ -432,26 +425,9 @@ impl DataAnchorClient {
             return Ok(None);
         };
 
-        if !account.data.starts_with(Blober::DISCRIMINATOR) {
-            return Err(LedgerDataBlobError::InvalidBloberAccount(
-                "Invalid discriminator".to_owned(),
-            )
-            .into());
-        }
+        let mut data = account.data.as_slice();
 
-        let mut state = account.data.get(Blober::DISCRIMINATOR.len()..).ok_or(
-            LedgerDataBlobError::InvalidBloberAccount("No state data".to_owned()),
-        )?;
-
-        if state.is_empty() {
-            return Err(
-                LedgerDataBlobError::InvalidBloberAccount("Empty state data".to_owned()).into(),
-            );
-        }
-
-        let blober = Blober::deserialize(&mut state).map_err(|e| {
-            LedgerDataBlobError::InvalidBloberAccount(format!("Failed to deserialize: {e:?}"))
-        })?;
+        let blober = Blober::try_deserialize(&mut data).map_err(LedgerDataBlobError::from)?;
 
         Ok(Some(blober))
     }
@@ -477,27 +453,10 @@ impl DataAnchorClient {
             return Err(LedgerDataBlobError::AccountNotOwnedByProgram.into());
         }
 
-        if !account.data.starts_with(Checkpoint::DISCRIMINATOR) {
-            return Err(LedgerDataBlobError::InvalidCheckpointAccount(
-                "Invalid discriminator".to_owned(),
-            )
-            .into());
-        }
+        let mut data = account.data.as_slice();
 
-        let mut state = account.data.get(Checkpoint::DISCRIMINATOR.len()..).ok_or(
-            LedgerDataBlobError::InvalidCheckpointAccount("No state data".to_owned()),
-        )?;
-
-        if state.is_empty() {
-            return Err(LedgerDataBlobError::InvalidCheckpointAccount(
-                "Empty state data".to_owned(),
-            )
-            .into());
-        }
-
-        let checkpoint = Checkpoint::deserialize(&mut state).map_err(|e| {
-            LedgerDataBlobError::InvalidCheckpointAccount(format!("Failed to deserialize: {e:?}"))
-        })?;
+        let checkpoint =
+            Checkpoint::try_deserialize(&mut data).map_err(LedgerDataBlobError::from)?;
 
         Ok(Some(checkpoint))
     }

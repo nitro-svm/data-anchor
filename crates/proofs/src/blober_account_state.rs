@@ -6,7 +6,8 @@
 use std::{collections::BTreeMap, fmt::Debug, sync::Arc};
 
 use anchor_lang::{
-    AnchorDeserialize, Discriminator,
+    AccountDeserialize, AnchorDeserialize, Discriminator,
+    error::{Error, ErrorCode},
     prelude::Pubkey,
     solana_program::{clock::Slot, hash::HASH_BYTES},
 };
@@ -166,11 +167,17 @@ impl BloberAccountStateProof {
     }
 
     pub fn verify(&self, blober_account_data: &[u8]) -> BloberAccountStateResult {
-        if &blober_account_data[..8] != Blober::DISCRIMINATOR {
-            return Err(BloberAccountStateError::DiscriminatorMismatch);
-        }
+        let mut data = blober_account_data;
 
-        let state = Blober::try_from_slice(&blober_account_data[8..]).map_err(Arc::new)?;
+        let state = Blober::try_deserialize(&mut data).map_err(|e| match e {
+            Error::AnchorError(anchor_error)
+                if anchor_error.error_code_number
+                    == ErrorCode::AccountDiscriminatorMismatch as u32 =>
+            {
+                BloberAccountStateError::DiscriminatorMismatch
+            }
+            _ => BloberAccountStateError::InvalidStateData,
+        })?;
 
         if let Some((&slot, _)) = self.uploads.last_key_value() {
             if slot != state.slot {

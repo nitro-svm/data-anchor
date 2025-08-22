@@ -40,6 +40,13 @@ impl Checkpoint {
         })
     }
 
+    pub fn is_initial(&self) -> bool {
+        self.slot == 0
+            && self.public_values.is_empty()
+            && self.verification_key.is_empty()
+            && self.proof == [0u8; GROTH16_PROOF_SIZE]
+    }
+
     pub fn store(&mut self, new: Self) -> Result<()> {
         if new.public_values.len() > PROOF_PUBLIC_VALUES_MAX_SIZE {
             return Err(error!(ErrorCode::PublicValuesExceedMaxSize));
