@@ -76,7 +76,7 @@ pub enum IndexerSubCommand {
         network_name: String,
     },
     /// Request a custom proof for a given slot.
-    #[command(visible_alias = "zkp")]
+    #[command(visible_alias = "zkp", alias = "zk-proofs")]
     ZKProof {
         /// The slot to query.
         #[arg(short, long)]
@@ -137,8 +137,11 @@ impl std::fmt::Display for IndexerCommandOutput {
             IndexerCommandOutput::Proofs(proof) => {
                 write!(f, "Proofs: {proof:?}")
             }
-            IndexerCommandOutput::ZKProofs(proof) => {
-                write!(f, "ZK Proofs: {proof:?}")
+            IndexerCommandOutput::ZKProofs(request_id) => {
+                write!(
+                    f,
+                    "ZK Proof request ID (use it to check for proof status via `proof-request-status`): {request_id}"
+                )
             }
             IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
                 write!(

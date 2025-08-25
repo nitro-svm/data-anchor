@@ -116,9 +116,9 @@ impl CommandOutput {
                     writer.serialize(compound_proof)?;
                     Ok(String::from_utf8(writer.into_inner()?)?)
                 }
-                IndexerCommandOutput::ZKProofs(proof_data) => {
+                IndexerCommandOutput::ZKProofs(request_id) => {
                     let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
-                    writer.serialize(proof_data)?;
+                    writer.serialize(json!({"request_id":request_id}))?;
                     Ok(String::from_utf8(writer.into_inner()?)?)
                 }
                 IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
@@ -190,7 +190,9 @@ impl CommandOutput {
                 IndexerCommandOutput::Proofs(compound_proof) => {
                     serde_json::to_string(compound_proof)
                 }
-                IndexerCommandOutput::ZKProofs(proof_data) => serde_json::to_string(proof_data),
+                IndexerCommandOutput::ZKProofs(request_id) => {
+                    serde_json::to_string(&json!({"request_id":request_id}))
+                }
                 IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
                     serde_json::to_string(&json!({
                         "request_id": request_id,
@@ -245,8 +247,8 @@ impl CommandOutput {
                 IndexerCommandOutput::Proofs(compound_proof) => {
                     serde_json::to_string_pretty(compound_proof)
                 }
-                IndexerCommandOutput::ZKProofs(proof_data) => {
-                    serde_json::to_string_pretty(proof_data)
+                IndexerCommandOutput::ZKProofs(request_id) => {
+                    serde_json::to_string_pretty(&json!({"request_id":request_id}))
                 }
                 IndexerCommandOutput::ProofRequestStatus(request_id, status) => {
                     serde_json::to_string_pretty(&json!({
