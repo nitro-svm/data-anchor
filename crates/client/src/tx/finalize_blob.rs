@@ -1,7 +1,8 @@
 use anchor_lang::{
-    InstructionData, ToAccountMetas, prelude::Pubkey, solana_program::instruction::Instruction,
+    Discriminator, InstructionData, Space, ToAccountMetas, prelude::Pubkey,
+    solana_program::instruction::Instruction,
 };
-use data_anchor_blober::instruction::FinalizeBlob;
+use data_anchor_blober::{blob::Blob, instruction::FinalizeBlob, state::blober::Blober};
 
 use crate::{
     TransactionType,
@@ -12,6 +13,10 @@ impl MessageBuilder for FinalizeBlob {
     type Input = Pubkey;
     const TX_TYPE: TransactionType = TransactionType::FinalizeBlob;
     const COMPUTE_UNIT_LIMIT: u32 = 5_000;
+    const LOADED_ACCOUNT_DATA_SIZE: u32 = (Blober::DISCRIMINATOR.len()
+        + Blober::INIT_SPACE
+        + Blob::DISCRIMINATOR.len()
+        + Blob::INIT_SPACE) as u32;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         vec![args.input, args.blober, args.payer]

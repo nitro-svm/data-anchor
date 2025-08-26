@@ -118,6 +118,7 @@ impl DataAnchorClient {
         fee_strategy: FeeStrategy,
         blober: Pubkey,
     ) -> DataAnchorClientResult<UploadMessages> {
+        tracing::warn!("Blob size: {}", blob_data.len());
         if blob_data.len() <= COMPOUND_TX_SIZE as usize {
             let fee_compound = fee_strategy
                 .convert_fee_strategy_to_fixed(
@@ -136,8 +137,7 @@ impl DataAnchorClient {
                 Compound::new(blob, timestamp, blob_data.to_vec()),
             ))
             .in_current_span()
-            .await
-            .expect("infallible with a fixed fee strategy");
+            .await;
 
             return Ok(UploadMessages::CompoundUpload(compound));
         }
@@ -160,8 +160,7 @@ impl DataAnchorClient {
                 CompoundDeclare::new(blob, timestamp, blob_data.to_vec()),
             ))
             .in_current_span()
-            .await
-            .expect("infallible with a fixed fee strategy");
+            .await;
 
             let fee_finalize = fee_strategy
                 .convert_fee_strategy_to_fixed(
@@ -180,8 +179,7 @@ impl DataAnchorClient {
                 blob,
             ))
             .in_current_span()
-            .await
-            .expect("infallible with a fixed fee strategy");
+            .await;
 
             return Ok(UploadMessages::StaggeredUpload {
                 declare_blob,
@@ -215,8 +213,7 @@ impl DataAnchorClient {
             ),
         ))
         .in_current_span()
-        .await
-        .expect("infallible with a fixed fee strategy");
+        .await;
 
         let fee_insert = fee_strategy
             .convert_fee_strategy_to_fixed(
@@ -247,7 +244,6 @@ impl DataAnchorClient {
                 ))
                 .in_current_span()
                 .await
-                .expect("infallible with a fixed fee strategy")
             }))
             .await;
 
@@ -269,7 +265,6 @@ impl DataAnchorClient {
                 CompoundFinalize::new(*chunk_idx, chunk_data.to_vec(), blob),
             ))
             .await
-            .expect("infallible with a fixed fee strategy")
         } else {
             let fee_finalize = fee_strategy
                 .convert_fee_strategy_to_fixed(
@@ -289,7 +284,6 @@ impl DataAnchorClient {
             ))
             .in_current_span()
             .await
-            .expect("infallible with a fixed fee strategy")
         };
 
         Ok(UploadMessages::StaggeredUpload {

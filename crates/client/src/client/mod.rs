@@ -258,8 +258,7 @@ impl DataAnchorClient {
                 blober,
             ),
         ))
-        .await
-        .expect("infallible with a fixed fee strategy");
+        .await;
 
         let span = info_span!(parent: Span::current(), "initialize_blober");
         Ok(check_outcomes(
@@ -336,8 +335,7 @@ impl DataAnchorClient {
             fee,
             checkpoint_accounts,
         ))
-        .await
-        .expect("infallible with a fixed fee strategy");
+        .await;
 
         let span = info_span!(parent: Span::current(), "close_blober");
         Ok(check_outcomes(
@@ -475,8 +473,7 @@ impl DataAnchorClient {
             blob,
         ))
         .in_current_span()
-        .await
-        .expect("infallible with a fixed fee strategy");
+        .await;
 
         let span = info_span!(parent: Span::current(), "discard_blob");
 
@@ -540,8 +537,7 @@ impl DataAnchorClient {
             authority,
         ))
         .in_current_span()
-        .await
-        .expect("infallible with a fixed fee strategy");
+        .await;
 
         let span = info_span!(parent: Span::current(), "configure_checkpoint");
 

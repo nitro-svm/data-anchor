@@ -76,11 +76,11 @@ test-programs: build-programs
 
 # Run compute budget tests for transaction fees
 [group('test')]
-test-compute-unit-limit:
+test-compute-unit-limit limit=ARBTEST_BUDGET_MS:
     #!/usr/bin/env bash
     set -euxo pipefail
     unset DATABASE_URL
-    cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
+    ARBTEST_BUDGET_MS={{ limit }} cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
 
 # Run tests for the crates in the workspace
 [group('test')]
@@ -216,6 +216,14 @@ run-yellowstone:
 [working-directory('crates/indexer/scripts')]
 run-yellowstone:
     ./linux/run-yellowstone.sh
+
+# Run the solana-test-validator with the blober program
+[group('indexer')]
+run-solana-test-validator:
+    solana-test-validator \
+        --ledger target/test-ledger \
+        --limit-ledger-size 1000000 \
+        --bpf-program anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2 programs/target/deploy/data_anchor_blober.so
 
 # Run the yellowstone consumer binary
 [group('indexer')]

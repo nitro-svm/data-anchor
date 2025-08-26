@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::hash};
 
-use crate::merge_hashes;
+use crate::{merge_hashes, MAX_NAMESPACE_LENGTH};
 
 #[account]
 #[derive(Debug, InitSpace, PartialEq, Eq, PartialOrd, Ord)]
@@ -8,7 +8,7 @@ pub struct Blober {
     pub hash: [u8; hash::HASH_BYTES],
     pub slot: u64,
     pub caller: Pubkey,
-    #[max_len(100)]
+    #[max_len(MAX_NAMESPACE_LENGTH)]
     pub namespace: String,
 }
 

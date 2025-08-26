@@ -1,10 +1,13 @@
 use anchor_lang::{
-    InstructionData, ToAccountMetas,
+    Discriminator, InstructionData, Space, ToAccountMetas,
     prelude::Pubkey,
-    solana_program::{instruction::Instruction, system_program},
+    solana_program::{instruction::Instruction, rent::ACCOUNT_STORAGE_OVERHEAD, system_program},
 };
 use data_anchor_blober::{
-    find_checkpoint_address, find_checkpoint_config_address, instruction::ConfigureCheckpoint,
+    checkpoint::{Checkpoint, CheckpointConfig},
+    find_checkpoint_address, find_checkpoint_config_address,
+    instruction::ConfigureCheckpoint,
+    state::blober::Blober,
 };
 
 use crate::{
@@ -15,7 +18,14 @@ use crate::{
 impl MessageBuilder for ConfigureCheckpoint {
     type Input = Pubkey;
     const TX_TYPE: TransactionType = TransactionType::ConfigureCheckpoint;
-    const COMPUTE_UNIT_LIMIT: u32 = 30_000;
+    const COMPUTE_UNIT_LIMIT: u32 = 34_000;
+    const LOADED_ACCOUNT_DATA_SIZE: u32 = (Blober::DISCRIMINATOR.len()
+        + Blober::INIT_SPACE
+        + Checkpoint::DISCRIMINATOR.len()
+        + Checkpoint::INIT_SPACE
+        + CheckpointConfig::DISCRIMINATOR.len()
+        + CheckpointConfig::INIT_SPACE
+        + ACCOUNT_STORAGE_OVERHEAD as usize) as u32;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         vec![

@@ -79,13 +79,29 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
             &payer.pubkey(),
             10 * LAMPORTS_PER_SOL,
             RpcRequestAirdropConfig {
-                commitment: Some(CommitmentConfig::finalized()),
+                commitment: Some(blober_rpc_client.commitment()),
                 ..RpcRequestAirdropConfig::default()
             },
         )
         .await
         .unwrap();
     print!("Airdropping 10 SOL");
+
+    if check_ledger {
+        // Wait for airdrop to complete
+        loop {
+            let balance = blober_rpc_client
+                .get_balance_with_commitment(&payer.pubkey(), blober_rpc_client.commitment())
+                .await
+                .unwrap()
+                .value;
+            if balance >= 10 * LAMPORTS_PER_SOL {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            print!(".");
+        }
+    }
 
     let fee_strategy = FeeStrategy::default();
 

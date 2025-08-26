@@ -1,5 +1,11 @@
-use anchor_lang::{prelude::Pubkey, solana_program::instruction::Instruction};
-use data_anchor_blober::instruction::{DeclareBlob, InsertChunk};
+use anchor_lang::{
+    Discriminator, Space, prelude::Pubkey, solana_program::instruction::Instruction,
+};
+use data_anchor_blober::{
+    blob::Blob,
+    instruction::{DeclareBlob, InsertChunk},
+    state::blober::Blober,
+};
 
 use crate::{
     TransactionType,
@@ -57,6 +63,10 @@ impl MessageBuilder for CompoundDeclare {
     const TX_TYPE: TransactionType = TransactionType::CompoundDeclare;
     const COMPUTE_UNIT_LIMIT: u32 =
         DeclareBlob::COMPUTE_UNIT_LIMIT + InsertChunk::COMPUTE_UNIT_LIMIT;
+    const LOADED_ACCOUNT_DATA_SIZE: u32 = (Blober::DISCRIMINATOR.len()
+        + Blober::INIT_SPACE
+        + Blob::DISCRIMINATOR.len()
+        + Blob::INIT_SPACE) as u32;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         vec![args.input.blob, args.blober, args.payer]

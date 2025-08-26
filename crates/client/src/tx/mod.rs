@@ -10,7 +10,7 @@ use solana_compute_budget_interface::ComputeBudgetInstruction;
 use solana_keypair::Keypair;
 use solana_signer::Signer;
 
-use crate::{DataAnchorClientResult, Fee, TransactionType};
+use crate::{Fee, TransactionType};
 
 pub mod close_blober;
 pub mod compound;
@@ -78,15 +78,17 @@ where
     }
 }
 
-/// The constant price of the [`solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_price`]
-/// and [`solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_limit`] instructions.
-pub const SET_PRICE_AND_CU_LIMIT_COST: u32 = 300;
+/// The constant price of the [`solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_price`],
+/// [`solana_compute_budget_interface::ComputeBudgetInstruction::set_compute_unit_limit`] and
+/// [`solana_compute_budget_interface::ComputeBudgetInstruction::set_loaded_accounts_data_size_limit`] instructions.
+pub const SET_PRICE_AND_CU_LIMIT_COST: u32 = 450;
 
 #[async_trait]
 pub trait MessageBuilder {
     type Input: Send;
     const TX_TYPE: TransactionType;
     const COMPUTE_UNIT_LIMIT: u32;
+    const LOADED_ACCOUNT_DATA_SIZE: u32;
     const NUM_SIGNATURES: u16 = 1;
     #[cfg(test)]
     const INITIALIZE_BLOBER: bool = true;
@@ -95,7 +97,7 @@ pub trait MessageBuilder {
 
     fn generate_instructions(args: &MessageArguments<Self::Input>) -> Vec<Instruction>;
 
-    async fn build_message(args: MessageArguments<Self::Input>) -> DataAnchorClientResult<Message> {
+    async fn build_message(args: MessageArguments<Self::Input>) -> Message {
         let set_price = args.fee.set_compute_unit_price();
 
         // This limit is chosen empirically
@@ -103,12 +105,17 @@ pub trait MessageBuilder {
             Self::COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
         );
 
+        // This limit can be known based on the instruction
+        let set_account_data_size = ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(
+            Self::LOADED_ACCOUNT_DATA_SIZE,
+        );
+
         let payer = Some(args.payer);
 
-        let mut all_instructions = vec![set_price, set_limit];
+        let mut all_instructions = vec![set_price, set_limit, set_account_data_size];
         all_instructions.extend(Self::generate_instructions(&args));
 
-        Ok(Message::new(&all_instructions, payer.as_ref()))
+        Message::new(&all_instructions, payer.as_ref())
     }
 
     #[cfg(test)]
@@ -118,6 +125,7 @@ pub trait MessageBuilder {
         blober: Pubkey,
     ) -> arbitrary::Result<Self::Input>;
 
+    #[allow(unused_variables, reason = "`updated` is used in asserts")]
     #[cfg(test)]
     fn test_compute_unit_limit() {
         use solana_transaction::Transaction;
@@ -128,6 +136,8 @@ pub trait MessageBuilder {
         let program_id = data_anchor_blober::id();
 
         let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
+        let mut max_units = Self::COMPUTE_UNIT_LIMIT;
+        let mut updated = false;
 
         arbtest::arbtest(|u| {
             let rpc_client = rpc_client.clone();
@@ -181,11 +191,11 @@ pub trait MessageBuilder {
 
                 let compute_units = result.value.units_consumed.unwrap() as u32;
 
-                assert!(
-                    compute_units <= Self::COMPUTE_UNIT_LIMIT,
-                    "Used {compute_units}, more than {}",
-                    Self::COMPUTE_UNIT_LIMIT
-                );
+                #[allow(unused_assignments, reason = "`max_units` is used in asserts")]
+                if compute_units * 11 / 10 > max_units {
+                    updated = true;
+                    max_units = compute_units * 11 / 10;
+                }
 
                 if Self::INITIALIZE_BLOBER {
                     close_blober(args.client, args.program_id, &payer, &namespace)
@@ -196,6 +206,12 @@ pub trait MessageBuilder {
                 Ok::<(), arbitrary::Error>(())
             })
         });
+
+        assert!(
+            !updated || max_units * 11 / 10 <= Self::COMPUTE_UNIT_LIMIT,
+            "Used {max_units} compute units, limit is only {}",
+            Self::COMPUTE_UNIT_LIMIT
+        );
     }
 }
 

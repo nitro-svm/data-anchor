@@ -1,7 +1,13 @@
 use anchor_lang::{
-    InstructionData, ToAccountMetas, prelude::Pubkey, solana_program::instruction::Instruction,
+    Discriminator, InstructionData, Space, ToAccountMetas,
+    prelude::Pubkey,
+    solana_program::{instruction::Instruction, rent::ACCOUNT_STORAGE_OVERHEAD},
 };
-use data_anchor_blober::instruction::Close;
+use data_anchor_blober::{
+    checkpoint::{Checkpoint, CheckpointConfig},
+    instruction::Close,
+    state::blober::Blober,
+};
 
 use crate::{
     TransactionType,
@@ -11,7 +17,14 @@ use crate::{
 impl MessageBuilder for Close {
     type Input = Option<(Pubkey, Pubkey)>;
     const TX_TYPE: TransactionType = TransactionType::CloseBlober;
-    const COMPUTE_UNIT_LIMIT: u32 = 10_000;
+    const COMPUTE_UNIT_LIMIT: u32 = 9_000;
+    const LOADED_ACCOUNT_DATA_SIZE: u32 = (Blober::DISCRIMINATOR.len()
+        + Blober::INIT_SPACE
+        + Checkpoint::DISCRIMINATOR.len()
+        + Checkpoint::INIT_SPACE
+        + CheckpointConfig::DISCRIMINATOR.len()
+        + CheckpointConfig::INIT_SPACE
+        + ACCOUNT_STORAGE_OVERHEAD as usize) as u32;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         let mut certain = vec![args.blober, args.payer];

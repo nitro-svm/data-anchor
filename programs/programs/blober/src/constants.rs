@@ -30,8 +30,12 @@ pub const MAX_BLOB_SIZE: u32 = MAX_CHUNKS as u32 * CHUNK_SIZE as u32;
 #[constant]
 pub const CHUNK_SIZE: u16 = 915;
 
+/// The maximum length of a namespace string.
+#[constant]
+pub const MAX_NAMESPACE_LENGTH: u8 = 100;
+
 /// The max size of data for a compound transaction containing all three (declare, insert and finalize) instructions.
-pub const COMPOUND_TX_SIZE: u16 = 854;
+pub const COMPOUND_TX_SIZE: u16 = 848;
 
 /// The max size of data for a compound transaction containing the first two (declare and insert) instructions.
 pub const COMPOUND_DECLARE_TX_SIZE: u16 = 868;

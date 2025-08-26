@@ -1,9 +1,9 @@
 use anchor_lang::{
-    InstructionData, ToAccountMetas,
+    Discriminator, InstructionData, Space, ToAccountMetas,
     prelude::Pubkey,
-    solana_program::{instruction::Instruction, system_program},
+    solana_program::{instruction::Instruction, rent::ACCOUNT_STORAGE_OVERHEAD, system_program},
 };
-use data_anchor_blober::instruction::Initialize;
+use data_anchor_blober::{instruction::Initialize, state::blober::Blober};
 
 use crate::{
     TransactionType,
@@ -13,7 +13,10 @@ use crate::{
 impl MessageBuilder for Initialize {
     type Input = (String, Pubkey);
     const TX_TYPE: TransactionType = TransactionType::InitializeBlober;
-    const COMPUTE_UNIT_LIMIT: u32 = 28_000;
+    const COMPUTE_UNIT_LIMIT: u32 = 26_000;
+    const LOADED_ACCOUNT_DATA_SIZE: u32 = (Blober::DISCRIMINATOR.len()
+        + Blober::INIT_SPACE
+        + ACCOUNT_STORAGE_OVERHEAD as usize) as u32;
     #[cfg(test)]
     const INITIALIZE_BLOBER: bool = false;
 

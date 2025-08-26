@@ -1,9 +1,9 @@
 use anchor_lang::{
-    InstructionData, ToAccountMetas,
+    Discriminator, InstructionData, Space, ToAccountMetas,
     prelude::Pubkey,
     solana_program::{instruction::Instruction, system_program},
 };
-use data_anchor_blober::instruction::DeclareBlob;
+use data_anchor_blober::{blob::Blob, instruction::DeclareBlob, state::blober::Blober};
 
 use crate::{
     TransactionType,
@@ -13,7 +13,11 @@ use crate::{
 impl MessageBuilder for DeclareBlob {
     type Input = (Self, Pubkey);
     const TX_TYPE: TransactionType = TransactionType::DeclareBlob;
-    const COMPUTE_UNIT_LIMIT: u32 = 44_000;
+    const COMPUTE_UNIT_LIMIT: u32 = 32_000;
+    const LOADED_ACCOUNT_DATA_SIZE: u32 = (Blober::DISCRIMINATOR.len()
+        + Blober::INIT_SPACE
+        + Blob::DISCRIMINATOR.len()
+        + Blob::INIT_SPACE) as u32;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         vec![args.input.1, args.blober, args.payer]
