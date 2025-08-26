@@ -3,7 +3,7 @@ pub const DEFAULT_CONCURRENCY: usize = 100;
 
 /// Default number of slots to look back for the
 /// [`crate::client::DataAnchorClient::get_ledger_blobs`] method.
-pub const DEFAULT_LOOKBACK_SLOTS: u64 = 10;
+pub const DEFAULT_LOOKBACK_SLOTS: u64 = 100;
 
 const MAINNET_GENESIS_HASH: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvDPxV6zKj1rS1n";
 const DEVNET_GENESIS_HASH: &str = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1r7k9WfA5B5f";

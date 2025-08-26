@@ -187,39 +187,20 @@ impl Options {
                 .build_with_config(self.config, self.indexer_api_token.clone())
                 .await?,
         );
+
         let output = match self.command {
-            Command::Indexer(subcommand) => {
-                subcommand
-                    .run(
-                        client.clone(),
-                        self.blober_pda
-                            .to_blober_address(self.program_id, self.payer.pubkey()),
-                    )
-                    .await
-            }
+            Command::Indexer(subcommand) => subcommand.run(client, self.blober_pda).await,
+            Command::Blob(subcommand) => subcommand.run(client, self.blober_pda).await,
+            Command::Benchmark(subcommand) => subcommand.run(client, self.blober_pda).await,
             Command::Blober(subcommand) => {
                 subcommand
                     .run(
-                        client.clone(),
+                        client,
                         self.blober_pda,
                         self.program_id,
                         self.payer.pubkey(),
                     )
                     .await
-            }
-            subcommand => {
-                let Some(namespace) = &self.blober_pda.namespace() else {
-                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
-                };
-                match subcommand {
-                    Command::Blob(subcommand) => subcommand.run(client.clone(), namespace).await,
-                    Command::Benchmark(subcommand) => {
-                        subcommand.run(client.clone(), namespace).await
-                    }
-                    _ => unreachable!(
-                        "Indexer and Blober subcommands should have been handled above"
-                    ),
-                }
             }
         }?;
 

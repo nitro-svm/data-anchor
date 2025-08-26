@@ -324,7 +324,9 @@ pub(crate) fn get_unique_timestamp() -> u64 {
         let now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("System time must move forward")
-            .as_secs();
+            .as_millis()
+            .try_into()
+            .expect("Timestamp must fit in u64 until year 2554");
 
         // Use the current time or the next available timestamp.
         let timestamp = max(now, last_used_timestamp + 1);

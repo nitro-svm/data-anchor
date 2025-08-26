@@ -4,7 +4,7 @@ use anchor_lang::prelude::Pubkey;
 use chrono::{DateTime, Utc};
 use clap::{Args, Parser};
 use data_anchor_api::{CompoundInclusionProof, CustomerElf, RequestStatus, TimeRange};
-use data_anchor_client::{DataAnchorClient, DataAnchorClientResult};
+use data_anchor_client::{BloberIdentifier, DataAnchorClient, DataAnchorClientResult};
 use itertools::Itertools;
 use serde::Serialize;
 use tracing::instrument;
@@ -169,11 +169,11 @@ impl IndexerSubCommand {
     pub async fn run(
         &self,
         client: Arc<DataAnchorClient>,
-        blober_pda: Pubkey,
+        identifier: BloberIdentifier,
     ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             IndexerSubCommand::Blobs(SlotArgs { slot }) => {
-                let data = client.get_blobs(*slot, blober_pda.into()).await?;
+                let data = client.get_blobs(*slot, identifier).await?;
                 Ok(IndexerCommandOutput::Blobs(data.unwrap_or_default()).into())
             }
             IndexerSubCommand::BlobsForBlober {
@@ -241,7 +241,7 @@ impl IndexerSubCommand {
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
             IndexerSubCommand::Proof(SlotArgs { slot }) => {
-                let proof = client.get_proof(*slot, blober_pda.into()).await?;
+                let proof = client.get_proof(*slot, identifier).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
             IndexerSubCommand::ProofForBlob { blob } => {
@@ -256,7 +256,7 @@ impl IndexerSubCommand {
             }
             IndexerSubCommand::ZKProof { slot, proof_type } => {
                 let request_id = client
-                    .checkpoint_custom_proof(*slot, blober_pda.into(), *proof_type)
+                    .checkpoint_custom_proof(*slot, identifier, *proof_type)
                     .await?;
                 Ok(IndexerCommandOutput::ZKProofs(request_id).into())
             }

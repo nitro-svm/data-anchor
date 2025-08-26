@@ -4,7 +4,8 @@ use anchor_lang::{prelude::Pubkey, solana_program::clock::Slot};
 use clap::Parser;
 use data_anchor_api::pubkey_with_str;
 use data_anchor_client::{
-    DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority, TransactionType,
+    BloberIdentifier, DataAnchorClient, DataAnchorClientResult, FeeStrategy, Priority,
+    TransactionType,
 };
 use itertools::Itertools;
 use serde::Serialize;
@@ -12,7 +13,7 @@ use solana_signature::Signature;
 use tokio::io::AsyncReadExt;
 use tracing::instrument;
 
-use crate::formatting::CommandOutput;
+use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};
 
 #[derive(Debug, Parser)]
 pub enum BlobSubCommand {
@@ -97,7 +98,7 @@ impl BlobSubCommand {
     pub async fn run(
         &self,
         client: Arc<DataAnchorClient>,
-        namespace: &str,
+        identifier: BloberIdentifier,
     ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BlobSubCommand::Upload { data_path, data } => {
@@ -116,6 +117,11 @@ impl BlobSubCommand {
                         .unwrap_or_else(|_| panic!("failed to read from stdin"));
                     data.into_bytes()
                 };
+
+                let Some(namespace) = identifier.namespace() else {
+                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
+                };
+
                 let (results, address) = client
                     .upload_blob(
                         &blob_data,
@@ -134,6 +140,10 @@ impl BlobSubCommand {
                 .into())
             }
             BlobSubCommand::Discard { blob } => {
+                let Some(namespace) = identifier.namespace() else {
+                    Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
+                };
+
                 let (results, _) = client
                     .discard_blob(
                         FeeStrategy::BasedOnRecentFees(Priority::VeryHigh),
@@ -153,10 +163,7 @@ impl BlobSubCommand {
             }
             BlobSubCommand::Fetch { signatures } => {
                 let blob = client
-                    .get_ledger_blobs_from_signatures::<Vec<u8>>(
-                        namespace.to_owned().into(),
-                        signatures.to_owned(),
-                    )
+                    .get_ledger_blobs_from_signatures::<Vec<u8>>(identifier, signatures.to_owned())
                     .await?;
                 Ok(BlobCommandOutput::Fetching(vec![blob]).into())
             }
@@ -165,11 +172,7 @@ impl BlobSubCommand {
                 lookback_slots,
             } => {
                 let blobs = client
-                    .get_ledger_blobs::<Vec<u8>>(
-                        *slot,
-                        namespace.to_owned().into(),
-                        *lookback_slots,
-                    )
+                    .get_ledger_blobs::<Vec<u8>>(*slot, identifier, *lookback_slots)
                     .await?;
                 Ok(BlobCommandOutput::Fetching(blobs).into())
             }

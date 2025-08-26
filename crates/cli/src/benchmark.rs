@@ -12,17 +12,17 @@ use bytesize::ByteSize;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use data_anchor_client::{
-    ChainError, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult, FeeStrategy,
-    Priority,
+    BloberIdentifier, ChainError, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
+    FeeStrategy, Priority,
 };
 use futures::StreamExt;
 use itertools::{Itertools, iproduct};
 use rand::{Rng, RngCore};
 use serde::Serialize;
 use solana_signer::Signer;
-use tracing::{error, instrument, trace};
+use tracing::{error, instrument, trace, warn};
 
-use crate::formatting::CommandOutput;
+use crate::{Cli, NAMESPACE_MISSING_MSG, formatting::CommandOutput};
 
 /// Imperically chosen constant from trial and error.
 const DEFAULT_CONCURRENCY: u64 = 600;
@@ -95,7 +95,7 @@ impl BenchmarkSubCommand {
     pub async fn run(
         &self,
         client: Arc<DataAnchorClient>,
-        namespace: &str,
+        identifier: BloberIdentifier,
     ) -> DataAnchorClientResult<CommandOutput> {
         match self {
             BenchmarkSubCommand::GenerateData {
@@ -119,7 +119,7 @@ impl BenchmarkSubCommand {
                     *concurrency,
                     *priority,
                     client,
-                    namespace,
+                    identifier,
                 )
                 .await?;
 
@@ -151,12 +151,19 @@ impl BenchmarkSubCommand {
                 // We preallocate the vectors to avoid reallocations.
                 let mut measurements = Vec::with_capacity(3 * 2 * 4 * 5);
 
-                if let Err(e) = client
-                    .initialize_blober(Default::default(), namespace.to_owned().into(), None)
+                match client
+                    .initialize_blober(Default::default(), identifier.clone(), None)
                     .await
                 {
-                    error!("Failed to initialize blober: {e}");
-                }
+                    Ok(_)
+                    | Err(DataAnchorClientError::ChainErrors(ChainError::AccountExists(_))) => {
+                        warn!("Blober already initialized, continuing with benchmark...");
+                    }
+                    Err(e) => {
+                        error!("Failed to initialize blober: {e}");
+                        return Err(e);
+                    }
+                };
 
                 let mut writer = running_csv
                     .as_ref()
@@ -189,7 +196,7 @@ impl BenchmarkSubCommand {
                                 DEFAULT_CONCURRENCY,
                                 priority,
                                 client.clone(),
-                                namespace,
+                                identifier.clone(),
                             )
                             .await?;
                             if let Some(ref mut writer) = writer {
@@ -206,12 +213,9 @@ impl BenchmarkSubCommand {
                 }
                 .await;
                 delete_all_in_dir(data_path).await?;
-                if let Err(e) = client
-                    .close_blober(Default::default(), namespace.to_owned().into(), None)
-                    .await
-                {
-                    error!("Failed to close blober: {e}");
-                }
+                client
+                    .close_blober(Default::default(), identifier, None)
+                    .await?;
 
                 Ok(BenchmarkCommandOutput::Measurements(measurements.clone()).into())
             }
@@ -264,7 +268,7 @@ async fn measure_performance(
     concurrency: u64,
     priority: Priority,
     client: Arc<DataAnchorClient>,
-    namespace: &str,
+    identifier: BloberIdentifier,
 ) -> DataAnchorClientResult<BenchMeasurement> {
     let reads = data_path
         .read_dir()?
@@ -296,6 +300,10 @@ async fn measure_performance(
     let start_time = tokio::time::Instant::now();
 
     let status = StatusData::new(total_files);
+
+    let Some(namespace) = identifier.namespace() else {
+        Cli::exit_with_missing_arg(NAMESPACE_MISSING_MSG);
+    };
 
     let (results, upload_times): (Vec<DataAnchorClientResult<_>>, Vec<f64>) =
         futures::stream::iter(data)
