@@ -45,7 +45,7 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
         run: |
           TAG=$GITHUB_REF
-          TAG=${TAG#data-anchor-} 
+          TAG=${TAG##*-} 
           echo "TAG=$TAG" >> "$GITHUB_ENV"
           echo "TARGET=$TARGET" >> "$GITHUB_ENV"
 
@@ -90,7 +90,7 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
         run: |
           TAG=$GITHUB_REF
-          TAG=${TAG#data-anchor-} 
+          TAG=${TAG##*-} 
           find ./scripts -type f -name 'install-cli.sh' -exec sed -i "s/<VERSION>/$TAG/" {} +
 
       - name: Configure AWS credentials
