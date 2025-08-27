@@ -66,6 +66,9 @@ jobs:
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
       - name: Tofu init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -99,6 +102,9 @@ jobs:
           role-to-assume: ${{ secrets.AWS_INFRA_ROLE }}
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
 
       - name: Tofu init
         working-directory: ${{ env.TF_WORKING_DIR }}
