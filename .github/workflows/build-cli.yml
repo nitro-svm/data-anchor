@@ -73,7 +73,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           tofu init
-          BUCKET_NAME=$(tofu output bucket_name)
+          BUCKET_NAME=$(tofu output -raw bucket_name)
           echo "BUCKET_NAME=$BUCKET_NAME" >> "$GITHUB_ENV"
 
       - name: Upload to AWS S3
@@ -110,7 +110,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           tofu init
-          BUCKET_NAME=$(tofu output bucket_name)
+          BUCKET_NAME=$(tofu output -raw bucket_name)
           echo "BUCKET_NAME=$BUCKET_NAME" >> "$GITHUB_ENV"
 
       - name: Upload to AWS S3
