@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-blober-v0.2.0...data-anchor-blober-v0.2.1) - 2025-08-22
+
+### Other
+
+- Use AccountDeserialize instead of AnchorDeserialize for account data ([#344](https://github.com/nitro-svm/data-anchor/pull/344))
+
 ## [0.2.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-blober-v0.1.7...data-anchor-blober-v0.2.0) - 2025-08-08
 
 ### Added
