@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.4.1...data-anchor-client-v0.4.2) - 2025-08-27
+
+### Added
+
+- Add `set_loaded_account_data_size_limit` instruction to transactions ([#350](https://github.com/nitro-svm/data-anchor/pull/350))
+- Add default indexer URL and recognition based on RPC URL ([#338](https://github.com/nitro-svm/data-anchor/pull/338))
+- Add encoding and compression markers to data ([#337](https://github.com/nitro-svm/data-anchor/pull/337))
+
+### Other
+
+- Clean up CLI and improve client constants ([#352](https://github.com/nitro-svm/data-anchor/pull/352))
+- Use AccountDeserialize instead of AnchorDeserialize for account data ([#344](https://github.com/nitro-svm/data-anchor/pull/344))
+- Enhance logging for transaction processing and blob operations ([#343](https://github.com/nitro-svm/data-anchor/pull/343))
+
 ## [0.4.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.4.0...data-anchor-client-v0.4.1) - 2025-08-19
 
 ### Added

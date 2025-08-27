@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.1...data-anchor-v0.4.2) - 2025-08-27
+
+### Added
+
+- Add verifier alias instead of pubkey for checkpoint authority ([#345](https://github.com/nitro-svm/data-anchor/pull/345))
+- Add default indexer URL and recognition based on RPC URL ([#338](https://github.com/nitro-svm/data-anchor/pull/338))
+- Add encoding and compression markers to data ([#337](https://github.com/nitro-svm/data-anchor/pull/337))
+
+### Fixed
+
+- Increase wait time for fallback ([#335](https://github.com/nitro-svm/data-anchor/pull/335))
+
+### Other
+
+- Clean up CLI and improve client constants ([#352](https://github.com/nitro-svm/data-anchor/pull/352))
+- Improve CLI output for ZK proof request ([#348](https://github.com/nitro-svm/data-anchor/pull/348))
+
 ## [0.4.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.0...data-anchor-v0.4.1) - 2025-08-19
 
 ### Added
