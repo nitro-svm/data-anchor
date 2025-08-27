@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload to AWS S3
         run: |
-          aws s3 cp "data-anchor-$TAG-$TARGET.tar.gz" "s3://$BUCKET_NAME/data-anchor/$TAG/" --acl public-read
+          aws s3 cp "data-anchor-$TAG-$TARGET.tar.gz" "s3://$BUCKET_NAME/data-anchor/$TAG/"
 
   update-install-script:
     name: Update and Upload install script
@@ -115,4 +115,4 @@ jobs:
 
       - name: Upload to AWS S3
         run: |
-          aws s3 cp "./scripts/install-cli.sh" "s3://$BUCKET_NAME/install.sh" --acl public-read
+          aws s3 cp "./scripts/install-cli.sh" "s3://$BUCKET_NAME/install.sh"
