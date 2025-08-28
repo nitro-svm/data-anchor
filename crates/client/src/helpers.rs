@@ -12,12 +12,12 @@ use data_anchor_blober::{
     instruction::{DeclareBlob, FinalizeBlob, InsertChunk},
 };
 use jsonrpsee::http_client::HttpClient;
+use nitro_sender::{SuccessfulTransaction, TransactionOutcome};
 use solana_signer::Signer;
 use tracing::{Instrument, Span, info_span};
 
 use crate::{
-    DataAnchorClient, DataAnchorClientResult, FeeStrategy, OutcomeError, SuccessfulTransaction,
-    TransactionOutcome,
+    DataAnchorClient, DataAnchorClientResult, FeeStrategy, OutcomeError,
     client::ChainError,
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageArguments, MessageBuilder},
     types::TransactionType,
@@ -46,7 +46,7 @@ impl DataAnchorClient {
             UploadMessages::CompoundUpload(tx) => {
                 let span = info_span!(parent: Span::current(), "compound_upload");
                 Ok(check_outcomes(
-                    self.batch_client
+                    self.nitro_sender
                         .send(vec![(TransactionType::Compound, tx)], timeout)
                         .instrument(span)
                         .await,
@@ -60,7 +60,7 @@ impl DataAnchorClient {
             } => {
                 let span = info_span!(parent: Span::current(), "declare_blob");
                 let tx1 = check_outcomes(
-                    self.batch_client
+                    self.nitro_sender
                         .send(vec![(TransactionType::DeclareBlob, declare_blob)], timeout)
                         .instrument(span)
                         .await,
@@ -71,7 +71,7 @@ impl DataAnchorClient {
                 let timeout =
                     timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
                 let tx2 = check_outcomes(
-                    self.batch_client
+                    self.nitro_sender
                         .send(
                             insert_chunks
                                 .into_iter()
@@ -89,7 +89,7 @@ impl DataAnchorClient {
                 let timeout =
                     timeout.map(|timeout| timeout.saturating_sub(Instant::now() - before));
                 let tx3 = check_outcomes(
-                    self.batch_client
+                    self.nitro_sender
                         .send(
                             vec![(TransactionType::FinalizeBlob, finalize_blob)],
                             timeout,
@@ -359,6 +359,7 @@ pub(crate) fn check_outcomes(
         let successful_transactions = outcomes
             .into_iter()
             .filter_map(TransactionOutcome::into_successful)
+            .map(|t| *t)
             .collect();
         Ok(successful_transactions)
     } else {

@@ -1,12 +1,13 @@
 use std::{str::FromStr, sync::Arc};
 
 use jsonrpsee::{http_client::HttpClientBuilder, ws_client::HeaderMap};
+use nitro_sender::NitroSender;
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_commitment_config::CommitmentConfig;
 
 use crate::{
-    BatchClient, DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
+    DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
     client::{
         DataAnchorClientBuilder,
         data_anchor_client_builder::{self, IsSet, IsUnset, SetIndexerClient, SetProofClient},
@@ -95,6 +96,7 @@ where
     pub async fn build_with_config(
         self,
         solana_config: Config,
+        shutdown_receiver: tokio::sync::watch::Receiver<()>,
         indexer_api_token: Option<String>,
     ) -> DataAnchorClientResult<DataAnchorClient>
     where
@@ -102,7 +104,7 @@ where
         State::ProgramId: IsSet,
         State::Indexer: IsSet,
         State::RpcClient: IsUnset,
-        State::BatchClient: IsUnset,
+        State::NitroSender: IsUnset,
         State::IndexerClient: IsUnset,
         State::ProofClient: IsUnset,
     {
@@ -121,7 +123,10 @@ where
 
         Ok(self
             .rpc_client(rpc_client.clone())
-            .batch_client(BatchClient::new(rpc_client.clone(), vec![payer.clone()]).await?)
+            .nitro_sender(
+                NitroSender::new(rpc_client.clone(), shutdown_receiver, vec![payer.clone()])
+                    .await?,
+            )
             .indexer_from_url(&indexer_url, indexer_api_token)
             .await?
             .build())

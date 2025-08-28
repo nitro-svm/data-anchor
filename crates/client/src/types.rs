@@ -5,12 +5,12 @@ use data_anchor_blober::instruction::{
     Close, ConfigureCheckpoint, DeclareBlob, DiscardBlob, FinalizeBlob, Initialize, InsertChunk,
 };
 use data_anchor_utils::DataAnchorUtilsError;
+use nitro_sender::TransactionOutcome;
 use solana_commitment_config::ParseCommitmentLevelError;
 use solana_rpc_client_api::client_error::Error;
 use thiserror::Error;
 
 use crate::{
-    TransactionOutcome,
     client::{ChainError, IndexerError, ProofError},
     tx::{Compound, CompoundDeclare, CompoundFinalize, MessageBuilder},
 };

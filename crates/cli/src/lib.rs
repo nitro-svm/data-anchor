@@ -179,12 +179,17 @@ impl Options {
 
     /// Run the parsed CLI command.
     pub async fn run(self) -> DataAnchorClientResult {
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
         let client = Arc::new(
             DataAnchorClient::builder()
                 .payer(self.payer.clone())
                 .program_id(self.program_id)
                 .maybe_indexer(self.indexer)
-                .build_with_config(self.config, self.indexer_api_token.clone())
+                .build_with_config(
+                    self.config,
+                    shutdown_receiver,
+                    self.indexer_api_token.clone(),
+                )
                 .await?,
         );
 
@@ -205,6 +210,9 @@ impl Options {
         }?;
 
         println!("{}", output.serialize_output(self.output));
+
+        // Ensure all background tasks are stopped before exiting.
+        drop(shutdown_sender);
 
         Ok(())
     }

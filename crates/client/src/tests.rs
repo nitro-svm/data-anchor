@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use data_anchor_blober::find_blober_address;
 use data_anchor_utils::encode_and_compress_async;
 use itertools::Itertools;
+use nitro_sender::NitroSender;
 use rand::Rng;
 use solana_client::{
     client_error::{ClientError as Error, ClientErrorKind as ErrorKind},
@@ -33,9 +34,7 @@ use solana_signer::Signer;
 use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
 
-use crate::{
-    BatchClient, DataAnchorClient, FeeStrategy, batch_client, helpers::get_unique_timestamp,
-};
+use crate::{DataAnchorClient, FeeStrategy, helpers::get_unique_timestamp};
 
 #[tokio::test]
 async fn full_workflow_mock() {
@@ -105,14 +104,19 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
 
     let fee_strategy = FeeStrategy::default();
 
-    let batch_client = BatchClient::new(blober_rpc_client.clone(), vec![payer.clone()])
-        .await
-        .unwrap();
+    let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+    let batch_client = NitroSender::new(
+        blober_rpc_client.clone(),
+        shutdown_receiver,
+        vec![payer.clone()],
+    )
+    .await
+    .unwrap();
     let data_anchor_client = DataAnchorClient::builder()
         .payer(payer.clone())
         .program_id(data_anchor_blober::id())
         .rpc_client(blober_rpc_client.clone())
-        .batch_client(batch_client)
+        .nitro_sender(batch_client)
         .build();
 
     let namespace = "test".to_owned();
@@ -225,6 +229,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .unwrap();
 
     assert_eq!(vec![data], all_ledger_blobs);
+    drop(shutdown_sender);
 }
 
 #[tokio::test]
@@ -233,17 +238,21 @@ async fn failing_upload_returns_error() {
     let successful_rpc_client = Arc::new(RpcClient::new_mock("success".to_string()));
     let failing_rpc_client = Arc::new(RpcClient::new_mock("instruction_error".to_string()));
 
+    let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
     // Give a failing RPC client to the Batch and TPU clients, so uploads will fail.
-    let batch_client =
-        batch_client::BatchClient::new(failing_rpc_client.clone(), vec![payer.clone()])
-            .await
-            .unwrap();
+    let batch_client = NitroSender::new(
+        failing_rpc_client.clone(),
+        shutdown_receiver,
+        vec![payer.clone()],
+    )
+    .await
+    .unwrap();
     // Give a successful RPC client to the DataAnchorClient to allow other calls to succeed.
     let data_anchor_client = DataAnchorClient::builder()
         .payer(payer)
         .program_id(Pubkey::new_unique())
         .rpc_client(successful_rpc_client.clone())
-        .batch_client(batch_client)
+        .nitro_sender(batch_client)
         .build();
 
     // Useful for spotting the blob data in the transaction ledger.
@@ -263,6 +272,8 @@ async fn failing_upload_returns_error() {
         .await
         .unwrap_err();
     println!("{err:#?}");
+
+    drop(shutdown_sender);
 }
 
 // The default MockSender always returns the same value for get_last_blockhash and

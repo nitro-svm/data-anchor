@@ -17,6 +17,7 @@ use data_anchor_utils::{
 };
 use futures::{StreamExt, TryStreamExt};
 use jsonrpsee::http_client::HttpClient;
+use nitro_sender::{NitroSender, SuccessfulTransaction};
 use solana_commitment_config::CommitmentConfig;
 use solana_keypair::Keypair;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -25,7 +26,6 @@ use tracing::{Instrument, Span, info, info_span, trace};
 
 use crate::{
     DataAnchorClientError, DataAnchorClientResult, IndexerUrl,
-    batch_client::{BatchClient, SuccessfulTransaction},
     constants::DEFAULT_CONCURRENCY,
     fees::{Fee, FeeStrategy, Lamports},
     helpers::{check_outcomes, get_unique_timestamp},
@@ -123,7 +123,7 @@ pub struct DataAnchorClient {
     #[builder(default = data_anchor_blober::id())]
     pub(crate) program_id: Pubkey,
     pub(crate) rpc_client: Arc<RpcClient>,
-    pub(crate) batch_client: BatchClient,
+    pub(crate) nitro_sender: NitroSender,
     #[builder(getter(name = get_indexer, vis = ""))]
     #[allow(dead_code, reason = "Used in builder")]
     indexer: Option<IndexerUrl>,
@@ -262,7 +262,7 @@ impl DataAnchorClient {
 
         let span = info_span!(parent: Span::current(), "initialize_blober");
         Ok(check_outcomes(
-            self.batch_client
+            self.nitro_sender
                 .send(vec![(TransactionType::InitializeBlober, msg)], timeout)
                 .instrument(span)
                 .await,
@@ -339,7 +339,7 @@ impl DataAnchorClient {
 
         let span = info_span!(parent: Span::current(), "close_blober");
         Ok(check_outcomes(
-            self.batch_client
+            self.nitro_sender
                 .send(vec![(TransactionType::CloseBlober, msg)], timeout)
                 .instrument(span)
                 .await,
@@ -479,7 +479,7 @@ impl DataAnchorClient {
 
         Ok((
             check_outcomes(
-                self.batch_client
+                self.nitro_sender
                     .send(vec![(TransactionType::DiscardBlob, msg)], timeout)
                     .instrument(span)
                     .await,
@@ -543,7 +543,7 @@ impl DataAnchorClient {
 
         Ok((
             check_outcomes(
-                self.batch_client
+                self.nitro_sender
                     .send(vec![(TransactionType::ConfigureCheckpoint, msg)], timeout)
                     .instrument(span)
                     .await,

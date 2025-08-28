@@ -22,7 +22,6 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
 # Solana & Agave
 anchor-lang = { workspace = true }
@@ -42,6 +41,9 @@ solana-transaction = { workspace = true }
 solana-transaction-error = { workspace = true }
 solana-transaction-status = { workspace = true }
 
+# Nitro dependencies
+nitro-sender = { workspace = true }
+
 # Locals
 data-anchor-blober = { workspace = true }
 data-anchor-api = { workspace = true }
@@ -60,4 +62,4 @@ solana-test-validator = { workspace = true }
 
 [features]
 default = []
-borsh = [ "data-anchor-utils/borsh" ]
+borsh = ["data-anchor-utils/borsh"]

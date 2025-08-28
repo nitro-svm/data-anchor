@@ -99,6 +99,9 @@ sp1-derive = "5.2.1"
 sp1-sdk = "5.2.1"
 sp1-zkvm = "5.2.1"
 
+# Nitro dependencies
+nitro-sender = "0.1.0"
+
 # Locals
 data-anchor = { path = "crates/cli", version = "0.4.2" }
 data-anchor-api = { path = "crates/indexer-api", version = "0.4.2" }
