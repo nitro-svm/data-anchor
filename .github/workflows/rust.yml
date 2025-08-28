@@ -78,25 +78,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: nitro-svm/infrastructure/actions/install-protoc@main
-
       - name: Install Rust
         run: |
           rustup show
           rustup install nightly
           # Nightly is needed for our configuration of cargo fmt
           rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
-
-      - name: cargo install zepter
-        uses: taiki-e/install-action@v2
-        with:
-          tool: zepter@1
-
-      - name: Install just
-        uses: extractions/setup-just@v3
-        with:
-          just-version: 1.39.0
 
       - name: Install system dependencies
         run: |
@@ -120,6 +107,11 @@ jobs:
       - name: Install SP1
         uses: nitro-svm/infrastructure/actions/install-sp1@main
 
+      - name: Install zepter, just and protoc
+        uses: taiki-e/install-action@v2
+        with:
+          tool: zepter,just,protoc
+
       - name: Run lint and formatting checks
         run: just lint
 
@@ -129,11 +121,6 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
-
-      - name: Install Protoc
-        uses: nitro-svm/infrastructure/actions/install-protoc@main
-
-      - uses: taiki-e/install-action@nextest
 
       - name: Install Rust
         run: rustup show
@@ -159,6 +146,11 @@ jobs:
           sudo swapon --show
           free -h
 
+      - name: Install nextest, just and protoc
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest,just,protoc
+
       - name: Install Solana tools
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
@@ -172,27 +164,23 @@ jobs:
           avm install "$ANCHOR_CLI"
           echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
 
-      - name: Install just
-        uses: extractions/setup-just@v3
-        with:
-          just-version: 1.39.0
-
       - name: Start database
         run: just docker-run-db
 
       - name: Install SP1
         uses: nitro-svm/infrastructure/actions/install-sp1@main
 
-      - run: just test
-
-      - run: just build-programs
+      - name: Run nextest
+        run: just test
 
       - name: Run full workflow test against local validator
         run: |
           rm -rf target/test-ledger
+          just build-programs
           just run-solana-test-validator &
-          sleep 5
+          sleep 5 
           just --yes test-with-local
+          pkill -f solana
 
   changes:
     runs-on: warp-ubuntu-2404-x64-8x
@@ -221,11 +209,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: nitro-svm/infrastructure/actions/install-protoc@main
-
-      - uses: taiki-e/install-action@nextest
-
       - name: Install Rust
         run: rustup show
 
@@ -250,6 +233,11 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential cmake pkg-config libudev-dev
 
+      - name: Install nextest, just and protoc
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest,just,protoc
+
       - name: Install Solana tools
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/${SOLANA_CLI}/install)"
@@ -263,11 +251,6 @@ jobs:
           avm install "$ANCHOR_CLI"
           echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
 
-      - name: Install just
-        uses: extractions/setup-just@v3
-        with:
-          just-version: 1.39.0
-
       - name: Install SP1
         uses: nitro-svm/infrastructure/actions/install-sp1@main
 
@@ -276,5 +259,4 @@ jobs:
           # Run property testing with arbitrary for 10s
           ARBTEST_BUDGET_MS: 10000
         run: |
-          just test-programs
-          just test-compute-unit-limit
+          just test-programs test-compute-unit-limit

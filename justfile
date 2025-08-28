@@ -220,7 +220,7 @@ run-yellowstone:
 # Run the solana-test-validator with the blober program
 [group('indexer')]
 run-solana-test-validator:
-    solana-test-validator \
+    solana-test-validator -q \
         --ledger target/test-ledger \
         --limit-ledger-size 1000000 \
         --bpf-program anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2 programs/target/deploy/data_anchor_blober.so
