@@ -59,6 +59,7 @@ pub enum IndexerSubCommand {
         time_args: TimeArgs,
     },
     /// Get proof for a given blob.
+    #[deprecated(since = "0.4.3", note = "please use `zk-proof` instead")]
     #[command(visible_alias = "pb")]
     ProofForBlob {
         /// The blob address to query.
@@ -66,6 +67,7 @@ pub enum IndexerSubCommand {
         blob: Pubkey,
     },
     /// Get compound proof for a given slot.
+    #[deprecated(since = "0.4.3", note = "please use `zk-proof` instead")]
     #[command(visible_alias = "p", alias = "proofs")]
     Proof(SlotArgs),
     /// List payers for a given network.
@@ -240,10 +242,12 @@ impl IndexerSubCommand {
                     .await?;
                 Ok(IndexerCommandOutput::Blobs(data).into())
             }
+            #[allow(deprecated)]
             IndexerSubCommand::Proof(SlotArgs { slot }) => {
                 let proof = client.get_proof(*slot, identifier).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())
             }
+            #[allow(deprecated)]
             IndexerSubCommand::ProofForBlob { blob } => {
                 let proof = client.get_proof_for_blob(blob.to_owned()).await?;
                 Ok(IndexerCommandOutput::Proofs(Box::new(proof)).into())

@@ -159,6 +159,7 @@ impl DataAnchorClient {
     }
 
     /// Fetches compound proof for a given slot from the [`IndexerRpcClient`].
+    #[deprecated(since = "0.4.3", note = "please use `checkpoint_proof` instead")]
     pub async fn get_proof(
         &self,
         slot: u64,
@@ -166,6 +167,7 @@ impl DataAnchorClient {
     ) -> DataAnchorClientResult<Option<CompoundInclusionProof>> {
         let blober = identifier.to_blober_address(self.program_id, self.payer.pubkey());
 
+        #[allow(deprecated)]
         self.indexer()
             .get_proof(blober.into(), slot)
             .await
@@ -173,10 +175,12 @@ impl DataAnchorClient {
     }
 
     /// Fetches compound proof for a given blob PDA [`Pubkey`] from the [`IndexerRpcClient`].
+    #[deprecated(since = "0.4.3", note = "please use `checkpoint_proof` instead")]
     pub async fn get_proof_for_blob(
         &self,
         blob: Pubkey,
     ) -> DataAnchorClientResult<Option<CompoundInclusionProof>> {
+        #[allow(deprecated)]
         self.indexer()
             .get_proof_for_blob(blob.into())
             .await

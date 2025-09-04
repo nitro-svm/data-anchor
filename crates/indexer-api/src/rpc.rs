@@ -131,6 +131,7 @@ pub trait IndexerRpc {
 
     /// Retrieve a proof for a given slot and blober pubkey. Returns an error if there was a
     /// database or RPC failure, and None if the slot has not been completed yet.
+    #[deprecated(since = "0.4.3", note = "please use `checkpoint_proof` instead")]
     #[method(name = "get_proof")]
     async fn get_proof(
         &self,
@@ -140,6 +141,7 @@ pub trait IndexerRpc {
 
     /// Retrieve a compound proof that covers a particular blob. Returns an error if there was a
     /// database or RPC failure, and None if the blob does not exist.
+    #[deprecated(since = "0.4.3", note = "please use `checkpoint_proof` instead")]
     #[method(name = "get_proof_for_blob")]
     async fn get_proof_for_blob(
         &self,
