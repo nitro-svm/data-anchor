@@ -19,7 +19,6 @@ pub struct BlobProof {
 }
 
 impl Debug for BlobProof {
-    #[cfg_attr(test, mutants::skip)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Proof")
             .field("digest", &Hash::new_from_array(self.digest))

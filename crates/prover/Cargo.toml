@@ -6,11 +6,10 @@ license.workspace = true
 authors.workspace = true
 homepage.workspace = true
 repository.workspace = true
-publish = false
+publish.workspace = true
 
 [dependencies]
 # External dependencies
-anyhow = { workspace = true }
 jsonrpsee = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

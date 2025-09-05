@@ -1,11 +1,5 @@
 set unstable := true
 
-export DATABASE_URL := env("DATABASE_URL", "postgres://postgres:secret@localhost:5432/postgres")
-
-# The Pubkey of the payer account for image building
-
-export PAYER_PUBKEY := "2MCVmcuUcREwQKDS3HazuYctkkbZV3XRMspM5eLWRZUV"
-
 # The budget for the arbtest program in milliseconds
 
 export ARBTEST_BUDGET_MS := "10000"
@@ -15,27 +9,18 @@ export ARBTEST_BUDGET_MS := "10000"
 fmt-justfile:
     just --fmt --check
 
-# Run formatting checks for the infrastructure directory
-[group('lint')]
-[working-directory('infrastructure')]
-fmt-tofu:
-    tofu fmt -check
-
 # Run lint and formatting checks for the programs directory
 [group('lint')]
 [working-directory('programs')]
 lint-programs:
     cargo +nightly fmt -- --check
-    cargo clippy --all-targets --all-features
+    cargo +1.86.0 clippy --all-targets --all-features
     zepter run check
 
 # Run lint and formatting checks for the entire project
 [group('lint')]
-lint: lint-programs fmt-justfile fmt-tofu build-prover
-    #!/usr/bin/env bash
-    set -euxo pipefail
+lint: lint-programs fmt-justfile build-prover
     cargo +nightly fmt -- --check
-    unset DATABASE_URL
     cargo clippy --all-targets --all-features
     zepter
 
@@ -44,23 +29,17 @@ lint: lint-programs fmt-justfile fmt-tofu build-prover
 fmt-justfile-fix:
     just --fmt
 
-# Fix formatting issues in the infrastructure directory
-[group('lint')]
-[working-directory('infrastructure')]
-fmt-tofu-fix:
-    tofu fmt
-
 # Fix lint and formatting issues in the programs directory
 [group('lint')]
 [working-directory('programs')]
 lint-programs-fix:
     cargo +nightly fmt
-    cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
+    cargo +1.86.0 clippy --fix --allow-dirty --allow-staged --all-targets --all-features
     zepter
 
 # Fix lint and formatting issues in the entire project
 [group('lint')]
-lint-fix: lint-programs-fix fmt-justfile-fix fmt-tofu-fix build-prover
+lint-fix: lint-programs-fix fmt-justfile-fix build-prover
     cargo +nightly fmt
     cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
     zepter
@@ -69,25 +48,16 @@ lint-fix: lint-programs-fix fmt-justfile-fix fmt-tofu-fix build-prover
 [group('test')]
 [working-directory('programs')]
 test-programs: build-programs
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    unset DATABASE_URL
     cargo nextest run --workspace
 
 # Run compute budget tests for transaction fees
 [group('test')]
 test-compute-unit-limit limit=ARBTEST_BUDGET_MS:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    unset DATABASE_URL
     ARBTEST_BUDGET_MS={{ limit }} cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
 
 # Run tests for the crates in the workspace
 [group('test')]
 test:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    unset DATABASE_URL
     cargo nextest run --workspace
 
 # Run tests for the entire project
@@ -99,48 +69,14 @@ test-all: test-programs test
 test-with-local:
     cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
 
-[confirm('This will run the indexer tests and requires a local database to be running. Are you sure you want to continue [y/n]?')]
-[group('test')]
-test-indexer:
-    cargo nextest run --workspace -j1 -E 'test(indexer)' -- --ignored
-
-# Run indexer database test
-[confirm('This will run the database tests and requires a local database to be running. Are you sure you want to continue [y/n]?')]
-[group('test')]
-test-db:
-    cargo nextest run --workspace -j1 -E 'test(postgres)' -- --ignored
-
-# Add sqlx migration
-[group('db')]
-sqlx-add name:
-    cargo sqlx migrate add -r {{ name }}
-
-# Run sqlx migrations
-[group('db')]
-sqlx-migrate:
-    cargo sqlx migrate run
-
-# Rollback the last sqlx migration
-[group('db')]
-sqlx-rollback:
-    cargo sqlx migrate revert
-
-# Run sqlx offline preparation
-[group('db')]
-sqlx-prepare:
-    cargo sqlx prepare --workspace -- --all-targets
-
 # Run pre-push checks
 [group('dev')]
-pre-push: lint-fix test-all sqlx-prepare
+pre-push: lint-fix test-all
 
 # Build the programs
 [group('build')]
 [working-directory('programs')]
 build-programs:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    unset DATABASE_URL
     anchor build --no-idl
 
 # Build the prover script
@@ -189,151 +125,13 @@ clean-programs:
 clean: clean-programs
     cargo clean
 
-# Run the geyser plugin locally using the solana-test-validator (linux)
-[group('indexer')]
-[linux]
-[working-directory('crates/indexer/scripts')]
-run-geyser: build
-    ./linux/run-geyser.sh
-
-# Run the geyser plugin locally using the solana-test-validator (macos)
-[group('indexer')]
-[macos]
-[working-directory('crates/indexer/scripts')]
-run-geyser: build
-    ./mac/run-geyser.sh
-
-# Run the indexer locally using the yellowstone gRPC plugin (macos)
-[group('indexer')]
-[macos]
-[working-directory('crates/indexer/scripts')]
-run-yellowstone:
-    ./mac/run-yellowstone.sh
-
-# Run the indexer locally using the yellowstone gRPC plugin (linux)
-[group('indexer')]
-[linux]
-[working-directory('crates/indexer/scripts')]
-run-yellowstone:
-    ./linux/run-yellowstone.sh
-
 # Run the solana-test-validator with the blober program
 [group('indexer')]
-run-solana-test-validator:
+run-solana-test-validator: build-programs
     solana-test-validator -q \
         --ledger target/test-ledger \
         --limit-ledger-size 1000000 \
         --bpf-program anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2 programs/target/deploy/data_anchor_blober.so
-
-# Run the yellowstone consumer binary
-[group('indexer')]
-run-yellowstone-consumer url token="":
-    cargo run --release --bin yellowstone-consumer -- -y {{ url }} {{ token && "-x " + token }}
-
-# Run the indexer binary
-[group('indexer')]
-run-indexer rpc-url:
-    cargo run --release --bin data-anchor-indexer -- \
-        -c postgres://postgres:secret@localhost:5432/postgres \
-        -g none \
-        -r {{ rpc-url }}
-
-# Run the indexer RPC server
-[group('indexer')]
-run-rpc:
-    cargo run --release --bin data-anchor-rpc -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9696'
-
-# Run the indexer proof RPC server
-[group('indexer')]
-run-proof-rpc:
-    cargo run --release --bin data-anchor-proof-rpc -- -c postgres://postgres:secret@localhost:5432/postgres -j '0.0.0.0:9697'
-
-# Run sozu reverse proxy over the RPC and proof RPC servers
-[group('indexer')]
-run-sozu:
-    sozu -c scripts/sozu.toml start
-
-# Build the docker image for the indexer
-[group('docker')]
-[linux]
-docker-build:
-    docker compose -f ./docker/docker-compose.yml build --ssh default --build-arg PAYER_PUBKEY={{ PAYER_PUBKEY }}
-
-# Run the indexer locally using docker
-[group('docker')]
-[linux]
-docker-run:
-    docker compose -f ./docker/docker-compose.yml up --force-recreate
-
-# Run the db locally using docker in detached mode
-[group('docker')]
-[working-directory('.github/workflows/db')]
-docker-run-db:
-    docker compose -f ./no-tls-db.yml up -d --wait --force-recreate
-    @sleep 2
-
-# Stop the docker db
-[group('docker')]
-[working-directory('.github/workflows/db')]
-docker-stop-db:
-    docker compose -f ./no-tls-db.yml down
-
-[group('tofu')]
-[private]
-[working-directory('infrastructure')]
-initialize-workspace workspace="staging":
-    #!/usr/bin/env bash
-    set -euxo pipefail
-
-    tofu workspace select {{ workspace }}
-
-# Apply staging infrastructure
-[confirm('This will apply the staging infrastructure. Are you sure you want to continue [y/n]?')]
-[group('tofu')]
-[working-directory('infrastructure')]
-apply-staging: initialize-workspace
-    #!/usr/bin/env bash
-    set -euxo pipefail
-
-    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/main)
-
-    tofu apply \
-        -var-file="environments/staging.tfvars" \
-        -var="release_id=${RELEASE}"
-
-# Apply devnet infrastructure
-[confirm('This will apply the devnet infrastructure. Are you sure you want to continue [y/n]?')]
-[group('tofu')]
-[working-directory('infrastructure')]
-apply-devnet: (initialize-workspace "devnet")
-    #!/usr/bin/env bash
-    set -euxo pipefail
-
-    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/devnet)
-
-    tofu apply \
-        -var-file="environments/devnet.tfvars" \
-        -var="release_id=${RELEASE}"
-
-# Apply mainnet infrastructure
-[confirm('This will apply the mainnet infrastructure. Are you sure you want to continue [y/n]?')]
-[group('tofu')]
-[working-directory('infrastructure')]
-apply-mainnet: (initialize-workspace "mainnet")
-    #!/usr/bin/env bash
-    set -euxo pipefail
-
-    RELEASE=$(git log --pretty=format:'%H' -n 1 origin/mainnet)
-
-    tofu apply \
-        -var-file="environments/mainnet.tfvars" \
-        -var="release_id=${RELEASE}"
-
-# Run local e2e tests
-[confirm('This will run all the indexer components and run CLI commands against it. Are you sure you want to continue [y/n]?')]
-[group('test')]
-run-e2e prover-mode='' private-key='':
-    {{ prover-mode && "SP1_PROVER=" + prover-mode }} {{ private-key && "NETWORK_PRIVATE_KEY=" + private-key }} ./scripts/run-e2e.sh
 
 # Run local e2e process and calculate on-chain cost
 [confirm('This will run all the indexer components and run CLI commands against it. Are you sure you want to continue [y/n]?')]

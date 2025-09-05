@@ -16,7 +16,6 @@ clap = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
 jsonrpsee = { workspace = true, features = ["ws-client", "http-client"] }
-schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -38,7 +37,6 @@ solana-rpc-client-api = { workspace = true }
 solana-signer = { workspace = true }
 solana-signature = { workspace = true }
 solana-transaction = { workspace = true }
-solana-transaction-error = { workspace = true }
 solana-transaction-status = { workspace = true }
 
 # Nitro dependencies
@@ -62,4 +60,4 @@ solana-test-validator = { workspace = true }
 
 [features]
 default = []
-borsh = ["data-anchor-utils/borsh"]
+borsh = [ "data-anchor-utils/borsh" ]

@@ -1,16 +1,13 @@
 use anchor_lang::prelude::Pubkey;
 use clap::ValueEnum;
 use itertools::Itertools;
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use solana_client::nonblocking::rpc_client::RpcClient;
 
 use crate::{DataAnchorClientResult, MicroLamports};
 
 /// The percentile of recent prioritization fees to use as the compute unit price for a transaction.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema, ValueEnum,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, ValueEnum)]
 pub enum Priority {
     /// 0th percentile
     Min,

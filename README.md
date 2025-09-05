@@ -5,11 +5,10 @@ This folder contains a few different crates that together form the DA adapter fo
 1. [`programs`](programs/programs/blober/README.md) contains the Solana program that needs to be deployed on-chain.
    - The `blober` program is used to split up blobs into chunks, and "stores" the chunks by passing them as arguments to the program. The data is never actually persisted on-chain, instead using the much cheaper ledger storage. As chunks come in one by one they will be hashed as a (incremental/sequential) merkle tree, yielding a final `digest` at the end which _is_ persisted in the `blob` PDA account.
    - When a blob's chunks are all fully submitted, the `blober` program hashes the `digest` itself and this new hash is persisted in the `blober` account. This might seem superfluous at first, but the purpose is to have a well-known address that can be proven whether it is present or not in the list of updated accounts that Solana calculates for each block.
-2. [`client`](./crates/client/README.md) contains a client that can be used to interact with the `blober` program. It also contains a client for the `Indexer` RPC. The `DataAnchorClient` then wraps all the complexity of creating a `blober` account, splitting a blob into chunks, uploading the chunks, hashing the `digest`, and closing the PDAs to reclaim rent. It also makes educated guesses about setting good prioritization fees (without overspending) to ensure transactions are included by validators.
-3. [`proofs`](./crates/proofs/README.md) contains the various proofs that are used to verify the state of the `blober`. This is how data availability can be proven all the way from a blob's chunks.
-4. [`indexer`](./crates/indexer/README.md) contains the code that runs the indexer, which is a geyser plugin used to monitor the `blober` accounts as they are being used. The indexer stores data in an embedded `native_db` database, and must be configured to monitor specific `blober` accounts.
-5. [`indexer_api`](./crates/indexer_api/README.md) contains the shared interface between the indexer and the client.
-6. [`cli`](./crates/cli/README.md) contains the CLI used to interact with the data module. This includes interacting with the on chain program to manage `blober` accounts and upload blobs, as well as the `indexer` to retrieve blob data and proofs.
+1. [`client`](./crates/client/README.md) contains a client that can be used to interact with the `blober` program. It also contains a client for the `Indexer` RPC. The `DataAnchorClient` then wraps all the complexity of creating a `blober` account, splitting a blob into chunks, uploading the chunks, hashing the `digest`, and closing the PDAs to reclaim rent. It also makes educated guesses about setting good prioritization fees (without overspending) to ensure transactions are included by validators.
+1. [`proofs`](./crates/proofs/README.md) contains the various proofs that are used to verify the state of the `blober`. This is how data availability can be proven all the way from a blob's chunks.
+1. [`indexer_api`](./crates/indexer_api/README.md) contains the shared interface between the indexer and the client.
+1. [`cli`](./crates/cli/README.md) contains the CLI used to interact with the data module. This includes interacting with the on chain program to manage `blober` accounts and upload blobs, as well as the `indexer` to retrieve blob data and proofs.
 
 ## Installation
 
@@ -19,7 +18,6 @@ Install the following tools:
 - [nodejs (using nvm)](https://nodejs.org/en/download/package-manager)
 - [yarn (using corepack)](https://yarnpkg.com/getting-started/install)
 - [Anchor (using avm)](https://www.anchor-lang.com/docs/installation#installing-using-anchor-version-manager-avm-recommended)
-- [cargo-mutants](https://mutants.rs/installation.html)
 
 All following sections assume the tools have been installed. It's also assumed that you've set the current working directory to the crate you want to test.
 

@@ -1,7 +1,3 @@
 [workspace]
 publish = true
 pr_branch_prefix = "release-plz-root-"
-
-[[package]]
-name = "data-anchor-indexer"
-publish = false

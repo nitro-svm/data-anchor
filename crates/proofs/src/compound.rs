@@ -64,7 +64,6 @@ impl<A: AsRef<[u8]>> ProofBlob<A> {
 }
 
 impl<A: AsRef<[u8]>> Debug for ProofBlob<A> {
-    #[cfg_attr(test, mutants::skip)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Blob")
             .field("blob", &self.blob)

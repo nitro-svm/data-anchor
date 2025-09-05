@@ -27,7 +27,6 @@ data-anchor-blober = { workspace = true }
 # External dependencies from crates.io
 arbitrary = { workspace = true, features = ["derive"] }
 arbtest = { workspace = true }
-mutants = { workspace = true }
 serde_json = { workspace = true }
 
 # Solana & Agave

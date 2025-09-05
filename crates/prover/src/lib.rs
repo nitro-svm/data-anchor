@@ -22,7 +22,7 @@ pub enum ProofGenerationError {
     #[error("Failed to run generation task: {0}")]
     RunGenerationTask(#[from] tokio::task::JoinError),
     #[error("Failed to generate proof: {0}")]
-    Generate(#[from] anyhow::Error),
+    Generate(String),
     #[error("Failed to verify proof: {0}")]
     Verify(#[from] SP1VerificationError),
     #[error("Failed to put Groth16 proof bytes into array")]
@@ -65,7 +65,10 @@ pub fn simulate_proof_generation(
     let client = ProverClient::from_env();
 
     debug!("Simulating proof generation");
-    let (public_values, report) = client.execute(prover_elf, &sp1_stdin).run()?;
+    let (public_values, report) = client
+        .execute(prover_elf, &sp1_stdin)
+        .run()
+        .map_err(|e| ProofGenerationError::Generate(e.to_string()))?;
 
     Ok((public_values, report))
 }
@@ -84,7 +87,11 @@ pub fn run_client(
     if prove {
         debug!("Generating Groth16 proof");
         let (pk, vk) = client.setup(prover_elf);
-        let proof = client.prove(&pk, &sp1_stdin).groth16().run()?;
+        let proof = client
+            .prove(&pk, &sp1_stdin)
+            .groth16()
+            .run()
+            .map_err(|e| ProofGenerationError::Generate(e.to_string()))?;
 
         if verify {
             debug!("Verifying Groth16 proof");
@@ -93,7 +100,10 @@ pub fn run_client(
     }
 
     debug!("Executing SP1 program");
-    let (public_values, report) = client.execute(prover_elf, &sp1_stdin).run()?;
+    let (public_values, report) = client
+        .execute(prover_elf, &sp1_stdin)
+        .run()
+        .map_err(|e| ProofGenerationError::Generate(e.to_string()))?;
 
     Ok((public_values, report))
 }
@@ -110,7 +120,14 @@ pub async fn generate_proof(
     let (pk, vk) = client.setup(prover_elf);
 
     info!("Generating Groth16 proof");
-    let proof = spawn_blocking(move || client.prove(&pk, &sp1_stdin).groth16().run()).await??;
+    let proof = spawn_blocking(move || {
+        client
+            .prove(&pk, &sp1_stdin)
+            .groth16()
+            .run()
+            .map_err(|e| ProofGenerationError::Generate(e.to_string()))
+    })
+    .await??;
 
     let proof_bytes = proof
         .bytes()
