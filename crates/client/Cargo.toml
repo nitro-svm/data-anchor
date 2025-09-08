@@ -20,6 +20,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+tokio-util = { workspace = true }
 tracing = { workspace = true }
 
 # Solana & Agave
@@ -54,9 +55,7 @@ arbtest = { workspace = true }
 rand = { workspace = true }
 rstest = { workspace = true }
 tokio = { workspace = true, features = ["test-util", "macros"] }
-
-# Solana & Agave
-solana-test-validator = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [features]
 default = []

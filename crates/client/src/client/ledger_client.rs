@@ -346,12 +346,12 @@ impl DataAnchorClient {
                     .filter_map(|compiled_instruction| {
                         Some(RelevantInstructionWithAccounts {
                             blob: get_account_at_index(
-                                &tx,
+                                tx.message.static_account_keys(),
                                 compiled_instruction,
                                 BLOB_ACCOUNT_INSTRUCTION_IDX,
                             )?,
                             blober: get_account_at_index(
-                                &tx,
+                                tx.message.static_account_keys(),
                                 compiled_instruction,
                                 BLOB_BLOBER_INSTRUCTION_IDX,
                             )?,

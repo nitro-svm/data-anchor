@@ -33,6 +33,7 @@ use solana_rpc_client_api::{
 use solana_signer::Signer;
 use solana_transaction_status::TransactionStatus;
 use tokio::time::Instant;
+use tokio_util::sync::CancellationToken;
 
 use crate::{DataAnchorClient, FeeStrategy, helpers::get_unique_timestamp};
 
@@ -51,6 +52,7 @@ async fn full_workflow_mock() {
 #[tokio::test]
 async fn full_workflow_unreliable_client() {
     // Pass a bad client for blob uploads.
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     let bad_client = Arc::new(RpcClient::new_sender(
         UnreliableSender(MockBlockSender {
             sender: MockSender::new("succeeds".to_string()),
@@ -72,6 +74,9 @@ async fn full_workflow_localnet() {
 }
 
 async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
     let payer = Arc::new(Keypair::new());
     blober_rpc_client
         .request_airdrop_with_config(
@@ -104,10 +109,10 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
 
     let fee_strategy = FeeStrategy::default();
 
-    let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+    let cancellation_token = CancellationToken::new();
     let batch_client = NitroSender::new(
         blober_rpc_client.clone(),
-        shutdown_receiver,
+        cancellation_token.clone(),
         vec![payer.clone()],
     )
     .await
@@ -229,7 +234,7 @@ async fn full_workflow(blober_rpc_client: Arc<RpcClient>, check_ledger: bool) {
         .unwrap();
 
     assert_eq!(vec![data], all_ledger_blobs);
-    drop(shutdown_sender);
+    cancellation_token.cancel();
 }
 
 #[tokio::test]
@@ -238,11 +243,11 @@ async fn failing_upload_returns_error() {
     let successful_rpc_client = Arc::new(RpcClient::new_mock("success".to_string()));
     let failing_rpc_client = Arc::new(RpcClient::new_mock("instruction_error".to_string()));
 
-    let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+    let cancellation_token = CancellationToken::new();
     // Give a failing RPC client to the Batch and TPU clients, so uploads will fail.
     let batch_client = NitroSender::new(
         failing_rpc_client.clone(),
-        shutdown_receiver,
+        cancellation_token.clone(),
         vec![payer.clone()],
     )
     .await
@@ -273,7 +278,7 @@ async fn failing_upload_returns_error() {
         .unwrap_err();
     println!("{err:#?}");
 
-    drop(shutdown_sender);
+    cancellation_token.cancel();
 }
 
 // The default MockSender always returns the same value for get_last_blockhash and

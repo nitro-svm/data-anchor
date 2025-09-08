@@ -5,6 +5,7 @@ use nitro_sender::NitroSender;
 use solana_cli_config::Config;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_commitment_config::CommitmentConfig;
+use tokio_util::sync::CancellationToken;
 
 use crate::{
     DataAnchorClient, DataAnchorClientError, DataAnchorClientResult,
@@ -96,7 +97,7 @@ where
     pub async fn build_with_config(
         self,
         solana_config: Config,
-        shutdown_receiver: tokio::sync::watch::Receiver<()>,
+        cancellation_token: CancellationToken,
         indexer_api_token: Option<String>,
     ) -> DataAnchorClientResult<DataAnchorClient>
     where
@@ -124,7 +125,7 @@ where
         Ok(self
             .rpc_client(rpc_client.clone())
             .nitro_sender(
-                NitroSender::new(rpc_client.clone(), shutdown_receiver, vec![payer.clone()])
+                NitroSender::new(rpc_client.clone(), cancellation_token, vec![payer.clone()])
                     .await?,
             )
             .indexer_from_url(&indexer_url, indexer_api_token)

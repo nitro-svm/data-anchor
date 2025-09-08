@@ -146,7 +146,7 @@ impl CommandOutput {
                     Ok(String::from_utf8(writer.into_inner()?)?)
                 }
                 BenchmarkCommandOutput::Measurements(vec) => {
-                    Ok(write_measurements(vec.clone(), true)?)
+                    Ok(write_measurements(vec.clone(), true))
                 }
             },
         }

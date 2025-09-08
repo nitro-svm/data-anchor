@@ -13,6 +13,7 @@ use data_anchor_blober::{
 };
 use jsonrpsee::http_client::HttpClient;
 use nitro_sender::{SuccessfulTransaction, TransactionOutcome};
+use solana_commitment_config::CommitmentConfig;
 use solana_signer::Signer;
 use tracing::{Instrument, Span, info_span};
 
@@ -41,6 +42,7 @@ impl DataAnchorClient {
         timeout: Option<Duration>,
     ) -> DataAnchorClientResult<Vec<SuccessfulTransaction<TransactionType>>> {
         let before = Instant::now();
+        let commitment = self.rpc_client.commitment();
 
         match upload_messages {
             UploadMessages::CompoundUpload(tx) => {
@@ -50,6 +52,7 @@ impl DataAnchorClient {
                         .send(vec![(TransactionType::Compound, tx)], timeout)
                         .instrument(span)
                         .await,
+                    commitment,
                 )
                 .map_err(ChainError::CompoundUpload)?)
             }
@@ -64,6 +67,7 @@ impl DataAnchorClient {
                         .send(vec![(TransactionType::DeclareBlob, declare_blob)], timeout)
                         .instrument(span)
                         .await,
+                    commitment,
                 )
                 .map_err(ChainError::DeclareBlob)?;
 
@@ -82,6 +86,7 @@ impl DataAnchorClient {
                         )
                         .instrument(span)
                         .await,
+                    commitment,
                 )
                 .map_err(ChainError::InsertChunks)?;
 
@@ -96,6 +101,7 @@ impl DataAnchorClient {
                         )
                         .instrument(span)
                         .await,
+                    commitment,
                 )
                 .map_err(ChainError::FinalizeBlob)?;
 
@@ -354,11 +360,12 @@ pub(crate) fn split_blob_into_chunks(data: &[u8]) -> Vec<(u16, &[u8])> {
 
 pub(crate) fn check_outcomes(
     outcomes: Vec<TransactionOutcome<TransactionType>>,
+    commitment: CommitmentConfig,
 ) -> Result<Vec<SuccessfulTransaction<TransactionType>>, OutcomeError> {
-    if outcomes.iter().all(|o| o.successful()) {
+    if outcomes.iter().all(|o| o.successful(commitment)) {
         let successful_transactions = outcomes
             .into_iter()
-            .filter_map(TransactionOutcome::into_successful)
+            .filter_map(|o| o.into_successful(commitment))
             .map(|t| *t)
             .collect();
         Ok(successful_transactions)

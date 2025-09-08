@@ -38,7 +38,7 @@ pub const MAX_NAMESPACE_LENGTH: u8 = 100;
 pub const COMPOUND_TX_SIZE: u16 = 848;
 
 /// The max size of data for a compound transaction containing the first two (declare and insert) instructions.
-pub const COMPOUND_DECLARE_TX_SIZE: u16 = 868;
+pub const COMPOUND_DECLARE_TX_SIZE: u16 = 862;
 
 /// The index of the blob account in the instruction accounts list.
 pub const BLOB_ACCOUNT_INSTRUCTION_IDX: usize = 0;

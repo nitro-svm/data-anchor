@@ -1,7 +1,6 @@
 use anchor_lang::{
-    Discriminator, InstructionData, Space, ToAccountMetas,
-    prelude::Pubkey,
-    solana_program::{instruction::Instruction, rent::ACCOUNT_STORAGE_OVERHEAD},
+    Discriminator, InstructionData, Space, ToAccountMetas, prelude::Pubkey,
+    solana_program::instruction::Instruction,
 };
 use data_anchor_blober::{
     checkpoint::{Checkpoint, CheckpointConfig},
@@ -23,8 +22,7 @@ impl MessageBuilder for Close {
         + Checkpoint::DISCRIMINATOR.len()
         + Checkpoint::INIT_SPACE
         + CheckpointConfig::DISCRIMINATOR.len()
-        + CheckpointConfig::INIT_SPACE
-        + ACCOUNT_STORAGE_OVERHEAD as usize) as u32;
+        + CheckpointConfig::INIT_SPACE) as u32;
 
     fn mutable_accounts(args: &MessageArguments<Self::Input>) -> Vec<Pubkey> {
         let mut certain = vec![args.blober, args.payer];

@@ -80,12 +80,13 @@ impl BlobAccount {
         let blob_account_blob_size = u32::from_le_bytes(blob_account_blob_size_bytes) as usize;
 
         if let Some(blob_size) = blob.blob_size()
-            && blob_account_blob_size != blob_size {
-                return Err(BloberAccountStateError::BlobSizeMismatch {
-                    expected: blob_account_blob_size,
-                    found: blob_size,
-                });
-            }
+            && blob_account_blob_size != blob_size
+        {
+            return Err(BloberAccountStateError::BlobSizeMismatch {
+                expected: blob_account_blob_size,
+                found: blob_size,
+            });
+        }
 
         Ok(blob_account_digest)
     }
