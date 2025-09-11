@@ -1,11 +1,11 @@
 [workspace]
-members = ["programs/blober", "programs/data-correctness", "programs/dawn-sla"]
+members = ["programs/blober", "programs/data-correctness", "programs/pob-sla"]
 resolver = "2"
 
 [workspace.package]
 version = "0.2.1"
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "GPL-3.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
 publish = true
@@ -22,8 +22,8 @@ tokio = "1.43.0"
 # Solana & Agave
 solana-logger = "=2.1.6"
 solana-program-test = "=2.1.6"
-solana-sdk = "=2.1.6"
 solana-rpc-client = "=2.1.6"
+solana-sdk = "=2.1.6"
 solana-test-validator = "=2.1.6"
 
 anchor-lang = "=0.31.1"

@@ -102,7 +102,6 @@ where
     ) -> DataAnchorClientResult<DataAnchorClient>
     where
         State::Payer: IsSet,
-        State::ProgramId: IsSet,
         State::Indexer: IsSet,
         State::RpcClient: IsUnset,
         State::NitroSender: IsUnset,

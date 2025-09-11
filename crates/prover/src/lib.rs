@@ -10,8 +10,8 @@ use tracing::{debug, info};
 /// Prover ELF binary for data correctness proof generation.
 pub const DATA_CORRECTNESS_ELF: &[u8] = include_elf!("data-anchor-data-correctness");
 
-/// Prover ELF binary for Dawn SLA proof generation.
-pub const DAWN_SLA_ELF: &[u8] = include_elf!("data-anchor-dawn-sla");
+/// Prover ELF binary for PoB SLA proof generation.
+pub const POB_ELF: &[u8] = include_elf!("data-anchor-pob-sla");
 
 /// Prover ELF binary for testing encoding and compression.
 pub const ENCODING_COMPRESSION_TEST_ELF: &[u8] =
