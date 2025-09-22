@@ -266,6 +266,7 @@ impl DataAnchorClient {
                 .send(vec![(TransactionType::InitializeBlober, msg)], timeout)
                 .instrument(span)
                 .await,
+            self.rpc_client.commitment(),
         )
         .map_err(ChainError::InitializeBlober)?)
     }
@@ -343,6 +344,7 @@ impl DataAnchorClient {
                 .send(vec![(TransactionType::CloseBlober, msg)], timeout)
                 .instrument(span)
                 .await,
+            self.rpc_client.commitment(),
         )
         .map_err(ChainError::CloseBlober)?)
     }
@@ -483,6 +485,7 @@ impl DataAnchorClient {
                     .send(vec![(TransactionType::DiscardBlob, msg)], timeout)
                     .instrument(span)
                     .await,
+                self.rpc_client.commitment(),
             )
             .map_err(ChainError::DiscardBlob)?,
             blob,
@@ -547,6 +550,7 @@ impl DataAnchorClient {
                     .send(vec![(TransactionType::ConfigureCheckpoint, msg)], timeout)
                     .instrument(span)
                     .await,
+                self.rpc_client.commitment(),
             )
             .map_err(ChainError::ConfigureCheckpoint)?,
             checkpoint_config,

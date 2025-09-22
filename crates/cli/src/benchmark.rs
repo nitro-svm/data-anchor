@@ -356,17 +356,14 @@ async fn measure_performance(
 }
 
 /// Writes a list of measurements to a CSV string.
-pub fn write_measurements(
-    measurements: Vec<BenchMeasurement>,
-    has_headers: bool,
-) -> DataAnchorClientResult<String> {
+pub fn write_measurements(measurements: Vec<BenchMeasurement>, has_headers: bool) -> String {
     let mut writer = csv::WriterBuilder::new()
         .has_headers(has_headers)
         .from_writer(Vec::new());
     for measurement in measurements {
         writer.serialize(measurement).unwrap();
     }
-    Ok(String::from_utf8(writer.into_inner().unwrap()).unwrap())
+    String::from_utf8(writer.into_inner().unwrap()).unwrap()
 }
 
 /// Deletes all files and directories in a directory.

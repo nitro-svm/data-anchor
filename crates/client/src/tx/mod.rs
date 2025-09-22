@@ -5,10 +5,12 @@ use anchor_lang::{
     solana_program::{instruction::Instruction, message::Message},
 };
 use async_trait::async_trait;
+use itertools::Itertools;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_compute_budget_interface::ComputeBudgetInstruction;
 use solana_keypair::Keypair;
 use solana_signer::Signer;
+use tracing::debug;
 
 use crate::{Fee, TransactionType};
 
@@ -83,6 +85,21 @@ where
 /// [`solana_compute_budget_interface::ComputeBudgetInstruction::set_loaded_accounts_data_size_limit`] instructions.
 pub const SET_PRICE_AND_CU_LIMIT_COST: u32 = 450;
 
+pub const SYSTEM_PROGRAM_DATA_SIZE: u32 = 14;
+pub const COMPUTE_BUDGET_PROGRAM_DATA_SIZE: u32 = 22;
+pub const ANCHOR_PROGRAM_DATA_SIZE: u32 = 36;
+
+pub const BASE_LOADED_ACCOUNT_DATA_SIZE: u32 =
+    SYSTEM_PROGRAM_DATA_SIZE + COMPUTE_BUDGET_PROGRAM_DATA_SIZE + ANCHOR_PROGRAM_DATA_SIZE;
+
+// Per SIMD-0186, all accounts are assigned a base size of 64 bytes to cover
+// the storage cost of metadata.
+pub const TRANSACTION_ACCOUNT_BASE_SIZE: u32 = 64;
+
+// Per SIMD-0186, resolved address lookup tables are assigned a base size of 8248
+// bytes: 8192 bytes for the maximum table size plus 56 bytes for metadata.
+pub const ADDRESS_LOOKUP_TABLE_BASE_SIZE: u32 = 8248;
+
 #[async_trait]
 pub trait MessageBuilder {
     type Input: Send;
@@ -99,15 +116,37 @@ pub trait MessageBuilder {
 
     async fn build_message(args: MessageArguments<Self::Input>) -> Message {
         let set_price = args.fee.set_compute_unit_price();
+        let instructions = Self::generate_instructions(&args);
+        let accounts_count = instructions
+            .iter()
+            .flat_map(|ix| ix.accounts.iter().map(|meta| meta.pubkey))
+            .unique()
+            .count()
+            + 1; // +1 for the `ComputeBudget` program account
+
+        let address_lookup_tables_count = instructions.len().saturating_add(3);
 
         // This limit is chosen empirically
         let set_limit = ComputeBudgetInstruction::set_compute_unit_limit(
             Self::COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
         );
 
+        debug!(
+            "Building message with limits: CU limit {}, loaded account data size limit {}, number of accounts {}, number of address lookup tables {}",
+            Self::COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
+            Self::LOADED_ACCOUNT_DATA_SIZE
+                + BASE_LOADED_ACCOUNT_DATA_SIZE
+                + (accounts_count as u32 * TRANSACTION_ACCOUNT_BASE_SIZE)
+                + (address_lookup_tables_count as u32 * ADDRESS_LOOKUP_TABLE_BASE_SIZE),
+            accounts_count,
+            address_lookup_tables_count,
+        );
         // This limit can be known based on the instruction
         let set_account_data_size = ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(
-            Self::LOADED_ACCOUNT_DATA_SIZE,
+            Self::LOADED_ACCOUNT_DATA_SIZE
+                + BASE_LOADED_ACCOUNT_DATA_SIZE
+                + (accounts_count as u32 * TRANSACTION_ACCOUNT_BASE_SIZE)
+                + (address_lookup_tables_count as u32 * ADDRESS_LOOKUP_TABLE_BASE_SIZE),
         );
 
         let payer = Some(args.payer);
@@ -127,17 +166,21 @@ pub trait MessageBuilder {
 
     #[allow(unused_variables, reason = "`updated` is used in asserts")]
     #[cfg(test)]
-    fn test_compute_unit_limit() {
+    fn test_compute_unit_limit()
+    where
+        Self: std::marker::Send,
+    {
         use solana_transaction::Transaction;
         use utils::{close_blober, initialize_blober, new_tokio, setup_environment};
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            .init();
 
         use crate::FeeStrategy;
 
         let program_id = data_anchor_blober::id();
 
-        let (rpc_client, payer) = new_tokio(async move { setup_environment(program_id).await });
-        let mut max_units = Self::COMPUTE_UNIT_LIMIT;
-        let mut updated = false;
+        let (rpc_client, payer) = new_tokio(async move { setup_environment().await });
 
         arbtest::arbtest(|u| {
             let rpc_client = rpc_client.clone();
@@ -183,22 +226,34 @@ pub trait MessageBuilder {
                 let tx = Transaction::new_signed_with_payer(
                     &Self::generate_instructions(&args),
                     Some(&args.payer),
-                    &[payer.clone()],
+                    std::slice::from_ref(&payer),
                     recent_blockhash,
                 );
 
-                let result = args.client.simulate_transaction(&tx).await.unwrap();
+                let accounts_count = tx.message.account_keys.len();
+                let address_lookup_tables_count = tx.message.instructions.len();
+                let accounts = tx.message.account_keys.clone();
+
+                let loaded_account_data_size_limit =
+                    Self::LOADED_ACCOUNT_DATA_SIZE + BASE_LOADED_ACCOUNT_DATA_SIZE;
+
+                let result = rpc_client.simulate_transaction(&tx).await.unwrap();
 
                 let compute_units = result.value.units_consumed.unwrap() as u32;
+                let loaded_account_data_size = result.value.loaded_accounts_data_size.unwrap_or(0);
 
-                #[allow(unused_assignments, reason = "`max_units` is used in asserts")]
-                if compute_units * 11 / 10 > max_units {
-                    updated = true;
-                    max_units = compute_units * 11 / 10;
-                }
+                assert!(
+                    compute_units * 11 / 10 <= Self::COMPUTE_UNIT_LIMIT,
+                    "Used {compute_units} compute units, limit is only {}",
+                    Self::COMPUTE_UNIT_LIMIT
+                );
+                assert!(
+                    loaded_account_data_size <= loaded_account_data_size_limit,
+                    "Used {loaded_account_data_size} bytes of loaded account data, limit is {loaded_account_data_size_limit}"
+                );
 
                 if Self::INITIALIZE_BLOBER {
-                    close_blober(args.client, args.program_id, &payer, &namespace)
+                    close_blober(rpc_client, program_id, &payer, &namespace)
                         .await
                         .unwrap();
                 }
@@ -206,12 +261,6 @@ pub trait MessageBuilder {
                 Ok::<(), arbitrary::Error>(())
             })
         });
-
-        assert!(
-            !updated || max_units * 11 / 10 <= Self::COMPUTE_UNIT_LIMIT,
-            "Used {max_units} compute units, limit is only {}",
-            Self::COMPUTE_UNIT_LIMIT
-        );
     }
 }
 
@@ -228,8 +277,8 @@ mod utils {
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_commitment_config::CommitmentConfig;
     use solana_keypair::Keypair;
+    use solana_native_token::LAMPORTS_PER_SOL;
     use solana_signer::Signer;
-    use solana_test_validator::TestValidatorGenesis;
     use solana_transaction::Transaction;
 
     /// For [`arbtest`] we need to have synchronous code inside the test, so we need to block on the futures.
@@ -320,23 +369,37 @@ mod utils {
     }
 
     /// Setup the environment for integration tests.
-    pub async fn setup_environment(program_id: Pubkey) -> (Arc<RpcClient>, Arc<Keypair>) {
-        let (test_validator, payer) = TestValidatorGenesis::default()
-            .add_program(
-                "../../programs/target/deploy/data_anchor_blober",
-                program_id,
-            )
-            .start_async()
-            .await;
-
+    pub async fn setup_environment() -> (Arc<RpcClient>, Arc<Keypair>) {
         let rpc_client = Arc::new(RpcClient::new_with_commitment(
-            test_validator.rpc_url(),
+            "http://localhost:8899".to_string(),
             CommitmentConfig::processed(),
         ));
-        let payer = Arc::new(payer);
-        // Sending too many transactions at once can cause the test validator to hang. It seems to hit
-        // some deadlock with the JsonRPC server shutdown. This is a test, so leak it to keep tests moving.
-        std::mem::forget(test_validator);
+        let payer = Arc::new(Keypair::new());
+
+        let lamports = 100 * LAMPORTS_PER_SOL;
+        let target_balance = rpc_client
+            .get_minimum_balance_for_rent_exemption(0)
+            .await
+            .unwrap()
+            + lamports;
+
+        rpc_client
+            .request_airdrop(&payer.pubkey(), target_balance)
+            .await
+            .unwrap();
+
+        // Wait for airdrop confirmation
+        loop {
+            let balance = rpc_client
+                .get_balance_with_commitment(&payer.pubkey(), CommitmentConfig::processed())
+                .await
+                .unwrap()
+                .value;
+            if balance >= lamports {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
 
         (rpc_client, payer)
     }

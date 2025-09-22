@@ -3,6 +3,15 @@ set unstable := true
 # The budget for the arbtest program in milliseconds
 
 export ARBTEST_BUDGET_MS := "10000"
+anchor-rust := "1.86.0"
+solana-cmd := '''
+    solana-test-validator \
+        --reset \
+        --clone-feature-set -u d \
+        --ledger target/test-ledger \
+        --limit-ledger-size 1000000 \
+        --bpf-program anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2 programs/target/deploy/data_anchor_blober.so \
+    '''
 
 [group('lint')]
 [private]
@@ -14,7 +23,7 @@ fmt-justfile:
 [working-directory('programs')]
 lint-programs:
     cargo +nightly fmt -- --check
-    cargo +1.86.0 clippy --all-targets --all-features
+    cargo +{{ anchor-rust }} clippy --all-targets --all-features
     zepter run check
 
 # Run lint and formatting checks for the entire project
@@ -34,7 +43,7 @@ fmt-justfile-fix:
 [working-directory('programs')]
 lint-programs-fix:
     cargo +nightly fmt
-    cargo +1.86.0 clippy --fix --allow-dirty --allow-staged --all-targets --all-features
+    cargo +{{ anchor-rust }} clippy --fix --allow-dirty --allow-staged --all-targets --all-features
     zepter
 
 # Fix lint and formatting issues in the entire project
@@ -48,11 +57,12 @@ lint-fix: lint-programs-fix fmt-justfile-fix build-prover
 [group('test')]
 [working-directory('programs')]
 test-programs: build-programs
-    cargo nextest run --workspace
+    cargo +{{ anchor-rust }} nextest run --workspace
 
 # Run compute budget tests for transaction fees
 [group('test')]
-test-compute-unit-limit limit=ARBTEST_BUDGET_MS:
+test-compute-unit-limit limit=ARBTEST_BUDGET_MS: run-solana-test-validator && stop-solana-test-validator
+    @sleep 10
     ARBTEST_BUDGET_MS={{ limit }} cargo nextest run --workspace -E 'test(compute_unit_limit)' -- --ignored
 
 # Run tests for the crates in the workspace
@@ -63,11 +73,6 @@ test:
 # Run tests for the entire project
 [group('test')]
 test-all: test-programs test
-
-# Run full workflow tests on a local network - the local network must be running
-[group('test')]
-test-with-local:
-    cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
 
 # Run pre-push checks
 [group('dev')]
@@ -125,13 +130,46 @@ clean-programs:
 clean: clean-programs
     cargo clean
 
+[group('dev')]
+[private]
+ensure-logs:
+    @mkdir -p target/logs
+
+[private]
+start-process cmd name: ensure-logs
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ cmd }} 1>./target/logs/{{ name }}.log 2>&1 &
+    echo $! > ./target/{{ name }}.pid
+    echo "{{ name }} started with PID $(cat ./target/{{ name }}.pid)"
+
+[private]
+stop-process name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f ./target/{{ name }}.pid ]; then
+        kill -9 $(cat ./target/{{ name }}.pid) 
+        rm ./target/{{ name }}.pid
+        echo "{{ name }} stopped."
+    else
+        echo "No {{ name }} PID file found. Is {{ name }} running?"
+    fi
+
 # Run the solana-test-validator with the blober program
-[group('indexer')]
-run-solana-test-validator: build-programs
-    solana-test-validator -q \
-        --ledger target/test-ledger \
-        --limit-ledger-size 1000000 \
-        --bpf-program anchorE4RzhiFx3TEFep6yRNK9igZBzMVWziqjbGHp2 programs/target/deploy/data_anchor_blober.so
+[group('solana')]
+run-solana-test-validator: build-programs (stop-process 'solana-test-validator')
+    @sleep 2
+    @just start-process "{{ solana-cmd }}" solana-test-validator
+
+# Stop the solana-test-validator
+[group('solana')]
+stop-solana-test-validator: (stop-process 'solana-test-validator')
+
+# Run full workflow tests on a local network - the local network must be running
+[group('test')]
+test-with-local: run-solana-test-validator && stop-solana-test-validator
+    @sleep 10
+    cargo nextest run --workspace -E 'test(full_workflow_localnet)' -- --ignored
 
 # Run local e2e process and calculate on-chain cost
 [confirm('This will run all the indexer components and run CLI commands against it. Are you sure you want to continue [y/n]?')]

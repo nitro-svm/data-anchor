@@ -13,6 +13,7 @@ use indexer::IndexerSubCommand;
 use solana_cli_config::Config;
 use solana_keypair::Keypair;
 use solana_signer::{EncodableKey, Signer};
+use tokio_util::sync::CancellationToken;
 use tracing::trace;
 
 mod benchmark;
@@ -179,7 +180,7 @@ impl Options {
 
     /// Run the parsed CLI command.
     pub async fn run(self) -> DataAnchorClientResult {
-        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+        let cancellation_token = CancellationToken::new();
         let client = Arc::new(
             DataAnchorClient::builder()
                 .payer(self.payer.clone())
@@ -187,7 +188,7 @@ impl Options {
                 .maybe_indexer(self.indexer)
                 .build_with_config(
                     self.config,
-                    shutdown_receiver,
+                    cancellation_token.clone(),
                     self.indexer_api_token.clone(),
                 )
                 .await?,
@@ -212,7 +213,7 @@ impl Options {
         println!("{}", output.serialize_output(self.output));
 
         // Ensure all background tasks are stopped before exiting.
-        drop(shutdown_sender);
+        cancellation_token.cancel();
 
         Ok(())
     }
