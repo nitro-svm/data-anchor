@@ -13,8 +13,7 @@ use data_anchor_proofs::{
     compound::{CompoundInclusionProof, ProofBlob, VerifyArgs},
 };
 use data_anchor_prover::{
-    DATA_CORRECTNESS_ELF, DAWN_SLA_ELF, ENCODING_COMPRESSION_TEST_ELF, run_client,
-    setup_prover_input,
+    DATA_CORRECTNESS_ELF, ENCODING_COMPRESSION_TEST_ELF, POB_ELF, run_client, setup_prover_input,
 };
 use data_anchor_utils::{
     compression::{CompressionType, ZstdCompression},
@@ -195,7 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut output = "slot,blob_proof_count,program,cycles,cycle_tracker,gases,elf".to_owned();
     for (elf, name) in [
         (DATA_CORRECTNESS_ELF, "DATA_CORRECTNESS"),
-        (DAWN_SLA_ELF, "DAWN_SLA"),
+        (POB_ELF, "POB_SLA"),
     ] {
         let (public_values, report) = run_client(
             &compound_inclusion_proof,

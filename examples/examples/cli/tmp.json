@@ -1,0 +1,11 @@
+{
+  "epoch": 1042,
+  "location": "Zug, Switzerland",
+  "timestamp": "2025-07-25T17:09:00+08:00",
+  "devices": [
+    { "device_id": "sensor-001", "data_points": 340, "co2_ppm": 417, "reward": "0.03" },
+    { "device_id": "sensor-002", "data_points": 327, "co2_ppm": 419, "reward": "0.02" }
+  ],
+  "total_reward": "0.05",
+  "proof": "mock_zk_proof_here"
+}

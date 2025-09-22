@@ -1,12 +1,13 @@
 [package]
 name = "data-anchor-proofs"
 description = "Proofs regarding the presence or absence of a blob uploaded using the Blober program."
-version = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-homepage = { workspace = true }
-repository = { workspace = true }
-publish = { workspace = true }
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 # External dependencies from crates.io

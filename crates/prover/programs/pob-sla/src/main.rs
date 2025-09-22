@@ -19,7 +19,7 @@ fn get_sla_score(blobs: &[&[u8]]) -> f64 {
 fn main() {
     let (_proof, args) = data_correctness_proof();
 
-    println!("cycle-tracker-report-start: dawn_sla");
+    println!("cycle-tracker-report-start: pob_sla");
     let blob_data = args
         .blobs
         .iter()
@@ -28,5 +28,5 @@ fn main() {
     let sla_score = get_sla_score(&blob_data);
 
     sp1_zkvm::io::commit(&sla_score);
-    println!("cycle-tracker-report-end: dawn_sla");
+    println!("cycle-tracker-report-end: pob_sla");
 }

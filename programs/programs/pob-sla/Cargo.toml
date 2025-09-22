@@ -1,6 +1,6 @@
 [package]
-name = "data-anchor-dawn-sla-verifier"
-description = "The on-chain verifier for verifying Dawn SLA and blober proofs."
+name = "data-anchor-pob-sla-verifier"
+description = "The on-chain verifier for verifying PoB SLA and blober proofs."
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -10,7 +10,7 @@ publish = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "data_anchor_dawn_sla_verifier"
+name = "data_anchor_pob_sla_verifier"
 
 [features]
 default = [ "sp1" ]

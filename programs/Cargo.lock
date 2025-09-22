@@ -1582,7 +1582,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "data-anchor-dawn-sla-verifier"
+name = "data-anchor-pob-sla-verifier"
 version = "0.2.1"
 dependencies = [
  "anchor-lang",

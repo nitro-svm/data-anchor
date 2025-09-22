@@ -1,12 +1,13 @@
 [package]
 name = "data-anchor-client"
 description = "Contains blober client for interacting with the Blober program on Solana."
-version = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-homepage = { workspace = true }
-repository = { workspace = true }
-publish = { workspace = true }
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 # External dependencies

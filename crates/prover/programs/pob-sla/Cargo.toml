@@ -1,5 +1,5 @@
 [package]
-name = "data-anchor-dawn-sla"
+name = "data-anchor-pob-sla"
 edition.workspace = true
 version.workspace = true
 license.workspace = true

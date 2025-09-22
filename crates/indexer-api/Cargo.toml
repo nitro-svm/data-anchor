@@ -1,12 +1,13 @@
 [package]
 name = "data-anchor-api"
 description = "The shared API for the Data Anchor indexer."
-version = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-homepage = { workspace = true }
-repository = { workspace = true }
-publish = { workspace = true }
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 # External dependencies from crates.io
@@ -21,10 +22,9 @@ serde_with = { workspace = true }
 # Solana & Agave
 anchor-lang = { workspace = true }
 solana-transaction = { workspace = true }
-solana-transaction-status = { workspace = true }
 
 # Locals
 data-anchor-blober = { workspace = true }
 data-anchor-data-correctness-verifier = { workspace = true }
-data-anchor-dawn-sla-verifier = { workspace = true }
+data-anchor-pob-sla-verifier = { workspace = true }
 data-anchor-proofs = { workspace = true }

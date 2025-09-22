@@ -14,6 +14,10 @@ solana-cmd := '''
     '''
 
 [group('lint')]
+check-udeps:
+    cargo +nightly udeps --workspace --all-targets --all-features
+
+[group('lint')]
 [private]
 fmt-justfile:
     just --fmt --check
@@ -182,3 +186,15 @@ calculate-on-chain-cost:
 [group('test')]
 run-prover prove='' verify='':
     cargo run --release -p data-anchor-prover-script {{ prove && '-p' + verify && ' -v' }} 2>&1
+
+# Run the client example
+[group('dev')]
+[working-directory('examples/examples')]
+run-client-example api-token='':
+    cargo run --example client -- {{ api-token && '--indexer-api-token ' + api-token }}
+
+# Run the CLI example
+[group('dev')]
+[working-directory('examples/examples/cli')]
+run-cli-example:
+    ./cli.sh

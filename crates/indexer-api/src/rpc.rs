@@ -167,15 +167,15 @@ pub trait IndexerRpc {
 pub enum CustomerElf {
     /// Data correctness elf, commits to the data being correct.
     DataCorrectness,
-    /// Dawn SLA elf, which commits to the data being correct and to a SLA result.
-    DawnSla,
+    /// Pob SLA elf, which commits to the data being correct and to a SLA result.
+    PobSla,
 }
 
 impl std::fmt::Display for CustomerElf {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CustomerElf::DataCorrectness => write!(f, "data-correctness"),
-            CustomerElf::DawnSla => write!(f, "dawn-sla"),
+            CustomerElf::PobSla => write!(f, "pob-sla"),
         }
     }
 }
@@ -184,7 +184,7 @@ impl CustomerElf {
     pub fn authority(&self) -> Pubkey {
         match self {
             CustomerElf::DataCorrectness => data_anchor_data_correctness_verifier::id(),
-            CustomerElf::DawnSla => data_anchor_dawn_sla_verifier::id(),
+            CustomerElf::PobSla => data_anchor_pob_sla_verifier::id(),
         }
     }
 }

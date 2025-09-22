@@ -1,60 +1,91 @@
-# ⚓ Data Anchor
+<div align="center">
+  <picture>
+      <img alt="DA" src="https://github.com/user-attachments/assets/552eeb0a-ca6b-49ba-9cea-2b9e1a7ac1c5" />
+  </picture>
+</div>
 
-This folder contains a few different crates that together form the DA adapter for Solana.
+### TL;DR
+Data Anchor delivers on‑chain verifiable storage at a fraction of the cost.
 
-1. [`programs`](programs/programs/blober/README.md) contains the Solana program that needs to be deployed on-chain.
-   - The `blober` program is used to split up blobs into chunks, and "stores" the chunks by passing them as arguments to the program. The data is never actually persisted on-chain, instead using the much cheaper ledger storage. As chunks come in one by one they will be hashed as a (incremental/sequential) merkle tree, yielding a final `digest` at the end which _is_ persisted in the `blob` PDA account.
-   - When a blob's chunks are all fully submitted, the `blober` program hashes the `digest` itself and this new hash is persisted in the `blober` account. This might seem superfluous at first, but the purpose is to have a well-known address that can be proven whether it is present or not in the list of updated accounts that Solana calculates for each block.
-1. [`client`](./crates/client/README.md) contains a client that can be used to interact with the `blober` program. It also contains a client for the `Indexer` RPC. The `DataAnchorClient` then wraps all the complexity of creating a `blober` account, splitting a blob into chunks, uploading the chunks, hashing the `digest`, and closing the PDAs to reclaim rent. It also makes educated guesses about setting good prioritization fees (without overspending) to ensure transactions are included by validators.
-1. [`proofs`](./crates/proofs/README.md) contains the various proofs that are used to verify the state of the `blober`. This is how data availability can be proven all the way from a blob's chunks.
-1. [`indexer_api`](./crates/indexer_api/README.md) contains the shared interface between the indexer and the client.
-1. [`cli`](./crates/cli/README.md) contains the CLI used to interact with the data module. This includes interacting with the on chain program to manage `blober` accounts and upload blobs, as well as the `indexer` to retrieve blob data and proofs.
 
-## Installation
+## Introduction
 
-Install the following tools:
+Data Anchor lets you store your data blobs on Solana’s ledger—packed and fully verifiable—while keeping costs low via efficient storage and an indexer. You pay rent once per blob, fetch data instantly via HTTP or CLI, and enjoy order‑of‑magnitude savings over naïvely stuffing bytes into on‑chain accounts 
 
-- [Solana CLI](https://docs.solanalabs.com/cli/install)
-- [nodejs (using nvm)](https://nodejs.org/en/download/package-manager)
-- [yarn (using corepack)](https://yarnpkg.com/getting-started/install)
-- [Anchor (using avm)](https://www.anchor-lang.com/docs/installation#installing-using-anchor-version-manager-avm-recommended)
 
-All following sections assume the tools have been installed. It's also assumed that you've set the current working directory to the crate you want to test.
+## Quickstart
 
-## Building
+**Usage**
+- [CLI Usage](https://github.com/nitro-svm/examples/tree/main/anchoring-data/cli)
+- [Client Usage](https://github.com/nitro-svm/examples/tree/main/anchoring-data/client)
 
-To build the `programs` crate, run `anchor build`. This will create program keypairs and store them in `programs/target/deploy/blober-keypair.json`. In a real deployment these would be the highly sensitive deployment keys used for updating the programs on-chain and the public keys would be well-known for each rollup, but during development it's normal for each developer to have their own keypairs.
+**Video Demos**
 
-Before deploying `programs` (e.g. to localnet) the keys must be synced with the source code using `anchor keys sync`. This will overwrite the IDs in the main `lib.rs` files and in `Anchor.toml`. Don't commit this change, it would just cause churn for a key that isn't checked in anywhere.
+1. [Uploading and Verifying Data on Solana](https://youtu.be/sgjmaujHYdE?si=a4GJrxBX5B24HHvF)
+2. [Upload and Index Data on Solana](https://youtu.be/sgjmaujHYdE?si=a4GJrxBX5B24HHvF)
 
-The other crates are built as usual with `cargo build`.
 
-## Testing
+## Why use Data Anchor
 
-### Unit tests, integration tests, doctests
+- **Minimized rent costs**: Storing data directly on Solana can cost ≈6.96 SOL per MB annually (rent‑exempt deposit), Data Anchor amortizes rent across data blobs to deliver over 100,000× savings. 
 
-Most of these run as normal with `cargo nextest run`, with some minor deviations.
+- **Handles arbitrary data**: Supports any payload—IoT metrics or availability proofs, ideal for data‑intensive DePIN networks generating millions of inputs per minute. 
 
-#### client
+- **Efficient ledger usage**: By packing data blobs into Solana’s append‑only ledger history where storage is cheaper than accounts, Data Anchor retains only minimal commitments in account space.
 
-`client` has a unit test that can run in two configurations, one of them requires a local Solana cluster. This test is disabled by default because it requires a local cluster to have been started with `anchor localnet`, to then run it you may issue this command `cargo test -- --include-ignored`. To monitor logs while the test is running run `solana logs --url localhost` in a separate terminal.
+- **Instant retrieval**: Anchored blobs can be fetched in their original JSON form with no manual reassembly, removing the overhead of reconstructing data from raw transactions.
 
-Before running integration tests the `programs` crate must be built with `anchor build`. This is because the `client` integration tests deploy the shared object files from `programs` directly before running its tests, instead of running the code natively.
+- **Immutable, verifiable data**: Every blob lives onchain, giving you cryptographic proof of integrity that can be independently audited against Solana’s tamper‑proof ledger. 
 
-#### proofs
+- **Built for scale**: Data Anchor leverages Solana’s high throughput (up to ~1,289 TPS) and sub‑second block times (≈0.4 s).
 
-The `proofs` crate makes heavy use of [`arbtest`](https://crates.io/crates/arbtest) for property-based testing. These tests rely on having the environment variable `ARBTEST_BUDGET_MS` set to something reasonable to ensure tests hit diverse cases (there are a lot of corner cases in the code). For quick iteration a good value is `2000` (2 seconds), but for final checks a value of at least `10000` is recommended. The limit is per-test but tests run in parallel so it's not as bad as it might seem.
 
-The `ARBTEST_BUDGET_MS` variable should also be set when running coverage or mutation tests, since they rely on repeated execution to find mutants and cover all code paths.
+## Architecture
 
-### Mutation testing
+We built Data Anchor as a set of focused Rust crates for anchoring data, on‑chain interaction, indexing, and proof handling—so teams can pick only the pieces they need. This modular design powers DePIN networks, rollups, and data‑heavy dApps seeking verifiable, scalable storage.
 
-In order to ensure tests are actually useful and not just a code coverage metric, mutation testing is used to find untested code paths. Mutation testing will attempt to inject bugs by modifying the source code, and if none of the tests fail, that's a case that hasn't been properly tested.
 
-To run mutation tests, run `ARBTEST_BUDGET_MS=10000 cargo mutants`.
+## Examples Overview
 
-For now mutation testing has been focused on the `proofs` crate.
+A quick run‑through of core workflows—see the CLI or RPC docs for full commands:
 
-## Documentation
+* **Initialize Namespace**
+  Create a new blober PDA for your namespace.
 
-Certain crates rely on optional features, so corresponding documentation will fail to be linked by cargo-doc unless those features are specified during documentation generation. For instance to generate docs for the `sov-sdk/crates/adapters/solana/adapter` crate, one needs to generate it as `cargo doc --features native`.
+* **Upload Data**
+  Store a JSON file as an on‑chain blob.
+
+* **Fetch & Decode Blob**
+  Retrieve by signature and decode the hex‑encoded data back into JSON.
+
+* **get\_blobs\_by\_namespace**
+  List all blobs under your namespace via the indexer.
+
+* **get\_blobs\_by\_payer**
+  List blobs paid for by your wallet.
+
+* **get\_blobs**
+  Fetch a specific blob by PDA and slot.
+
+* **get\_payers\_by\_network**
+  List all payers on a given network.
+
+* **get\_proof**
+  Obtain a cryptographic proof for a blob.
+
+
+## Full API reference and integration guides
+[Data Anchor Developer Documentation](https://docs.termina.technology/documentation/network-extension-stack/modules/data-anchor)
+
+#### Data Anchor Crate Documentations
+
+* [CLI Documentation](https://docs.rs/data-anchor/latest/data_anchor/)
+* [Client API](https://docs.rs/data-anchor-client/latest/data_anchor_client/)
+* [Blober Program](https://docs.rs/data-anchor-blober/latest/data_anchor_blober/)
+* [Indexer API](https://docs.rs/data-anchor-api/latest/data_anchor_api/)
+* [Proofs API](https://docs.rs/data-anchor-proofs/latest/data_anchor_proofs/)
+
+
+## Support
+
+Got questions or feedback? Reach out to us on [Twitter](https://x.com/Terminaxyz)!
