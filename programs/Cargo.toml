@@ -3,7 +3,7 @@ members = ["programs/blober", "programs/data-correctness", "programs/pob-sla"]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 license = "GPL-3.0"
 authors = ["Nitro Labs <team@nitro.technology>"]
@@ -32,7 +32,7 @@ anchor-lang = "=0.31.1"
 sp1-solana = "=0.1.0"
 
 # Locals
-data-anchor-blober = { path = "./programs/blober", version = "0.2.1", default-features = false }
+data-anchor-blober = { path = "./programs/blober", version = "0.2.2", default-features = false }
 
 [profile.release]
 overflow-checks = true
