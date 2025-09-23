@@ -110,7 +110,7 @@ Below is a high‑level summary of what `cli.sh` does:
 The source code for the CLI and related components is published on [crates.io](https://crates.io), and visible to
 anyone who views them:
 
-- [CLI Documentation](https://docs.rs/data-anchor/latest/data_anchor/)
+- [CLI Documentation](https://docs.rs/data-anchor-oss/latest/data_anchor/)
 - [Client API](https://docs.rs/data-anchor-client/latest/data_anchor_client/)
 - [Blober Program](https://docs.rs/data-anchor-blober/latest/data_anchor_blober/)
 - [Indexer API](https://docs.rs/data-anchor-api/latest/data_anchor_api/)

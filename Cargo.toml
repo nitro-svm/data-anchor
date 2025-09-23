@@ -15,7 +15,7 @@ exclude = ["programs"]
 
 [workspace.package]
 edition = "2024"
-version = "0.4.2"
+version = "0.4.3"
 license = "MIT"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
@@ -90,22 +90,22 @@ sp1-zkvm = "5.2.1"
 nitro-sender = "0.2.0"
 
 # Locals
-data-anchor = { path = "crates/cli", version = "0.4.2" }
-data-anchor-api = { path = "crates/indexer-api", version = "0.4.2" }
-data-anchor-client = { path = "crates/client", version = "0.4.2" }
-data-anchor-proofs = { path = "crates/proofs", version = "0.4.2" }
-data-anchor-blober = { path = "programs/programs/blober", version = "0.2.1", default-features = false, features = [
+data-anchor = { path = "crates/cli", version = "0.4.3" }
+data-anchor-api = { path = "crates/indexer-api", version = "0.4.3" }
+data-anchor-client = { path = "crates/client", version = "0.4.3" }
+data-anchor-proofs = { path = "crates/proofs", version = "0.4.3" }
+data-anchor-blober = { path = "programs/programs/blober", version = "0.2.2", default-features = false, features = [
   "no-entrypoint",
 ] }
-data-anchor-data-correctness-verifier = { path = "programs/programs/data-correctness", version = "0.2.1", default-features = false, features = [
+data-anchor-data-correctness-verifier = { path = "programs/programs/data-correctness", version = "0.2.2", default-features = false, features = [
   "no-entrypoint",
 ] }
-data-anchor-pob-sla-verifier = { path = "programs/programs/pob-sla", version = "0.2.1", default-features = false, features = [
+data-anchor-pob-sla-verifier = { path = "programs/programs/pob-sla", version = "0.2.2", default-features = false, features = [
   "no-entrypoint",
 ] }
 data-anchor-prover = { path = "crates/prover" }
 data-anchor-prover-core = { path = "crates/prover/programs/core" }
-data-anchor-utils = { path = "crates/utils", version = "0.4.2" }
+data-anchor-utils = { path = "crates/utils", version = "0.4.3" }
 
 [patch.crates-io]
 getrandom_v0_1 = { package = "getrandom", git = "https://github.com/nitro-svm/getrandom", branch = "0.1-zkvm" }

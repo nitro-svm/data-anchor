@@ -4,9 +4,9 @@ authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-publish.workspace = true
 repository.workspace = true
 version.workspace = true
+publish = false
 
 [package.metadata.cargo-udeps.ignore]
 development = ["data-anchor-prover"]

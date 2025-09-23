@@ -7,84 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.2](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.1...data-anchor-v0.4.2) - 2025-08-27
+## [0.4.2](https://github.com/nitro-svm/data-anchor-oss/compare/data-anchor-v0.4.1...data-anchor-v0.4.2) - 2025-08-27
 
 ### Added
 
-- Add verifier alias instead of pubkey for checkpoint authority ([#345](https://github.com/nitro-svm/data-anchor/pull/345))
-- Add default indexer URL and recognition based on RPC URL ([#338](https://github.com/nitro-svm/data-anchor/pull/338))
-- Add encoding and compression markers to data ([#337](https://github.com/nitro-svm/data-anchor/pull/337))
+- Add verifier alias instead of pubkey for checkpoint authority ([#345](https://github.com/nitro-svm/data-anchor-oss/pull/345))
+- Add default indexer URL and recognition based on RPC URL ([#338](https://github.com/nitro-svm/data-anchor-oss/pull/338))
+- Add encoding and compression markers to data ([#337](https://github.com/nitro-svm/data-anchor-oss/pull/337))
 
 ### Fixed
 
-- Increase wait time for fallback ([#335](https://github.com/nitro-svm/data-anchor/pull/335))
+- Increase wait time for fallback ([#335](https://github.com/nitro-svm/data-anchor-oss/pull/335))
 
 ### Other
 
-- Clean up CLI and improve client constants ([#352](https://github.com/nitro-svm/data-anchor/pull/352))
-- Improve CLI output for ZK proof request ([#348](https://github.com/nitro-svm/data-anchor/pull/348))
+- Clean up CLI and improve client constants ([#352](https://github.com/nitro-svm/data-anchor-oss/pull/352))
+- Improve CLI output for ZK proof request ([#348](https://github.com/nitro-svm/data-anchor-oss/pull/348))
 
-## [0.4.1](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.0...data-anchor-v0.4.1) - 2025-08-19
+## [0.4.1](https://github.com/nitro-svm/data-anchor-oss/compare/data-anchor-v0.4.0...data-anchor-v0.4.1) - 2025-08-19
 
 ### Added
 
-- Add SP1 support for compression ([#326](https://github.com/nitro-svm/data-anchor/pull/326))
-- Add compression support to client ([#315](https://github.com/nitro-svm/data-anchor/pull/315))
-- Add encoding support to client ([#314](https://github.com/nitro-svm/data-anchor/pull/314))
-- Improve end-to-end test and fix bugs discovered by it ([#308](https://github.com/nitro-svm/data-anchor/pull/308))
-- Add proof request status query ([#305](https://github.com/nitro-svm/data-anchor/pull/305))
-- Add proof posting on-chain after ZK generation ([#303](https://github.com/nitro-svm/data-anchor/pull/303))
-- Add verifiers and improve checkpointing ([#294](https://github.com/nitro-svm/data-anchor/pull/294))
-- Add client and CLI methods for checkpoint handling ([#281](https://github.com/nitro-svm/data-anchor/pull/281))
-- Strip down proof system ([#268](https://github.com/nitro-svm/data-anchor/pull/268))
-- Use vanity address for blober program ([#266](https://github.com/nitro-svm/data-anchor/pull/266))
+- Add SP1 support for compression ([#326](https://github.com/nitro-svm/data-anchor-oss/pull/326))
+- Add compression support to client ([#315](https://github.com/nitro-svm/data-anchor-oss/pull/315))
+- Add encoding support to client ([#314](https://github.com/nitro-svm/data-anchor-oss/pull/314))
+- Improve end-to-end test and fix bugs discovered by it ([#308](https://github.com/nitro-svm/data-anchor-oss/pull/308))
+- Add proof request status query ([#305](https://github.com/nitro-svm/data-anchor-oss/pull/305))
+- Add proof posting on-chain after ZK generation ([#303](https://github.com/nitro-svm/data-anchor-oss/pull/303))
+- Add verifiers and improve checkpointing ([#294](https://github.com/nitro-svm/data-anchor-oss/pull/294))
+- Add client and CLI methods for checkpoint handling ([#281](https://github.com/nitro-svm/data-anchor-oss/pull/281))
+- Strip down proof system ([#268](https://github.com/nitro-svm/data-anchor-oss/pull/268))
+- Use vanity address for blober program ([#266](https://github.com/nitro-svm/data-anchor-oss/pull/266))
 
 ### Other
 
-- Benchmark cleanup ([#312](https://github.com/nitro-svm/data-anchor/pull/312))
-- Add list payers command and improve e2e script ([#306](https://github.com/nitro-svm/data-anchor/pull/306))
-- Clean up all dependencies ([#302](https://github.com/nitro-svm/data-anchor/pull/302))
-- Remove solana_sdk everywhere (almost) ([#301](https://github.com/nitro-svm/data-anchor/pull/301))
-- Use solana_clock instead of solana_sdk Slot import ([#300](https://github.com/nitro-svm/data-anchor/pull/300))
-- Use solana_signer instead of solana_sdk Signer import ([#298](https://github.com/nitro-svm/data-anchor/pull/298))
-- Use solana_keypair instead of solana_sdk Keypair import ([#297](https://github.com/nitro-svm/data-anchor/pull/297))
-- Use solana_pubkey instead of solana_sdk Pubkey import ([#296](https://github.com/nitro-svm/data-anchor/pull/296))
-- Make time range param consistently optional ([#283](https://github.com/nitro-svm/data-anchor/pull/283))
+- Benchmark cleanup ([#312](https://github.com/nitro-svm/data-anchor-oss/pull/312))
+- Add list payers command and improve e2e script ([#306](https://github.com/nitro-svm/data-anchor-oss/pull/306))
+- Clean up all dependencies ([#302](https://github.com/nitro-svm/data-anchor-oss/pull/302))
+- Remove solana_sdk everywhere (almost) ([#301](https://github.com/nitro-svm/data-anchor-oss/pull/301))
+- Use solana_clock instead of solana_sdk Slot import ([#300](https://github.com/nitro-svm/data-anchor-oss/pull/300))
+- Use solana_signer instead of solana_sdk Signer import ([#298](https://github.com/nitro-svm/data-anchor-oss/pull/298))
+- Use solana_keypair instead of solana_sdk Keypair import ([#297](https://github.com/nitro-svm/data-anchor-oss/pull/297))
+- Use solana_pubkey instead of solana_sdk Pubkey import ([#296](https://github.com/nitro-svm/data-anchor-oss/pull/296))
+- Make time range param consistently optional ([#283](https://github.com/nitro-svm/data-anchor-oss/pull/283))
 
-## [0.4.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.3.1...data-anchor-v0.4.0) - 2025-07-10
+## [0.4.0](https://github.com/nitro-svm/data-anchor-oss/compare/data-anchor-v0.3.1...data-anchor-v0.4.0) - 2025-07-10
 
 ### Added
 
-- Add balance and account existance checks for on-chain commands ([#261](https://github.com/nitro-svm/data-anchor/pull/261))
-- Improve PDA management and outputs ([#241](https://github.com/nitro-svm/data-anchor/pull/241))
-- Add blober PDA pubkey to command output ([#239](https://github.com/nitro-svm/data-anchor/pull/239))
-- Improve CLI README.md ([#236](https://github.com/nitro-svm/data-anchor/pull/236))
-- Improve client and CLI ergonomics ([#235](https://github.com/nitro-svm/data-anchor/pull/235))
-- Improve CLI integration ([#234](https://github.com/nitro-svm/data-anchor/pull/234))
+- Add balance and account existance checks for on-chain commands ([#261](https://github.com/nitro-svm/data-anchor-oss/pull/261))
+- Improve PDA management and outputs ([#241](https://github.com/nitro-svm/data-anchor-oss/pull/241))
+- Add blober PDA pubkey to command output ([#239](https://github.com/nitro-svm/data-anchor-oss/pull/239))
+- Improve CLI README.md ([#236](https://github.com/nitro-svm/data-anchor-oss/pull/236))
+- Improve client and CLI ergonomics ([#235](https://github.com/nitro-svm/data-anchor-oss/pull/235))
+- Improve CLI integration ([#234](https://github.com/nitro-svm/data-anchor-oss/pull/234))
 
 ### Fixed
 
-- Add full e2e test and squash discovered bugs ([#257](https://github.com/nitro-svm/data-anchor/pull/257))
-- Serialize blober identifier in parent struct and streamline identifier on CLI level ([#244](https://github.com/nitro-svm/data-anchor/pull/244))
+- Add full e2e test and squash discovered bugs ([#257](https://github.com/nitro-svm/data-anchor-oss/pull/257))
+- Serialize blober identifier in parent struct and streamline identifier on CLI level ([#244](https://github.com/nitro-svm/data-anchor-oss/pull/244))
 
 ### Other
 
-- Also use `BloberIdentifier` on initialization ([#260](https://github.com/nitro-svm/data-anchor/pull/260))
-- Simplify API params on indexer RPC ([#228](https://github.com/nitro-svm/data-anchor/pull/228))
+- Also use `BloberIdentifier` on initialization ([#260](https://github.com/nitro-svm/data-anchor-oss/pull/260))
+- Simplify API params on indexer RPC ([#228](https://github.com/nitro-svm/data-anchor-oss/pull/228))
 
-## [0.3.0](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.2.0...data-anchor-v0.3.0) - 2025-06-26
+## [0.3.0](https://github.com/nitro-svm/data-anchor-oss/compare/data-anchor-v0.2.0...data-anchor-v0.3.0) - 2025-06-26
 
 ### Added
 
-- Add `payer_pubkey` to namespace query ([#203](https://github.com/nitro-svm/data-anchor/pull/203))
-- Rename `BloberClient` to `DataAnchorClient` ([#202](https://github.com/nitro-svm/data-anchor/pull/202))
-- Add API key support to blober client and CLI ([#201](https://github.com/nitro-svm/data-anchor/pull/201))
-- Add new methods to anchor CLI ([#200](https://github.com/nitro-svm/data-anchor/pull/200))
-- Add new methods to blober client ([#199](https://github.com/nitro-svm/data-anchor/pull/199))
+- Add `payer_pubkey` to namespace query ([#203](https://github.com/nitro-svm/data-anchor-oss/pull/203))
+- Rename `BloberClient` to `DataAnchorClient` ([#202](https://github.com/nitro-svm/data-anchor-oss/pull/202))
+- Add API key support to blober client and CLI ([#201](https://github.com/nitro-svm/data-anchor-oss/pull/201))
+- Add new methods to anchor CLI ([#200](https://github.com/nitro-svm/data-anchor-oss/pull/200))
+- Add new methods to blober client ([#199](https://github.com/nitro-svm/data-anchor-oss/pull/199))
 
 ### Other
 
-- Upgrade edition, version and formatting ([#211](https://github.com/nitro-svm/data-anchor/pull/211))
+- Upgrade edition, version and formatting ([#211](https://github.com/nitro-svm/data-anchor-oss/pull/211))
 
 ## [0.1.7](https://github.com/nitro-svm/nitro-data-module/compare/nitro-da-cli-v0.1.6...nitro-da-cli-v0.1.7) - 2025-05-30
 
