@@ -95,7 +95,9 @@ jobs:
           sudo apt install -y build-essential cmake pkg-config libudev-dev
 
       - name: Install SP1
-        uses: nitro-svm/infrastructure/actions/install-sp1@main
+        run: |
+          curl -L https://sp1up.succinct.xyz | bash
+          $HOME/.sp1/bin/sp1up -t $GITHUB_TOKEN -c
 
       - name: Install zepter, just and protoc
         uses: taiki-e/install-action@v2
@@ -155,7 +157,9 @@ jobs:
           echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
 
       - name: Install SP1
-        uses: nitro-svm/infrastructure/actions/install-sp1@main
+        run: |
+          curl -L https://sp1up.succinct.xyz | bash
+          $HOME/.sp1/bin/sp1up -t $GITHUB_TOKEN -c
 
       - name: Run nextest
         run: just test
@@ -236,7 +240,9 @@ jobs:
           echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
 
       - name: Install SP1
-        uses: nitro-svm/infrastructure/actions/install-sp1@main
+        run: |
+          curl -L https://sp1up.succinct.xyz | bash
+          $HOME/.sp1/bin/sp1up -t $GITHUB_TOKEN -c
 
       - name: Run program tests
         env:

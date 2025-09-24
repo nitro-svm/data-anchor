@@ -90,9 +90,9 @@ compound_proof.verify(blober_program, blockhash, &[ProofBlob { blob: blob_pubkey
 
 ## Accounts Exclusion Proofs
 
-The [`AccountMerkleTree`](https://github.com/nitro-svm/data-anchor/blob/main/crates/proofs/src/accounts_delta_hash/account_merkle_tree/tree.rs#L33-L38)
+The [`AccountMerkleTree`](https://github.com/nitro-svm/data-anchor-oss/blob/main/crates/proofs/src/accounts_delta_hash/account_merkle_tree/tree.rs#L33-L38)
 is a 16-ary Merkle tree that supports exclusion proofs, which allow callers to verify a given account is not included among its leaves.
-There are [4 types](https://github.com/nitro-svm/data-anchor/blob/main/crates/proofs/src/accounts_delta_hash/exclusion/proof.rs#L12-L20) of exclusion proofs:
+There are [4 types](https://github.com/nitro-svm/data-anchor-oss/blob/main/crates/proofs/src/accounts_delta_hash/exclusion/proof.rs#L12-L20) of exclusion proofs:
 
 - Empty: the tree is empty, so no accounts can be present.
 - Left: an account is smaller than the leftmost leaf and must be to its left.
@@ -100,7 +100,7 @@ There are [4 types](https://github.com/nitro-svm/data-anchor/blob/main/crates/pr
 - Inner: an account has to exist between two adjacent leaves, but no such gap exists.
 
 If each leaf node stored its global index, then exclusion checks would be trivial. Unfortunately, the `AccountMerkleTree` doesn't contain this information,
-so instead we rely on the relative index from [`InclusionProofLevel`](https://github.com/nitro-svm/data-anchor/blob/dcc09b5e8a16e5a287882ccd4126e8cfb82afc23/crates/proofs/src/accounts_delta_hash/inclusion.rs#L11-L18):
+so instead we rely on the relative index from [`InclusionProofLevel`](https://github.com/nitro-svm/data-anchor-oss/blob/dcc09b5e8a16e5a287882ccd4126e8cfb82afc23/crates/proofs/src/accounts_delta_hash/inclusion.rs#L11-L18):
 
 - This represents the node's position within its immediate subtree.
 - It ranges from 0 to `fanout - 1`, where `fanout` is n in an n-ary tree (e.g. 2 in binary trees, 16 in our case).

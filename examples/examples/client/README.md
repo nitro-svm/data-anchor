@@ -97,7 +97,7 @@ just run-client-example <YOUR-API-KEY>
 The source code for the client and related components is published on [crates.io](https://crates.io), and visible to anyone who views them:
 
 - [Client API](https://docs.rs/data-anchor-client/latest/data_anchor_client/)
-- [CLI Documentation](https://docs.rs/data-anchor/latest/data_anchor/)
+- [CLI Documentation](https://docs.rs/data-anchor-oss/latest/data_anchor/)
 - [Blober Program](https://docs.rs/data-anchor-blober/latest/data_anchor_blober/)
 - [Indexer API](https://docs.rs/data-anchor-api/latest/data_anchor_api/)
 - [Proofs API](https://docs.rs/data-anchor-proofs/latest/data_anchor_proofs/)
