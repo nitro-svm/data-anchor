@@ -4,7 +4,7 @@ Thank you for your interest in contributing to Data Anchor! This document provid
 
 ## Development Setup
 
-Please see [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed instructions on:
+Please see [DEVELOPING.md](./DEVELOPING.md) for detailed instructions on:
 - Installation requirements
 - Building the project
 - Running tests
@@ -24,7 +24,7 @@ Please see [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed instructions on:
 2. Create a feature branch from `main`
 3. Make your changes
 4. Ensure all tests pass
-5. Run mutation testing where applicable (see DEVELOPMENT.md)
+5. Run mutation testing where applicable (see DEVELOPING.md)
 6. Submit a pull request with a clear description of changes
 
 ### Code Style
