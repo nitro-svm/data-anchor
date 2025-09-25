@@ -1,0 +1,27 @@
+[package]
+name = "data-anchor-rust-client-example"
+description = "Rust client example for Data Anchor"
+authors = ["Nitro Labs <team@nitro.technology>"]
+edition = "2024"
+homepage = "https://www.termina.technology"
+license = "MIT"
+repository = "https://github.com/nitro-svm/data-anchor-oss"
+version = "0.4.3"
+publish = false
+
+[dependencies]
+# External dependencies
+clap = { version = "4.5.45", features = ["derive", "env"] }
+dotenvy = "0.15.7"
+serde_json = { version = "1.0.143", default-features = false }
+tokio = { version = "1.47.1", features = ["full"] }
+tokio-util = "0.7.16"
+
+# Solana & Agave
+solana-cli-config = "2.2.1"
+solana-keypair = "2.2.1"
+solana-pubkey = "2.2.1"
+solana-signer = "2.2.1"
+
+# Locals
+data-anchor-client = { path = "../../crates/client" }
