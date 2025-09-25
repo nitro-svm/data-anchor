@@ -2865,22 +2865,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "data-anchor-examples"
-version = "0.4.3"
-dependencies = [
- "clap 4.5.47",
- "data-anchor-client",
- "dotenvy",
- "serde_json",
- "solana-cli-config",
- "solana-keypair",
- "solana-pubkey",
- "solana-signer",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
 name = "data-anchor-pob-sla"
 version = "0.4.3"
 dependencies = [
@@ -3196,12 +3180,6 @@ dependencies = [
  "quote",
  "syn 2.0.106",
 ]
-
-[[package]]
-name = "dotenvy"
-version = "0.15.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "downcast-rs"

@@ -9,9 +9,8 @@ members = [
   "crates/prover-script",
   "crates/prover/programs/*",
   "crates/utils",
-  "examples",
 ]
-exclude = ["programs"]
+exclude = ["programs", "examples"]
 
 [workspace.package]
 edition = "2024"
