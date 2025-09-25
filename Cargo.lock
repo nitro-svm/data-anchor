@@ -2065,7 +2065,7 @@ version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fce8dd7fcfcbf3a0a87d8f515194b49d6135acab73e18bd380d1d93bb1a15eb"
 dependencies = [
- "clap 4.5.47",
+ "clap 4.5.48",
  "heck 0.4.1",
  "indexmap 2.11.0",
  "log",
@@ -2181,9 +2181,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.47"
+version = "4.5.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eac00902d9d136acd712710d71823fb8ac8004ca445a89e73a41d45aa712931"
+checksum = "e2134bb3ea021b78629caa971416385309e0131b351b25e01dc16fb54e1b5fae"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -2191,9 +2191,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.47"
+version = "4.5.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ad9bbf750e73b5884fb8a211a9424a1906c1e156724260fdae972f31d70e1d6"
+checksum = "c2ba64afa3c0a6df7fa517765e31314e983f51dda798ffba27b988194fb65dc9"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2747,7 +2747,7 @@ dependencies = [
  "anchor-lang",
  "bytesize",
  "chrono",
- "clap 4.5.47",
+ "clap 4.5.48",
  "csv",
  "data-anchor-api",
  "data-anchor-blober",
@@ -2775,7 +2775,7 @@ version = "0.4.3"
 dependencies = [
  "anchor-lang",
  "chrono",
- "clap 4.5.47",
+ "clap 4.5.48",
  "data-anchor-blober",
  "data-anchor-data-correctness-verifier",
  "data-anchor-pob-sla-verifier",
@@ -2806,7 +2806,7 @@ dependencies = [
  "arbtest",
  "async-trait",
  "bon",
- "clap 4.5.47",
+ "clap 4.5.48",
  "data-anchor-api",
  "data-anchor-blober",
  "data-anchor-utils",
@@ -2933,7 +2933,7 @@ dependencies = [
  "anchor-lang",
  "arbitrary",
  "bytesize",
- "clap 4.5.47",
+ "clap 4.5.48",
  "data-anchor-blober",
  "data-anchor-proofs",
  "data-anchor-prover",
@@ -9222,7 +9222,7 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "chrono",
- "clap 4.5.47",
+ "clap 4.5.48",
  "dirs",
  "sp1-prover",
 ]
@@ -9235,7 +9235,7 @@ checksum = "7bc79ba7a23ee664870ac6dd9ca8125d9fd0bb1c6acb13cb34cb1c0b81458e89"
 dependencies = [
  "bincode",
  "bytemuck",
- "clap 4.5.47",
+ "clap 4.5.48",
  "elf",
  "enum-map",
  "eyre",
@@ -9420,7 +9420,7 @@ checksum = "49b14da2fa5bea1b2fffccda3f5c0c9a153a766f412c5259ea75302e58629e7c"
 dependencies = [
  "anyhow",
  "bincode",
- "clap 4.5.47",
+ "clap 4.5.48",
  "dirs",
  "downloader",
  "enum-map",
