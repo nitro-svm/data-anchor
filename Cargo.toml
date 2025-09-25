@@ -74,7 +74,7 @@ solana-rpc-client-api = "2.3.7"
 solana-seed-derivable = "2.2.1"
 solana-signature = "2.3.0"
 solana-signer = "2.2.1"
-solana-transaction = "2.2.2"
+solana-transaction = "2.2.3"
 solana-transaction-status = "2.3.7"
 
 anchor-lang = "=0.31.1"
