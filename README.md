@@ -76,7 +76,7 @@ A quick run‑through of core workflows—see the CLI or RPC docs for full comma
 
 #### Data Anchor Crate Documentations
 
-- [CLI Documentation](https://docs.rs/data-anchor-oss/latest/data_anchor/)
+- [CLI Documentation](https://docs.rs/data-anchor/latest/data_anchor/)
 - [Client API](https://docs.rs/data-anchor-client/latest/data_anchor_client/)
 - [Blober Program](https://docs.rs/data-anchor-blober/latest/data_anchor_blober/)
 - [Indexer API](https://docs.rs/data-anchor-api/latest/data_anchor_api/)

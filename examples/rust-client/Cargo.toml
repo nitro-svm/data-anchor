@@ -5,7 +5,7 @@ authors = ["Nitro Labs <team@nitro.technology>"]
 edition = "2024"
 homepage = "https://www.termina.technology"
 license = "MIT"
-repository = "https://github.com/nitro-svm/data-anchor-oss"
+repository = "https://github.com/nitro-svm/data-anchor"
 version = "0.4.3"
 publish = false
 
