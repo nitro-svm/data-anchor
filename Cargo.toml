@@ -19,7 +19,7 @@ license = "MIT"
 authors = ["Nitro Labs <team@nitro.technology>"]
 homepage = "https://www.termina.technology"
 publish = true
-repository = "https://github.com/nitro-svm/data-anchor-oss"
+repository = "https://github.com/nitro-svm/data-anchor"
 
 [workspace.dependencies]
 # External dependencies
