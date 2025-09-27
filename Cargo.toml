@@ -46,7 +46,7 @@ jsonrpsee = { version = "0.24.9", features = [
 lz4_flex = "0.11.5"
 postcard = { version = "1.1.3", features = ["use-std"] }
 # Has to be 0.7 for Solana SDK compatibility
-rand = "0.7"
+rand = "0.9"
 rstest = "0.26.1"
 serde = { version = "1.0.219", default-features = false }
 serde_json = { version = "1.0.143", default-features = false }
