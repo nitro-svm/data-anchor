@@ -61,7 +61,7 @@ ruzstd = "0.8.1"
 # Solana & Agave
 solana-account = "2.2.1"
 solana-account-decoder-client-types = "2.3.8"
-solana-cli-config = "2.2.1"
+solana-cli-config = "2.3.11"
 solana-client = "2.3.7"
 solana-commitment-config = "2.2.1"
 solana-compute-budget-interface = "2.2.2"
