@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.4.3...data-anchor-client-v0.4.4) - 2025-09-30
+
+### Other
+
+- Use shorter domain name ([#22](https://github.com/nitro-svm/data-anchor/pull/22))
+- Change repo link ([#18](https://github.com/nitro-svm/data-anchor/pull/18))
+
 ## [0.4.2](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.4.1...data-anchor-client-v0.4.2) - 2025-08-27
 
 ### Added
