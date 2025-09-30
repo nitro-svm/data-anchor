@@ -2742,7 +2742,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anchor-lang",
  "bytesize",
@@ -2771,7 +2771,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-api"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -2799,7 +2799,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-client"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anchor-lang",
  "arbitrary",
@@ -2841,7 +2841,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-data-correctness"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "data-anchor-prover-core",
  "sp1-zkvm 5.2.1",
@@ -2857,7 +2857,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-encoding-compression-test"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "data-anchor-prover-core",
  "data-anchor-utils",
@@ -2866,7 +2866,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-pob-sla"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "data-anchor-prover-core",
  "sp1-zkvm 5.2.1",
@@ -2883,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-proofs"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anchor-lang",
  "arbitrary",
@@ -2904,7 +2904,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-prover"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "data-anchor-api",
  "data-anchor-proofs",
@@ -2919,7 +2919,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-prover-core"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "data-anchor-proofs",
  "sp1-derive",
@@ -2928,7 +2928,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-prover-script"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anchor-lang",
  "arbitrary",
@@ -2945,7 +2945,7 @@ dependencies = [
 
 [[package]]
 name = "data-anchor-utils"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "async-trait",
  "bincode",
