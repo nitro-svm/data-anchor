@@ -61,7 +61,7 @@ impl IndexerUrl {
                 return url.clone();
             }
         };
-        format!("https://{name}.indexer.data-anchor.termina.technology")
+        format!("https://{name}.data-anchor.termina.technology")
     }
 }
 
@@ -109,18 +109,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case::mainnet(
-        IndexerUrl::Mainnet,
-        "https://mainnet.indexer.data-anchor.termina.technology"
-    )]
-    #[case::devnet(
-        IndexerUrl::Devnet,
-        "https://devnet.indexer.data-anchor.termina.technology"
-    )]
-    #[case::staging(
-        IndexerUrl::Staging,
-        "https://staging.indexer.data-anchor.termina.technology"
-    )]
+    #[case::mainnet(IndexerUrl::Mainnet, "https://mainnet.data-anchor.termina.technology")]
+    #[case::devnet(IndexerUrl::Devnet, "https://devnet.data-anchor.termina.technology")]
+    #[case::staging(IndexerUrl::Staging, "https://staging.data-anchor.termina.technology")]
     #[case::custom(IndexerUrl::Custom("https://custom.indexer.url".to_string()), "https://custom.indexer.url")]
     fn test_indexer_url_url(#[case] indexer_url: IndexerUrl, #[case] expected_url: &str) {
         assert_eq!(indexer_url.url(), expected_url);
