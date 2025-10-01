@@ -11,6 +11,7 @@ permissions:
 
 env:
   TF_WORKING_DIR: infrastructure/cli
+  BUCKET_NAME: ${{ vars.BUCKET_NAME }}
 
 jobs:
   release-and-upload:
@@ -66,16 +67,6 @@ jobs:
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-
-      - name: Tofu init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          tofu init
-          BUCKET_NAME=$(tofu output -raw bucket_name)
-          echo "BUCKET_NAME=$BUCKET_NAME" >> "$GITHUB_ENV"
-
       - name: Upload to AWS S3
         run: |
           aws s3 cp "data-anchor-$TAG-$TARGET.tar.gz" "s3://$BUCKET_NAME/data-anchor/$TAG/"
@@ -102,16 +93,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_INFRA_ROLE }}
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-
-      - name: Tofu init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          tofu init
-          BUCKET_NAME=$(tofu output -raw bucket_name)
-          echo "BUCKET_NAME=$BUCKET_NAME" >> "$GITHUB_ENV"
 
       - name: Upload to AWS S3
         run: |
