@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.5...data-anchor-v0.4.6) - 2026-02-05
+
+### Other
+
+- update Cargo.lock dependencies
+
 ## [0.4.4](https://github.com/nitro-svm/data-anchor/compare/data-anchor-v0.4.3...data-anchor-v0.4.4) - 2025-09-30
 
 ### Other
