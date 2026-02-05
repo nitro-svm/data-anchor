@@ -85,12 +85,19 @@ where
 /// [`solana_compute_budget_interface::ComputeBudgetInstruction::set_loaded_accounts_data_size_limit`] instructions.
 pub const SET_PRICE_AND_CU_LIMIT_COST: u32 = 450;
 
-pub const SYSTEM_PROGRAM_DATA_SIZE: u32 = 14;
+pub const SYSTEM_PROGRAM_DATA_SIZE: u32 = 21;
 pub const COMPUTE_BUDGET_PROGRAM_DATA_SIZE: u32 = 22;
 pub const ANCHOR_PROGRAM_DATA_SIZE: u32 = 36;
+pub const UPGRADEABLE_PROGRAM_METADATA: u32 = 32;
+pub const DATA_ANCHOR_BLOBER_PROGRAM_DATA_SIZE: u32 = 406936;
+pub const SAFETY_MARGIN_LOADED_ACCOUNT_DATA_SIZE: u32 = 256;
 
-pub const BASE_LOADED_ACCOUNT_DATA_SIZE: u32 =
-    SYSTEM_PROGRAM_DATA_SIZE + COMPUTE_BUDGET_PROGRAM_DATA_SIZE + ANCHOR_PROGRAM_DATA_SIZE;
+pub const BASE_LOADED_ACCOUNT_DATA_SIZE: u32 = SYSTEM_PROGRAM_DATA_SIZE
+    + COMPUTE_BUDGET_PROGRAM_DATA_SIZE
+    + ANCHOR_PROGRAM_DATA_SIZE
+    + UPGRADEABLE_PROGRAM_METADATA
+    + DATA_ANCHOR_BLOBER_PROGRAM_DATA_SIZE
+    + SAFETY_MARGIN_LOADED_ACCOUNT_DATA_SIZE;
 
 // Per SIMD-0186, all accounts are assigned a base size of 64 bytes to cover
 // the storage cost of metadata.
@@ -132,14 +139,12 @@ pub trait MessageBuilder {
         );
 
         debug!(
-            "Building message with limits: CU limit {}, loaded account data size limit {}, number of accounts {}, number of address lookup tables {}",
+            "Building message with limits: CU limit {}, loaded account data size limit {}, number of accounts {accounts_count}, number of address lookup tables {address_lookup_tables_count}",
             Self::COMPUTE_UNIT_LIMIT + SET_PRICE_AND_CU_LIMIT_COST,
             Self::LOADED_ACCOUNT_DATA_SIZE
                 + BASE_LOADED_ACCOUNT_DATA_SIZE
                 + (accounts_count as u32 * TRANSACTION_ACCOUNT_BASE_SIZE)
                 + (address_lookup_tables_count as u32 * ADDRESS_LOOKUP_TABLE_BASE_SIZE),
-            accounts_count,
-            address_lookup_tables_count,
         );
         // This limit can be known based on the instruction
         let set_account_data_size = ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(
