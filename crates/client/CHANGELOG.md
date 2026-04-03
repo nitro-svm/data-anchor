@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.4.4...data-anchor-client-v0.4.6) - 2026-02-05
+
+### Added
+
+- Update account loaded data size limits ([#33](https://github.com/nitro-svm/data-anchor/pull/33))
+
+### Other
+
+- release v0.4.5 ([#34](https://github.com/nitro-svm/data-anchor/pull/34))
+
 ## [0.4.5](https://github.com/nitro-svm/data-anchor/compare/data-anchor-client-v0.4.4...data-anchor-client-v0.4.5) - 2026-02-05
 
 ### Added
