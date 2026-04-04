@@ -2825,7 +2825,7 @@ dependencies = [
  "solana-compute-budget-interface",
  "solana-epoch-info",
  "solana-keypair",
- "solana-native-token",
+ "solana-native-token 3.0.0",
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-signature",
@@ -7562,7 +7562,7 @@ dependencies = [
  "solana-hash",
  "solana-keypair",
  "solana-message",
- "solana-native-token",
+ "solana-native-token 2.3.0",
  "solana-presigner",
  "solana-pubkey",
  "solana-remote-wallet",
@@ -8095,9 +8095,15 @@ dependencies = [
 
 [[package]]
 name = "solana-native-token"
-version = "2.2.2"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "307fb2f78060995979e9b4f68f833623565ed4e55d3725f100454ce78a99a1a3"
+checksum = "61515b880c36974053dd499c0510066783f0cc6ac17def0c7ef2a244874cf4a9"
+
+[[package]]
+name = "solana-native-token"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae8dd4c280dca9d046139eb5b7a5ac9ad10403fbd64964c7d7571214950d758f"
 
 [[package]]
 name = "solana-net-utils"
@@ -8257,7 +8263,7 @@ dependencies = [
  "solana-loader-v4-interface",
  "solana-message",
  "solana-msg",
- "solana-native-token",
+ "solana-native-token 2.3.0",
  "solana-nonce",
  "solana-program-entrypoint",
  "solana-program-error",
@@ -9964,7 +9970,7 @@ dependencies = [
  "solana-decode-error",
  "solana-instruction",
  "solana-msg",
- "solana-native-token",
+ "solana-native-token 2.3.0",
  "solana-program-entrypoint",
  "solana-program-error",
  "solana-program-memory",
